@@ -9,16 +9,10 @@ import (
 )
 
 var (
-	rwLock              *sync.RWMutex
-	validate            *validator.Validate
-	ws                  WServer
-	rpcSvr              RPCServer
-	sendMsgAllCount     uint64
-	sendMsgFailedCount  uint64
-	sendMsgSuccessCount uint64
-	userCount           uint64
-
-	sendMsgAllCountLock sync.RWMutex
+	rwLock   *sync.RWMutex
+	validate *validator.Validate
+	ws       WServer
+	rpcSvr   RPCServer
 )
 
 func Init(rpcPort, wsPort int) {

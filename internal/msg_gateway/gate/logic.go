@@ -221,9 +221,6 @@ func (ws *WServer) userLogoutResp(conn *UserConn, m *Req) {
 	_ = conn.Close()
 }
 func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
-	sendMsgAllCountLock.Lock()
-	sendMsgAllCount++
-	sendMsgAllCountLock.Unlock()
 	log.NewInfo(m.OperationID, "Ws call success to sendMsgReq start", m.MsgIncr, m.ReqIdentifier, m.SendID)
 
 	nReply := new(pbChat.SendMsgResp)
@@ -393,7 +390,7 @@ func SetTokenKicked(userID string, platformID int, operationID string) {
 		log.Error(operationID, "GetTokenMapByUidPid failed ", err.Error(), userID, constant.PlatformIDToName(platformID))
 		return
 	}
-	for k, _ := range m {
+	for k := range m {
 		m[k] = constant.KickedToken
 	}
 	err = db.DB.SetTokenMapByUidPid(userID, platformID, m)
