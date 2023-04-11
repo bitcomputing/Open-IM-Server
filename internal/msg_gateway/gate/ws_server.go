@@ -83,7 +83,6 @@ func (ws *WServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			newConn := &UserConn{conn, new(sync.Mutex), utils.StringToInt32(query["platformID"][0]), 0, compression, query["sendID"][0], false, query["token"][0], utils.Md5(conn.RemoteAddr().String() + "_" + strconv.Itoa(int(utils.GetCurrentTimestampByMill())))}
-			userCount++
 			ws.addUserConn(query["sendID"][0], utils.StringToInt(query["platformID"][0]), newConn, query["token"][0], newConn.connID, operationID)
 			go ws.readMsg(newConn)
 		}
@@ -100,13 +99,11 @@ func (ws *WServer) readMsg(conn *UserConn) {
 		}
 		if err != nil {
 			log.NewWarn("", "WS ReadMsg error ", " userIP", conn.RemoteAddr().String(), "userUid", "platform", "error", err.Error())
-			userCount--
 			ws.delUserConn(conn)
 			return
 		}
 		if messageType == websocket.CloseMessage {
 			log.NewWarn("", "WS receive error ", " userIP", conn.RemoteAddr().String(), "userUid", "platform", "error", string(msg))
-			userCount--
 			ws.delUserConn(conn)
 			return
 		}
@@ -217,7 +214,7 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 				}
 				log.NewDebug(operationID, "get token map is ", m, uid, constant.PlatformIDToName(platformID))
 
-				for k, _ := range m {
+				for k := range m {
 					if k != token {
 						m[k] = constant.KickedToken
 					}
@@ -272,7 +269,7 @@ func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn
 				}
 				log.NewDebug(operationID, "get token map is ", m, uid, constant.PlatformIDToName(platformID))
 
-				for k, _ := range m {
+				for k := range m {
 					if k != token {
 						m[k] = constant.KickedToken
 					}

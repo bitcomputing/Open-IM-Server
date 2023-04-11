@@ -13,11 +13,8 @@ import (
 	jpush "Open_IM/internal/push/jpush"
 	"Open_IM/internal/push/mobpush"
 	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/kafka"
 	promePkg "Open_IM/pkg/common/prometheus"
-	"Open_IM/pkg/statistics"
-	"fmt"
 )
 
 var (
@@ -35,7 +32,6 @@ func Init(rpcPort int) {
 }
 func init() {
 	producer = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic)
-	statistics.NewStatistics(&successCount, config.Config.ModuleName.PushName, fmt.Sprintf("%d second push to msg_gateway count", constant.StatisticsTimeInterval), constant.StatisticsTimeInterval)
 	if *config.Config.Push.Getui.Enable {
 		offlinePusher = getui.GetuiClient
 	}
