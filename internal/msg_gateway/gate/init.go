@@ -1,11 +1,6 @@
 package gate
 
 import (
-	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-
-	"Open_IM/pkg/statistics"
-	"fmt"
 	"sync"
 
 	promePkg "Open_IM/pkg/common/prometheus"
@@ -29,9 +24,7 @@ var (
 func Init(rpcPort, wsPort int) {
 	rwLock = new(sync.RWMutex)
 	validate = validator.New()
-	statistics.NewStatistics(&sendMsgAllCount, config.Config.ModuleName.LongConnSvrName, fmt.Sprintf("%d second recv to msg_gateway sendMsgCount", constant.StatisticsTimeInterval), constant.StatisticsTimeInterval)
-	statistics.NewStatistics(&userCount, config.Config.ModuleName.LongConnSvrName, fmt.Sprintf("%d second add user conn", constant.StatisticsTimeInterval), constant.StatisticsTimeInterval)
-	ws.onInit(wsPort)
+
 	rpcSvr.onInit(rpcPort)
 	initPrometheus()
 }
