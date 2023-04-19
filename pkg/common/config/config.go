@@ -675,7 +675,7 @@ func unmarshalConfig(config interface{}, configName string) {
 
 func init() {
 	unmarshalConfig(&Config, "config.yaml")
-	unmarshalConfig(&UsualConfig, "usualConfig.yaml")
+	// unmarshalConfig(&UsualConfig, "usualConfig.yaml")
 	if Config.Etcd.UserName == "" {
 		Config.Etcd.UserName = UsualConfig.Etcd.UserName
 	}
