@@ -1,22 +1,46 @@
 package apiAuth
 
 import (
+	authclient "Open_IM/internal/rpc/auth/client"
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	rpc "Open_IM/pkg/proto/auth"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/fatih/structs"
 	"github.com/gin-gonic/gin"
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/zrpc"
 )
+
+var (
+	authClient authclient.AuthClient
+)
+
+func init() {
+	authClientConfig := zrpc.RpcClientConf{
+		Etcd: discov.EtcdConf{
+			Hosts: config.Config.ClientConfigs.Auth.Disconvery.Hosts,
+			Key:   config.Config.ClientConfigs.Auth.Disconvery.Key,
+		},
+		Timeout: config.Config.ClientConfigs.Auth.Timeout,
+		Middlewares: zrpc.ClientMiddlewaresConf{
+			Trace:      config.Config.ClientConfigs.Auth.Middlewares.Trace,
+			Duration:   config.Config.ClientConfigs.Auth.Middlewares.Duration,
+			Prometheus: config.Config.ClientConfigs.Auth.Middlewares.Prometheus,
+			Breaker:    config.Config.ClientConfigs.Auth.Middlewares.Breaker,
+			Timeout:    config.Config.ClientConfigs.Auth.Middlewares.Timeout,
+		},
+	}
+	authClient = authclient.NewAuthClient(authClientConfig)
+}
 
 // @Summary 用户注册
 // @Description 用户注册
@@ -33,14 +57,14 @@ func UserRegister(c *gin.Context) {
 	params := api.UserRegisterReq{}
 	if err := c.BindJSON(&params); err != nil {
 		errMsg := " BindJSON failed " + err.Error()
-		log.NewError("0", errMsg)
+		logx.Error(errMsg)
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": errMsg})
 		return
 	}
-
+	logger := logx.WithContext(c.Request.Context()).WithFields(logx.Field("op", params.OperationID))
 	if params.Secret != config.Config.Secret {
 		errMsg := " params.Secret != config.Config.Secret "
-		log.NewError(params.OperationID, errMsg, params.Secret, config.Config.Secret)
+		logger.Error(errMsg, params.Secret, config.Config.Secret)
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 401, "errMsg": errMsg})
 		return
 	}
@@ -48,25 +72,16 @@ func UserRegister(c *gin.Context) {
 	utils.CopyStructFields(req.UserInfo, &params)
 	//copier.Copy(req.UserInfo, &params)
 	req.OperationID = params.OperationID
-	log.NewInfo(req.OperationID, "UserRegister args ", req.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImAuthName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewAuthClient(etcdConn)
-	reply, err := client.UserRegister(context.Background(), req)
+	reply, err := authClient.UserRegister(c.Request.Context(), req)
 	if err != nil {
 		errMsg := req.OperationID + " " + "UserRegister failed " + err.Error() + req.String()
-		log.NewError(req.OperationID, errMsg)
+		logger.Error(errMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
 	if reply.CommonResp.ErrCode != 0 {
 		errMsg := req.OperationID + " " + " UserRegister failed " + reply.CommonResp.ErrMsg + req.String()
-		log.NewError(req.OperationID, errMsg)
+		logger.Error(errMsg)
 		if reply.CommonResp.ErrCode == constant.RegisterLimit {
 			c.JSON(http.StatusOK, gin.H{"errCode": constant.RegisterLimit, "errMsg": "用户注册被限制"})
 		} else if reply.CommonResp.ErrCode == constant.InvitationError {
@@ -78,10 +93,10 @@ func UserRegister(c *gin.Context) {
 	}
 
 	pbDataToken := &rpc.UserTokenReq{Platform: params.Platform, FromUserID: params.UserID, OperationID: params.OperationID}
-	replyToken, err := client.UserToken(context.Background(), pbDataToken)
+	replyToken, err := authClient.UserToken(c.Request.Context(), pbDataToken)
 	if err != nil {
 		errMsg := req.OperationID + " " + " client.UserToken failed " + err.Error() + pbDataToken.String()
-		log.NewError(req.OperationID, errMsg)
+		logger.Error(errMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
@@ -107,37 +122,27 @@ func UserToken(c *gin.Context) {
 	params := api.UserTokenReq{}
 	if err := c.BindJSON(&params); err != nil {
 		errMsg := " BindJSON failed " + err.Error()
-		log.NewError(params.OperationID, errMsg)
+		logx.Error(errMsg)
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": errMsg})
 		return
 	}
-
+	logger := logx.WithContext(c.Request.Context()).WithFields(logx.Field("op", params.OperationID))
 	if params.Secret != config.Config.Secret {
 		errMsg := params.OperationID + " params.Secret != config.Config.Secret "
-		log.NewError(params.OperationID, "params.Secret != config.Config.Secret", params.Secret, config.Config.Secret)
+		logger.Error("params.Secret != config.Config.Secret", params.Secret, config.Config.Secret)
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 401, "errMsg": errMsg})
 		return
 	}
 	req := &rpc.UserTokenReq{Platform: params.Platform, FromUserID: params.UserID, OperationID: params.OperationID, LoginIp: params.LoginIp}
-	log.NewInfo(req.OperationID, "UserToken args ", req.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImAuthName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewAuthClient(etcdConn)
-	reply, err := client.UserToken(context.Background(), req)
+	reply, err := authClient.UserToken(context.Background(), req)
 	if err != nil {
 		errMsg := req.OperationID + " UserToken failed " + err.Error() + " req: " + req.String()
-		log.NewError(req.OperationID, errMsg)
+		logger.Error(errMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
 	resp := api.UserTokenResp{CommResp: api.CommResp{ErrCode: reply.CommonResp.ErrCode, ErrMsg: reply.CommonResp.ErrMsg},
 		UserToken: api.UserTokenInfo{UserID: req.FromUserID, Token: reply.Token, ExpiredTime: reply.ExpiredTime}}
-	log.NewInfo(req.OperationID, "UserToken return ", resp)
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -157,25 +162,24 @@ func ParseToken(c *gin.Context) {
 	params := api.ParseTokenReq{}
 	if err := c.BindJSON(&params); err != nil {
 		errMsg := " BindJSON failed " + err.Error()
-		log.NewError("0", errMsg)
+		logx.Error(errMsg)
 		c.JSON(http.StatusOK, gin.H{"errCode": 1001, "errMsg": errMsg})
 		return
 	}
-
+	logger := logx.WithContext(c.Request.Context()).WithFields(logx.Field("op", params.OperationID))
 	var ok bool
 	var errInfo string
 	var expireTime int64
 	ok, _, errInfo, expireTime = token_verify.GetUserIDFromTokenExpireTime(c.Request.Header.Get("token"), params.OperationID)
 	if !ok {
 		errMsg := params.OperationID + " " + "GetUserIDFromTokenExpireTime failed " + errInfo
-		log.NewError(params.OperationID, errMsg)
+		logger.Error(errMsg)
 		c.JSON(http.StatusOK, gin.H{"errCode": 1001, "errMsg": errMsg})
 		return
 	}
 
 	resp := api.ParseTokenResp{CommResp: api.CommResp{ErrCode: 0, ErrMsg: ""}, ExpireTime: api.ExpireTime{ExpireTimeSeconds: uint32(expireTime)}}
 	resp.Data = structs.Map(&resp.ExpireTime)
-	log.NewInfo(params.OperationID, "ParseToken return ", resp)
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -195,10 +199,12 @@ func ForceLogout(c *gin.Context) {
 	params := api.ForceLogoutReq{}
 	if err := c.BindJSON(&params); err != nil {
 		errMsg := " BindJSON failed " + err.Error()
-		log.NewError("0", errMsg)
+		logx.Error(errMsg)
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": errMsg})
 		return
 	}
+	logger := logx.WithContext(c.Request.Context()).WithFields(logx.Field("op", params.OperationID))
+
 	req := &rpc.ForceLogoutReq{}
 	utils.CopyStructFields(req, &params)
 
@@ -207,28 +213,18 @@ func ForceLogout(c *gin.Context) {
 	ok, req.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
-		log.NewError(req.OperationID, errMsg)
+		logger.Error(errMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
 
-	log.NewInfo(req.OperationID, "ForceLogout args ", req.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImAuthName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewAuthClient(etcdConn)
-	reply, err := client.ForceLogout(context.Background(), req)
+	reply, err := authClient.ForceLogout(context.Background(), req)
 	if err != nil {
 		errMsg := req.OperationID + " UserToken failed " + err.Error() + req.String()
-		log.NewError(req.OperationID, errMsg)
+		logger.Error(errMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
 	resp := api.ForceLogoutResp{CommResp: api.CommResp{ErrCode: reply.CommonResp.ErrCode, ErrMsg: reply.CommonResp.ErrMsg}}
-	log.NewInfo(params.OperationID, utils.GetSelfFuncName(), " return ", resp)
 	c.JSON(http.StatusOK, resp)
 }

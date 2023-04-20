@@ -8,12 +8,13 @@ import (
 	utils2 "Open_IM/pkg/common/utils"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
+	"context"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 )
 
-func OrganizationNotificationToAll(opUserID string, operationID string) {
+func OrganizationNotificationToAll(ctx context.Context, opUserID string, operationID string) {
 	err, userIDList := imdb.GetAllOrganizationUserID()
 	if err != nil {
 		log.Error(operationID, "GetAllOrganizationUserID failed ", err.Error())
@@ -22,7 +23,7 @@ func OrganizationNotificationToAll(opUserID string, operationID string) {
 
 	tips := open_im_sdk.OrganizationChangedTips{OpUser: &open_im_sdk.UserInfo{}}
 
-	user, err := imdb.GetUserByUserID(opUserID)
+	user, err := imdb.GetUserByUserID(ctx, opUserID)
 	if err != nil {
 		log.NewError(operationID, "GetUserByUserID failed ", err.Error(), opUserID)
 		return

@@ -150,9 +150,9 @@ func DelGroupMemberIDListFromCache(groupID string) error {
 	return err
 }
 
-func GetUserInfoFromCache(userID string) (*db.User, error) {
+func GetUserInfoFromCache(ctx context.Context, userID string) (*db.User, error) {
 	getUserInfo := func() (string, error) {
-		userInfo, err := imdb.GetUserByUserID(userID)
+		userInfo, err := imdb.GetUserByUserID(ctx, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "")
 		}
@@ -162,7 +162,7 @@ func GetUserInfoFromCache(userID string) (*db.User, error) {
 		}
 		return string(bytes), nil
 	}
-	userInfoStr, err := db.DB.Rc.Fetch(userInfoCache+userID, time.Second*30*60, getUserInfo)
+	userInfoStr, err := db.DB.Rc.Fetch2(ctx, userInfoCache+userID, time.Second*30*60, getUserInfo)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}

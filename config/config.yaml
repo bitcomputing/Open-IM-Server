@@ -152,6 +152,36 @@ credential: #腾讯cos，发送图片、视频、文件时需要，请自行申�
     roleSessionName:                        #角色SESSION名称
 
 
+serverConfigs:
+  auth:
+    name: open-im-auth
+    discovery:
+      hosts:
+        - 127.0.0.1:2379
+      key: open-im-auth.rpc
+    port: 10160
+    timeout: 3000
+    middlewares:
+      trace: true
+      recover: true
+      stat: true
+      prometheus: true
+      breaker: true
+
+clientConfigs:
+  auth:
+    discovery:
+      hosts:
+        - 127.0.0.1:2379
+      key: open-im-auth.rpc
+    timeout: 3000
+    middlewares:
+      trace: true
+      duration: true
+      prometheus: true
+      breaker: true
+      timeout: true
+
 rpcport: #rpc服务端口 默认即可
   openImUserPort: [ 10110 ]
   openImFriendPort: [ 10120 ]

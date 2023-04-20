@@ -5,6 +5,7 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -12,7 +13,7 @@ import (
 
 func init() {
 	for k, v := range config.Config.Manager.AppManagerUid {
-		_, err := GetUserByUserID(v)
+		_, err := GetUserByUserID(context.Background(), v)
 		if err != nil {
 		} else {
 			continue
@@ -25,7 +26,7 @@ func init() {
 			appMgr.Nickname = "AppManager" + utils.IntToString(k+1)
 		}
 		appMgr.AppMangerLevel = constant.AppAdmin
-		err = UserRegister(appMgr)
+		err = UserRegister(context.Background(), appMgr)
 		if err != nil {
 			fmt.Println("AppManager insert error ", err.Error(), appMgr)
 		} else {
@@ -34,7 +35,7 @@ func init() {
 	}
 }
 
-func UserRegister(user db.User) error {
+func UserRegister(ctx context.Context, user db.User) error {
 	user.CreateTime = time.Now()
 	if user.AppMangerLevel == 0 {
 		user.AppMangerLevel = constant.AppOrdinaryUsers
@@ -42,7 +43,7 @@ func UserRegister(user db.User) error {
 	if user.Birth.Unix() < 0 {
 		user.Birth = utils.UnixSecondToTime(0)
 	}
-	err := db.DB.MysqlDB.DefaultGormDB().Table("users").Create(&user).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("users").Create(&user).Error
 	if err != nil {
 		return err
 	}
@@ -55,9 +56,9 @@ func GetAllUser() ([]db.User, error) {
 	return userList, err
 }
 
-func GetUserByUserID(userID string) (*db.User, error) {
+func GetUserByUserID(ctx context.Context, userID string) (*db.User, error) {
 	var user db.User
-	err := db.DB.MysqlDB.DefaultGormDB().Table("users").Where("user_id=?", userID).Take(&user).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("users").Where("user_id=?", userID).Take(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +150,8 @@ func UsersIsBlock(userIDList []string) (inBlockUserIDList []string, err error) {
 	return inBlockUserIDList, err
 }
 
-func BlockUser(userID, endDisableTime string) error {
-	user, err := GetUserByUserID(userID)
+func BlockUser(ctx context.Context, userID, endDisableTime string) error {
+	user, err := GetUserByUserID(ctx, userID)
 	if err != nil || user.UserID == "" {
 		return err
 	}
@@ -162,9 +163,9 @@ func BlockUser(userID, endDisableTime string) error {
 		return errors.New("endDisableTime is before now")
 	}
 	var blockUser db.BlackList
-	db.DB.MysqlDB.DefaultGormDB().Table("black_lists").Where("uid=?", userID).First(&blockUser)
+	db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("black_lists").Where("uid=?", userID).First(&blockUser)
 	if blockUser.UserId != "" {
-		db.DB.MysqlDB.DefaultGormDB().Model(&blockUser).Where("uid=?", blockUser.UserId).Update("end_disable_time", end)
+		db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&blockUser).Where("uid=?", blockUser.UserId).Update("end_disable_time", end)
 		return nil
 	}
 	blockUser = db.BlackList{
@@ -172,7 +173,7 @@ func BlockUser(userID, endDisableTime string) error {
 		BeginDisableTime: time.Now(),
 		EndDisableTime:   end,
 	}
-	err = db.DB.MysqlDB.DefaultGormDB().Create(&blockUser).Error
+	err = db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Create(&blockUser).Error
 	return err
 }
 
