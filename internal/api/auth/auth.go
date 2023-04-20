@@ -24,7 +24,7 @@ var (
 	authClient authclient.AuthClient
 )
 
-func init() {
+func Init() {
 	authClientConfig := zrpc.RpcClientConf{
 		Etcd: discov.EtcdConf{
 			Hosts: config.Config.ClientConfigs.Auth.Disconvery.Hosts,

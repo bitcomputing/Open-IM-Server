@@ -198,6 +198,10 @@ func main() {
 		address = config.Config.Api.ListenIP + ":" + strconv.Itoa(*ginPort)
 	}
 	fmt.Println("start api server, address: ", address, ", OpenIM version: ", constant.CurrentVersion)
+
+	// init RPC clients
+	apiAuth.Init()
+
 	err := r.Run(address)
 	if err != nil {
 		log.Error("", "api run failed ", address, err.Error())
