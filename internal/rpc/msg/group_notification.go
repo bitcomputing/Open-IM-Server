@@ -12,8 +12,8 @@ import (
 	"Open_IM/pkg/utils"
 	"context"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -110,16 +110,17 @@ func groupNotification(ctx context.Context, contentType int32, m proto.Message, 
 	var tips open_im_sdk.TipsComm
 	tips.Detail, err = proto.Marshal(m)
 	if err != nil {
-		log.Error(operationID, "Marshal failed ", err.Error(), m.String())
+		log.Error(operationID, "Marshal failed ", err.Error())
 		return
 	}
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
 
-	tips.JsonDetail, _ = marshaler.MarshalToString(m)
+	buffer, _ := marshaler.Marshal(m)
+	tips.JsonDetail = string(buffer)
 	var nickname string
 
 	from, err := imdb.GetUserByUserID(ctx, sendID)

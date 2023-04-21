@@ -11,10 +11,11 @@ import (
 	pbCommon "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
-	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/proto"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"google.golang.org/protobuf/proto"
 )
 
 // @Summary 根据seq列表删除消息

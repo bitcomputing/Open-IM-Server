@@ -11,8 +11,8 @@ import (
 	"Open_IM/pkg/utils"
 	"context"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func getFromToUserNickname(ctx context.Context, fromUserID, toUserID string) (string, string, error) {
@@ -33,17 +33,17 @@ func friendNotification(ctx context.Context, commID *pbFriend.CommID, contentTyp
 	var tips open_im_sdk.TipsComm
 	tips.Detail, err = proto.Marshal(m)
 	if err != nil {
-		log.Error(commID.OperationID, "Marshal failed ", err.Error(), m.String())
+		log.Error(commID.OperationID, "Marshal failed ", err.Error())
 		return
 	}
 
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
-
-	tips.JsonDetail, _ = marshaler.MarshalToString(m)
+	buffer, _ := marshaler.Marshal(m)
+	tips.JsonDetail = string(buffer)
 
 	fromUserNickname, toUserNickname, err := getFromToUserNickname(ctx, commID.FromUserID, commID.ToUserID)
 	if err != nil {

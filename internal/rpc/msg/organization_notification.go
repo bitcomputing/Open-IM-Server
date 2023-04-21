@@ -10,8 +10,8 @@ import (
 	"Open_IM/pkg/utils"
 	"context"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func OrganizationNotificationToAll(ctx context.Context, opUserID string, operationID string) {
@@ -42,17 +42,18 @@ func OrganizationNotification(opUserID string, recvUserID string, contentType in
 	var tips open_im_sdk.TipsComm
 	tips.Detail, err = proto.Marshal(m)
 	if err != nil {
-		log.Error(operationID, "Marshal failed ", err.Error(), m.String())
+		log.Error(operationID, "Marshal failed ", err.Error(), m)
 		return
 	}
 
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
 
-	tips.JsonDetail, _ = marshaler.MarshalToString(m)
+	buffer, _ := marshaler.Marshal(m)
+	tips.JsonDetail = string(buffer)
 
 	switch contentType {
 	case constant.OrganizationChangedNotification:

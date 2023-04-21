@@ -27,7 +27,7 @@ import (
 	promePkg "Open_IM/pkg/common/prometheus"
 
 	go_redis "github.com/go-redis/redis/v8"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // When the number of group members is greater than this value，Online users will be sent first，Guaranteed service availability

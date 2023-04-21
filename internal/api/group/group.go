@@ -12,8 +12,8 @@ import (
 	"Open_IM/pkg/utils"
 	"context"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/gin-gonic/gin"
 
@@ -873,15 +873,15 @@ func SetGroupInfo(c *gin.Context) {
 }
 func argsHandle(params *api.SetGroupInfoReq, req *rpc.SetGroupInfoReq) {
 	if params.NeedVerification != nil {
-		req.GroupInfoForSet.NeedVerification = &wrappers.Int32Value{Value: *params.NeedVerification}
+		req.GroupInfoForSet.NeedVerification = &wrapperspb.Int32Value{Value: *params.NeedVerification}
 		log.NewInfo(req.OperationID, "NeedVerification ", req.GroupInfoForSet.NeedVerification)
 	}
 	if params.LookMemberInfo != nil {
-		req.GroupInfoForSet.LookMemberInfo = &wrappers.Int32Value{Value: *params.LookMemberInfo}
+		req.GroupInfoForSet.LookMemberInfo = &wrapperspb.Int32Value{Value: *params.LookMemberInfo}
 		log.NewInfo(req.OperationID, "LookMemberInfo ", req.GroupInfoForSet.LookMemberInfo)
 	}
 	if params.ApplyMemberFriend != nil {
-		req.GroupInfoForSet.ApplyMemberFriend = &wrappers.Int32Value{Value: *params.ApplyMemberFriend}
+		req.GroupInfoForSet.ApplyMemberFriend = &wrapperspb.Int32Value{Value: *params.ApplyMemberFriend}
 		log.NewInfo(req.OperationID, "ApplyMemberFriend ", req.GroupInfoForSet.ApplyMemberFriend)
 	}
 }
@@ -1293,16 +1293,16 @@ func SetGroupMemberInfo(c *gin.Context) {
 		OpUserID:    opUserID,
 	}
 	if req.Nickname != nil {
-		reqPb.Nickname = &wrappers.StringValue{Value: *req.Nickname}
+		reqPb.Nickname = &wrapperspb.StringValue{Value: *req.Nickname}
 	}
 	if req.FaceURL != nil {
-		reqPb.FaceURL = &wrappers.StringValue{Value: *req.FaceURL}
+		reqPb.FaceURL = &wrapperspb.StringValue{Value: *req.FaceURL}
 	}
 	if req.Ex != nil {
-		reqPb.Ex = &wrappers.StringValue{Value: *req.Ex}
+		reqPb.Ex = &wrapperspb.StringValue{Value: *req.Ex}
 	}
 	if req.RoleLevel != nil {
-		reqPb.RoleLevel = &wrappers.Int32Value{Value: *req.RoleLevel}
+		reqPb.RoleLevel = &wrapperspb.Int32Value{Value: *req.RoleLevel}
 	}
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), " api args ", reqPb.String())
 	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImGroupName, req.OperationID)

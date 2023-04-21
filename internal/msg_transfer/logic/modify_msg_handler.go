@@ -11,9 +11,10 @@ import (
 	server_api_params "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"encoding/json"
+
 	"github.com/Shopify/sarama"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type ModifyMsgConsumerHandler struct {

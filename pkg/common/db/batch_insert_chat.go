@@ -9,10 +9,11 @@ import (
 	"Open_IM/pkg/utils"
 	"context"
 	"errors"
+
 	go_redis "github.com/go-redis/redis/v8"
-	"github.com/golang/protobuf/proto"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/protobuf/proto"
 )
 
 func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataToMQ, operationID string, currentMaxSeq uint64) error {

@@ -18,9 +18,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 func (ws *WServer) msgParse(conn *UserConn, binaryMsg []byte) {

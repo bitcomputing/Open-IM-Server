@@ -6,24 +6,27 @@ import (
 	"Open_IM/pkg/common/log"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func SetConversationNotification(operationID, sendID, recvID string, contentType int, m proto.Message, tips open_im_sdk.TipsComm) {
-	log.NewInfo(operationID, "args: ", sendID, recvID, contentType, m.String(), tips.String())
+	log.NewInfo(operationID, "args: ", sendID, recvID, contentType, m, tips.String())
 	var err error
 	tips.Detail, err = proto.Marshal(m)
 	if err != nil {
-		log.NewError(operationID, "Marshal failed ", err.Error(), m.String())
+		log.NewError(operationID, "Marshal failed ", err.Error(), m)
 		return
 	}
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
-	tips.JsonDetail, _ = marshaler.MarshalToString(m)
+
+	buffer, _ := marshaler.Marshal(m)
+	tips.JsonDetail = string(buffer)
 	var n NotificationMsg
 	n.SendID = sendID
 	n.RecvID = recvID
@@ -49,7 +52,7 @@ func ConversationSetPrivateNotification(operationID, sendID, recvID string, isPr
 	}
 	var tips open_im_sdk.TipsComm
 	var tipsMsg string
-	if isPrivateChat == true {
+	if isPrivateChat {
 		tipsMsg = config.Config.Notification.ConversationSetPrivate.DefaultTips.OpenTips
 	} else {
 		tipsMsg = config.Config.Notification.ConversationSetPrivate.DefaultTips.CloseTips
@@ -69,7 +72,7 @@ func ConversationChangeNotification(operationID, userID string) {
 	SetConversationNotification(operationID, userID, userID, constant.ConversationOptChangeNotification, ConversationChangedTips, tips)
 }
 
-//会话未读数同步
+// 会话未读数同步
 func ConversationUnreadChangeNotification(operationID, userID, conversationID string, updateUnreadCountTime int64) {
 	log.NewInfo(operationID, utils.GetSelfFuncName())
 	ConversationChangedTips := &open_im_sdk.ConversationUpdateTips{

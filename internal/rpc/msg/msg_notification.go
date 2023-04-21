@@ -5,8 +5,9 @@ import (
 	"Open_IM/pkg/common/log"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func DeleteMessageNotification(opUserID, userID string, seqList []uint32, operationID string) {
@@ -15,22 +16,23 @@ func DeleteMessageNotification(opUserID, userID string, seqList []uint32, operat
 }
 
 func MessageNotification(operationID, sendID, recvID string, contentType int32, m proto.Message) {
-	log.Debug(operationID, utils.GetSelfFuncName(), "args: ", m.String(), contentType)
+	log.Debug(operationID, utils.GetSelfFuncName(), "args: ", m, contentType)
 	var err error
 	var tips open_im_sdk.TipsComm
 	tips.Detail, err = proto.Marshal(m)
 	if err != nil {
-		log.Error(operationID, "Marshal failed ", err.Error(), m.String())
+		log.Error(operationID, "Marshal failed ", err.Error(), m)
 		return
 	}
 
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
 
-	tips.JsonDetail, _ = marshaler.MarshalToString(m)
+	buffer, _ := marshaler.Marshal(m)
+	tips.JsonDetail = string(buffer)
 	var n NotificationMsg
 	n.SendID = sendID
 	n.RecvID = recvID

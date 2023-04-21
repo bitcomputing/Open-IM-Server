@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 

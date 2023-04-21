@@ -16,7 +16,7 @@ import (
 	"Open_IM/pkg/utils"
 
 	"github.com/Shopify/sarama"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	promePkg "Open_IM/pkg/common/prometheus"
 )

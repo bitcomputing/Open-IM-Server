@@ -11,12 +11,13 @@ import (
 	pbPush "Open_IM/pkg/proto/push"
 	"Open_IM/pkg/utils"
 	"context"
-	"github.com/Shopify/sarama"
-	"github.com/golang/protobuf/proto"
 	"hash/crc32"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Shopify/sarama"
+	"google.golang.org/protobuf/proto"
 )
 
 type MsgChannelValue struct {

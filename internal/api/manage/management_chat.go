@@ -23,8 +23,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/golang/protobuf/proto"
 	"github.com/mitchellh/mapstructure"
+	"google.golang.org/protobuf/proto"
 )
 
 var validate *validator.Validate

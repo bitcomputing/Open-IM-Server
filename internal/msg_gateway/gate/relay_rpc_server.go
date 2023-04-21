@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"

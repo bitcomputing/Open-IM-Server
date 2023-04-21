@@ -11,7 +11,8 @@ import (
 	"Open_IM/pkg/common/log"
 	pbRtc "Open_IM/pkg/proto/rtc"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
-	"github.com/golang/protobuf/proto"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Req struct {

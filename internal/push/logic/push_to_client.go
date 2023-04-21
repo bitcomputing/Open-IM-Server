@@ -23,7 +23,7 @@ import (
 
 	promePkg "Open_IM/pkg/common/prometheus"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type OpenIMContent struct {

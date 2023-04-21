@@ -20,8 +20,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	//"github.com/garyburd/redigo/redis"
-	"github.com/golang/protobuf/proto"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/protobuf/proto"
 
 	"strconv"
 	"time"
