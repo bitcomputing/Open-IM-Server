@@ -33,6 +33,7 @@ type userServer struct {
 	rpcRegisterName string
 	etcdSchema      string
 	etcdAddr        []string
+	pbUser.UnimplementedUserServer
 }
 
 func NewUserServer(port int) *userServer {

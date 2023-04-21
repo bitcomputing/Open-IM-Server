@@ -33,6 +33,7 @@ type rpcChat struct {
 	//offlineProducer *kafka.Producer
 	delMsgCh       chan deleteMsg
 	dMessageLocker MessageLocker
+	msg.UnimplementedMsgServer
 }
 
 type deleteMsg struct {

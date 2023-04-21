@@ -28,6 +28,7 @@ type rpcConversation struct {
 	rpcRegisterName string
 	etcdSchema      string
 	etcdAddr        []string
+	pbConversation.UnimplementedConversationServer
 }
 
 func (rpc *rpcConversation) ModifyConversationField(c context.Context, req *pbConversation.ModifyConversationFieldReq) (*pbConversation.ModifyConversationFieldResp, error) {

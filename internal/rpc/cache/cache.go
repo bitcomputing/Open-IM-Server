@@ -23,6 +23,7 @@ type cacheServer struct {
 	rpcRegisterName string
 	etcdSchema      string
 	etcdAddr        []string
+	pbCache.UnimplementedCacheServer
 }
 
 func NewCacheServer(port int) *cacheServer {

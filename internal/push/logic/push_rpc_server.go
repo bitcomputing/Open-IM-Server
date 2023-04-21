@@ -23,6 +23,7 @@ type RPCServer struct {
 	rpcRegisterName string
 	etcdSchema      string
 	etcdAddr        []string
+	pbPush.UnimplementedPushMsgServiceServer
 }
 
 func (r *RPCServer) Init(rpcPort int) {
