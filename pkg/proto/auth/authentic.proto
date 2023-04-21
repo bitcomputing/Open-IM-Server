@@ -1,7 +1,7 @@
 syntax = "proto3";
 import "pkg/proto/sdk_ws/ws.proto";
 package pbAuth;
-option go_package = "Open_IM/pkg/proto/auth;pbAuth";
+option go_package = "Open_IM/pkg/proto/auth;auth";
 
 message CommonResp{
     int32   errCode = 1;
