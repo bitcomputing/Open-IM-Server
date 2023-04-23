@@ -128,8 +128,8 @@ func NewRpcAuthServer(port int) *rpcAuth {
 			Help: "The number of user login",
 		}),
 		userLoginCounter: metric.NewCounterVec(&metric.CounterVecOpts{
-			Namespace: "user_register",
-			Help:      "The number of user register",
+			Name: "user_register",
+			Help: "The number of user register",
 		}),
 	}
 }
