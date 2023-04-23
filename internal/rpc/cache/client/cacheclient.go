@@ -29,7 +29,9 @@ type cacheClient struct {
 }
 
 func NewCacheClient(config zrpc.RpcClientConf) CacheClient {
-	return &cacheClient{}
+	return &cacheClient{
+		client: zrpc.MustNewClient(config),
+	}
 }
 
 func (c *cacheClient) GetFriendIDListFromCache(ctx context.Context, in *pbcache.GetFriendIDListFromCacheReq, opts ...grpc.CallOption) (*pbcache.GetFriendIDListFromCacheResp, error) {
