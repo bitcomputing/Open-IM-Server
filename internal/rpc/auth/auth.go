@@ -40,7 +40,7 @@ func (rpc *rpcAuth) UserRegister(ctx context.Context, req *pbAuth.UserRegisterRe
 		return &pbAuth.UserRegisterResp{CommonResp: &pbAuth.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: errMsg}}, nil
 	}
 	// promePkg.PromeInc(promePkg.UserRegisterCounter)
-	rpc.userRegisterCounter.Add(1)
+	rpc.userRegisterCounter.Inc()
 	return &pbAuth.UserRegisterResp{CommonResp: &pbAuth.CommonResp{}}, nil
 }
 
@@ -123,11 +123,11 @@ func NewRpcAuthServer(port int) *rpcAuth {
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImAuthName,
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
 		etcdAddr:        config.Config.Etcd.EtcdAddr,
-		userRegisterCounter: metric.NewCounterVec(&metric.CounterVecOpts{
+		userLoginCounter: metric.NewCounterVec(&metric.CounterVecOpts{
 			Name: "user_login",
 			Help: "The number of user login",
 		}),
-		userLoginCounter: metric.NewCounterVec(&metric.CounterVecOpts{
+		userRegisterCounter: metric.NewCounterVec(&metric.CounterVecOpts{
 			Name: "user_register",
 			Help: "The number of user register",
 		}),
