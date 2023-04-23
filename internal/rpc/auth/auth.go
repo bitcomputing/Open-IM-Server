@@ -39,7 +39,6 @@ func (rpc *rpcAuth) UserRegister(ctx context.Context, req *pbAuth.UserRegisterRe
 		logger.Error(errMsg, user)
 		return &pbAuth.UserRegisterResp{CommonResp: &pbAuth.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: errMsg}}, nil
 	}
-	// promePkg.PromeInc(promePkg.UserRegisterCounter)
 	rpc.userRegisterCounter.Inc()
 	return &pbAuth.UserRegisterResp{CommonResp: &pbAuth.CommonResp{}}, nil
 }
@@ -57,7 +56,6 @@ func (rpc *rpcAuth) UserToken(ctx context.Context, req *pbAuth.UserTokenReq) (*p
 		logger.Error(errMsg)
 		return &pbAuth.UserTokenResp{CommonResp: &pbAuth.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: errMsg}}, nil
 	}
-	// promePkg.PromeInc(promePkg.UserLoginCounter)
 	rpc.userLoginCounter.Inc()
 	return &pbAuth.UserTokenResp{CommonResp: &pbAuth.CommonResp{}, Token: tokens, ExpiredTime: expTime}, nil
 }
@@ -148,62 +146,3 @@ func (rpc *rpcAuth) RegisterLegacyDiscovery() {
 
 	}
 }
-
-// func (rpc *rpcAuth) Run() {
-// 	operationID := utils.OperationIDGenerator()
-// 	log.NewInfo(operationID, "rpc auth start...")
-
-// 	listenIP := ""
-// 	if config.Config.ListenIP == "" {
-// 		listenIP = "0.0.0.0"
-// 	} else {
-// 		listenIP = config.Config.ListenIP
-// 	}
-// 	address := listenIP + ":" + strconv.Itoa(rpc.rpcPort)
-// 	listener, err := net.Listen("tcp", address)
-// 	if err != nil {
-// 		panic("listening err:" + err.Error() + rpc.rpcRegisterName)
-// 	}
-// 	log.NewInfo(operationID, "listen network success, ", address, listener)
-// 	var grpcOpts []grpc.ServerOption
-// 	if config.Config.Prometheus.Enable {
-// 		promePkg.NewGrpcRequestCounter()
-// 		promePkg.NewGrpcRequestFailedCounter()
-// 		promePkg.NewGrpcRequestSuccessCounter()
-// 		promePkg.NewUserRegisterCounter()
-// 		promePkg.NewUserLoginCounter()
-// 		grpcOpts = append(grpcOpts, []grpc.ServerOption{
-// 			// grpc.UnaryInterceptor(promePkg.UnaryServerInterceptorProme),
-// 			grpc.StreamInterceptor(grpcPrometheus.StreamServerInterceptor),
-// 			grpc.UnaryInterceptor(grpcPrometheus.UnaryServerInterceptor),
-// 		}...)
-// 	}
-// 	srv := grpc.NewServer(grpcOpts...)
-// 	defer srv.GracefulStop()
-
-// 	//service registers with etcd
-// 	pbAuth.RegisterAuthServer(srv, rpc)
-// 	rpcRegisterIP := config.Config.RpcRegisterIP
-// 	if config.Config.RpcRegisterIP == "" {
-// 		rpcRegisterIP, err = utils.GetLocalIP()
-// 		if err != nil {
-// 			log.Error("", "GetLocalIP failed ", err.Error())
-// 		}
-// 	}
-// 	log.NewInfo("", "rpcRegisterIP", rpcRegisterIP)
-
-// 	err = getcdv3.RegisterEtcd(rpc.etcdSchema, strings.Join(rpc.etcdAddr, ","), rpcRegisterIP, rpc.rpcPort, rpc.rpcRegisterName, 10)
-// 	if err != nil {
-// 		log.NewError(operationID, "RegisterEtcd failed ", err.Error(),
-// 			rpc.etcdSchema, strings.Join(rpc.etcdAddr, ","), rpcRegisterIP, rpc.rpcPort, rpc.rpcRegisterName)
-// 		panic(utils.Wrap(err, "register auth module  rpc to etcd err"))
-
-// 	}
-// 	log.NewInfo(operationID, "RegisterAuthServer ok ", rpc.etcdSchema, strings.Join(rpc.etcdAddr, ","), rpcRegisterIP, rpc.rpcPort, rpc.rpcRegisterName)
-// 	err = srv.Serve(listener)
-// 	if err != nil {
-// 		log.NewError(operationID, "Serve failed ", err.Error())
-// 		return
-// 	}
-// 	log.NewInfo(operationID, "rpc auth ok")
-// }
