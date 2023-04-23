@@ -9,7 +9,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-type ConversationClient interface{}
+type ConversationClient interface {
+	ModifyConversationField(context.Context, *pbconversation.ModifyConversationFieldReq, ...grpc.CallOption) (*pbconversation.ModifyConversationFieldResp, error)
+}
 
 type conversationClient struct {
 	client zrpc.Client
