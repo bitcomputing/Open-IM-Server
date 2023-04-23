@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/metric"
 
 	"Open_IM/pkg/common/config"
 )
@@ -39,6 +40,7 @@ func (rpc *rpcAuth) UserRegister(ctx context.Context, req *pbAuth.UserRegisterRe
 		return &pbAuth.UserRegisterResp{CommonResp: &pbAuth.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: errMsg}}, nil
 	}
 	// promePkg.PromeInc(promePkg.UserRegisterCounter)
+	rpc.userRegisterCounter.Add(1)
 	return &pbAuth.UserRegisterResp{CommonResp: &pbAuth.CommonResp{}}, nil
 }
 
@@ -56,6 +58,7 @@ func (rpc *rpcAuth) UserToken(ctx context.Context, req *pbAuth.UserTokenReq) (*p
 		return &pbAuth.UserTokenResp{CommonResp: &pbAuth.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: errMsg}}, nil
 	}
 	// promePkg.PromeInc(promePkg.UserLoginCounter)
+	rpc.userLoginCounter.Inc()
 	return &pbAuth.UserTokenResp{CommonResp: &pbAuth.CommonResp{}, Token: tokens, ExpiredTime: expTime}, nil
 }
 
@@ -110,6 +113,8 @@ type rpcAuth struct {
 	etcdSchema      string
 	etcdAddr        []string
 	pbAuth.UnimplementedAuthServer
+	userRegisterCounter metric.CounterVec
+	userLoginCounter    metric.CounterVec
 }
 
 func NewRpcAuthServer(port int) *rpcAuth {
@@ -118,6 +123,14 @@ func NewRpcAuthServer(port int) *rpcAuth {
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImAuthName,
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
 		etcdAddr:        config.Config.Etcd.EtcdAddr,
+		userRegisterCounter: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "user_login",
+			Help: "The number of user login",
+		}),
+		userLoginCounter: metric.NewCounterVec(&metric.CounterVecOpts{
+			Namespace: "user_register",
+			Help:      "The number of user register",
+		}),
 	}
 }
 

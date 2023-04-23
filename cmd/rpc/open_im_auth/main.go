@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/core/prometheus"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
@@ -32,6 +33,11 @@ func main() {
 	cfg := zrpc.RpcServerConf{
 		ServiceConf: service.ServiceConf{
 			Name: config.Config.ServerConfigs.Auth.Name,
+			Prometheus: prometheus.Config{
+				Host: config.Config.ServerConfigs.Auth.Prometheus.Host,
+				Port: config.Config.ServerConfigs.Auth.Prometheus.Port,
+				Path: config.Config.ServerConfigs.Auth.Prometheus.Path,
+			},
 		},
 		ListenOn: fmt.Sprintf("0.0.0.0:%d", config.Config.ServerConfigs.Auth.Port),
 		Etcd: discov.EtcdConf{

@@ -559,8 +559,13 @@ type ServerConfig struct {
 		Hosts []string `yaml:"hosts"`
 		Key   string   `yaml:"key"`
 	} `yaml:"discovery"`
-	Port        int   `yaml:"port"`
-	Timeout     int64 `yaml:"timeout"`
+	Port       int   `yaml:"port"`
+	Timeout    int64 `yaml:"timeout"`
+	Prometheus struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+		Path string `yaml:"path"`
+	} `yaml:"prometheus"`
 	Middlewares struct {
 		Trace      bool `yaml:"trace"`
 		Recover    bool `yaml:"recover"`

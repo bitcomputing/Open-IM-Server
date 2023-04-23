@@ -161,6 +161,10 @@ serverConfigs:
       key: open-im-auth.rpc
     port: 10160
     timeout: 3000
+    prometheus:
+      host: 0.0.0.0
+      port: 9091
+      path: /metrics
     middlewares:
       trace: true
       recover: true
