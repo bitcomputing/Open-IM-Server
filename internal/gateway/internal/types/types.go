@@ -10,16 +10,16 @@ type RegisterRequest struct {
 
 type ApiUserInfo struct {
 	UserID      string `json:"userID" validate:"required,min=1,max=64"`
-	Nickname    string `json:"nickname" validate:"omitempty,min=1,max=64"`
-	FaceURL     string `json:"faceURL" validate:"omitempty,max=1024"`
-	Gender      int32  `json:"gender" validate:"omitempty,oneof=0 1 2"`
-	PhoneNumber string `json:"phoneNumber" validate:"omitempty,max=32"`
-	Birth       uint32 `json:"birth" validate:"omitempty"`
-	Email       string `json:"email" validate:"omitempty,max=64"`
+	Nickname    string `json:"nickname,optional" validate:"omitempty,min=1,max=64"`
+	FaceURL     string `json:"faceURL,optional" validate:"omitempty,max=1024"`
+	Gender      int32  `json:"gender,optional" validate:"omitempty,oneof=0 1 2"`
+	PhoneNumber string `json:"phoneNumber,optional" validate:"omitempty,max=32"`
+	Birth       uint32 `json:"birth,optional" validate:"omitempty"`
+	Email       string `json:"email,optional" validate:"omitempty,max=64"`
 	CreateTime  int64  `json:"createTime"`
-	LoginLimit  int32  `json:"loginLimit" validate:"omitempty"`
-	Ex          string `json:"ex" validate:"omitempty,max=1024"`
-	BirthStr    string `json:"birthStr" validate:"omitempty"`
+	LoginLimit  int32  `json:"loginLimit,optional" validate:"omitempty"`
+	Ex          string `json:"ex,optional" validate:"omitempty,max=1024"`
+	BirthStr    string `json:"birthStr,optional" validate:"omitempty"`
 }
 
 type RegisterResponse struct {
