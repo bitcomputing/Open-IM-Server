@@ -1,0 +1,9 @@
+Name: openim
+Host: 0.0.0.0
+Port: 8888
+AuthClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: auth.rpc
+  Timeout: 3000

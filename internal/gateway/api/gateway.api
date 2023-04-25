@@ -1,0 +1,27 @@
+syntax = "v1"
+
+import "types.api"
+
+@server(
+	group: auth
+	prefix: /auth
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "User registration"
+	@handler Register
+	post /user_register (RegisterRequest) returns (RegisterResponse)
+	
+	@doc "User login to obtain token"
+	@handler Login
+	post /user_token (LoginRequest) returns (LoginResponse)
+	
+	@doc "Parse the token"
+	@handler ParseToken
+	post /parse_token (ParseTokenRequest) returns (ParseTokenResponse)
+	
+	@doc "Force logout"
+	@handler ForceLogout
+	post /force_logout (ForceLogoutRequest) returns (ForceLogoutResponse)
+}
