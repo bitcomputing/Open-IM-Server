@@ -38,7 +38,6 @@ func Init() {
 			Breaker:    config.Config.ClientConfigs.Auth.Middlewares.Breaker,
 			Timeout:    config.Config.ClientConfigs.Auth.Middlewares.Timeout,
 		},
-		KeepaliveTime: 0,
 	}
 	authClient = authclient.NewAuthClient(authClientConfig)
 }
