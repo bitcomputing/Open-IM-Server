@@ -2,9 +2,8 @@ package auth
 
 import (
 	"context"
-	"strings"
 
-	"Open_IM/internal/gateway/internal/common/header"
+	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
 	"Open_IM/internal/gateway/internal/types"
 	"Open_IM/pkg/common/token_verify"
@@ -31,13 +30,10 @@ func NewParseTokenLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ParseT
 func (l *ParseTokenLogic) ParseToken(req *types.ParseTokenRequest) (resp *types.ParseTokenResponse, err error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
-	headerValue, err := header.GetHeaderValues(l.ctx)
+	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
 	if err != nil {
-		errMsg := strings.Join([]string{req.OperationID, "GetHeaderValues failed", err.Error()}, " ")
-		logger.Error(errMsg)
-		return nil, errors.InternalError.WriteMessage(errMsg)
+		return nil, err
 	}
-	token := headerValue.Token
 
 	ok, _, errInfo, expireTime := token_verify.GetUserIDFromTokenExpireTime(token, req.OperationID)
 	if !ok {

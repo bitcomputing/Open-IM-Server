@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	auth "Open_IM/internal/gateway/internal/handler/auth"
+	client "Open_IM/internal/gateway/internal/handler/client"
 	"Open_IM/internal/gateway/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -38,5 +39,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/auth"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_client_config",
+					Handler: client.SetClientConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_client_config",
+					Handler: client.GetClientConfigHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/init"),
 	)
 }

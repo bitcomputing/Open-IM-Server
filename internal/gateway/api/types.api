@@ -73,3 +73,25 @@ type ForceLogoutRequest {
 type ForceLogoutResponse {
 	CommResp
 }
+
+type SetClientConfigRequest {
+	OperationID     string  `json:"operationID"  validate:"required"`
+	DiscoverPageURL *string `json:"discoverPageURL"`
+}
+
+type SetClientConfigResponse {
+	CommResp
+}
+
+type GetClientConfigRequest {
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type GetClientConfigResponse {
+	CommResp
+	Data DiscoverPageURL `json:"data"`
+}
+
+type DiscoverPageURL {
+	DiscoverPageURL string `json:"discoverPageURL"`
+}

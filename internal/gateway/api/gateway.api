@@ -25,3 +25,19 @@ service gateway {
 	@handler ForceLogout
 	post /force_logout (ForceLogoutRequest) returns (ForceLogoutResponse)
 }
+
+@server(
+	group: client
+	prefix: /init
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Set client config"
+	@handler SetClientConfig
+	post /set_client_config (SetClientConfigRequest) returns (SetClientConfigResponse)
+	
+	@doc "Get client config"
+	@handler GetClientConfig
+	post /get_client_config (GetClientConfigRequest) returns (GetClientConfigResponse)
+}

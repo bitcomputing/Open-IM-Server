@@ -74,3 +74,25 @@ type ForceLogoutRequest struct {
 type ForceLogoutResponse struct {
 	CommResp
 }
+
+type SetClientConfigRequest struct {
+	OperationID     string  `json:"operationID"  validate:"required"`
+	DiscoverPageURL *string `json:"discoverPageURL"`
+}
+
+type SetClientConfigResponse struct {
+	CommResp
+}
+
+type GetClientConfigRequest struct {
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type GetClientConfigResponse struct {
+	CommResp
+	Data DiscoverPageURL `json:"data"`
+}
+
+type DiscoverPageURL struct {
+	DiscoverPageURL string `json:"discoverPageURL"`
+}
