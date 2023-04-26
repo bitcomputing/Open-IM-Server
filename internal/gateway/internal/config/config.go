@@ -7,5 +7,7 @@ import (
 
 type Config struct {
 	rest.RestConf
-	AuthClient zrpc.RpcClientConf
+	AuthClient         zrpc.RpcClientConf
+	UserClient         zrpc.RpcClientConf
+	ConversationClient zrpc.RpcClientConf
 }

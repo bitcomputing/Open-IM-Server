@@ -7,3 +7,15 @@ AuthClient:
       - 127.0.0.1:2379
     Key: auth.rpc
   Timeout: 3000
+UserClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: user.rpc
+  Timeout: 3000
+ConversationClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: conversation.rpc
+  Timeout: 3000

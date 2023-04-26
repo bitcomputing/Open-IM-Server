@@ -41,3 +41,39 @@ service gateway {
 	@handler GetClientConfig
 	post /get_client_config (GetClientConfigRequest) returns (GetClientConfigResponse)
 }
+
+@server(
+	group: conversation
+	prefix: /conversation
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Get user's all conversations"
+	@handler GetAllConversations
+	post /get_all_conversations (GetAllConversationsRequest) returns (GetAllConversationsResponse)
+	
+	@doc "Get conversation by id"
+	@handler GetConversation
+	post /get_conversation (GetConversationRequest) returns (GetConversationResponse)
+	
+	@doc "Get conversations by ids"
+	@handler GetConversations
+	post /get_conversations (GetConversationsRequest) returns (GetConversationsResponse)
+	
+	@doc "Set conversation"
+	@handler SetConversation
+	post /set_conversation (SetConversationRequest) returns (SetConversationResponse)
+	
+	@doc "Batch set conversations"
+	@handler BatchSetConversations
+	post /batch_set_conversation (BatchSetConversationsRequest) returns (BatchSetConversationsResponse)
+	
+	@doc "Set recv msg opt"
+	@handler SetRecvMsgOpt
+	post /set_recv_msg_opt (SetRecvMsgOptRequest) returns (SetRecvMsgOptResponse)
+	
+	@doc "Modify conversation field"
+	@handler ModifyConversationField
+	post /modify_conversation_field (ModifyConversationFieldRequest) returns (ModifyConversationFieldResponse)
+}

@@ -96,3 +96,104 @@ type GetClientConfigResponse struct {
 type DiscoverPageURL struct {
 	DiscoverPageURL string `json:"discoverPageURL"`
 }
+
+type GetAllConversationsRequest struct {
+	OwnerUserID string `json:"ownerUserID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetAllConversationsResponse struct {
+	CommResp
+	Conversations []Conversation `json:"data"`
+}
+
+type Conversation struct {
+	OwnerUserID           string `json:"ownerUserID" validate:"required"`
+	ConversationID        string `json:"conversationID" validate:"required"`
+	ConversationType      int32  `json:"conversationType" validate:"required"`
+	UserID                string `json:"userID"`
+	GroupID               string `json:"groupID"`
+	RecvMsgOpt            int32  `json:"recvMsgOpt,optional"  validate:"omitempty,oneof=0 1 2"`
+	UnreadCount           int32  `json:"unreadCount,optional"  validate:"omitempty"`
+	DraftTextTime         int64  `json:"draftTextTime"`
+	IsPinned              bool   `json:"isPinned,optional" validate:"omitempty"`
+	IsPrivateChat         bool   `json:"isPrivateChat"`
+	BurnDuration          int32  `json:"burnDuration"`
+	GroupAtType           int32  `json:"groupAtType"`
+	IsNotInGroup          bool   `json:"isNotInGroup"`
+	UpdateUnreadCountTime int64  `json:"updateUnreadCountTime"`
+	AttachedInfo          string `json:"attachedInfo"`
+	Ex                    string `json:"ex"`
+}
+
+type GetConversationRequest struct {
+	ConversationID string `json:"conversationID" validate:"required"`
+	OwnerUserID    string `json:"ownerUserID" validate:"required"`
+	OperationID    string `json:"operationID" validate:"required"`
+}
+
+type GetConversationResponse struct {
+	CommResp
+	Conversation Conversation `json:"data"`
+}
+
+type GetConversationsRequest struct {
+	ConversationIDs []string `json:"conversationIDs" validate:"required"`
+	OwnerUserID     string   `json:"ownerUserID" validate:"required"`
+	OperationID     string   `json:"operationID" validate:"required"`
+}
+
+type GetConversationsResponse struct {
+	CommResp
+	Conversations []Conversation `json:"data"`
+}
+
+type SetConversationRequest struct {
+	Conversation
+	NotificationType int32  `json:"notificationType"`
+	OperationID      string `json:"operationID" validate:"required"`
+}
+
+type SetConversationResponse struct {
+	CommResp
+}
+
+type BatchSetConversationsRequest struct {
+	Conversations    []Conversation `json:"conversations" validate:"required"`
+	NotificationType int32          `json:"notificationType"`
+	OwnerUserID      string         `json:"ownerUserID" validate:"required"`
+	OperationID      string         `json:"operationID" validate:"required"`
+}
+
+type BatchSetConversationsResponse struct {
+	CommResp
+	Data SuccessAndFailed `json:"data"`
+}
+
+type SuccessAndFailed struct {
+	Success []string `json:"success"`
+	Failed  []string `json:"failed"`
+}
+
+type SetRecvMsgOptRequest struct {
+	OwnerUserID      string `json:"ownerUserID" validate:"required"`
+	ConversationID   string `json:"conversationID"`
+	RecvMsgOpt       int32  `json:"recvMsgOpt,optional"  validate:"omitempty,oneof=0 1 2"`
+	OperationID      string `json:"operationID" validate:"required"`
+	NotificationType int32  `json:"notificationType"`
+}
+
+type SetRecvMsgOptResponse struct {
+	CommResp
+}
+
+type ModifyConversationFieldRequest struct {
+	Conversation
+	FieldType   int32    `json:"fieldType" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type ModifyConversationFieldResponse struct {
+	CommResp
+}

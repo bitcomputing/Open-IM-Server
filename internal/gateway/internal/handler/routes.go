@@ -6,6 +6,7 @@ import (
 
 	auth "Open_IM/internal/gateway/internal/handler/auth"
 	client "Open_IM/internal/gateway/internal/handler/client"
+	conversation "Open_IM/internal/gateway/internal/handler/conversation"
 	"Open_IM/internal/gateway/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -58,5 +59,49 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/init"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_all_conversations",
+					Handler: conversation.GetAllConversationsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_conversation",
+					Handler: conversation.GetConversationHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_conversations",
+					Handler: conversation.GetConversationsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_conversation",
+					Handler: conversation.SetConversationHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/batch_set_conversation",
+					Handler: conversation.BatchSetConversationsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_recv_msg_opt",
+					Handler: conversation.SetRecvMsgOptHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/modify_conversation_field",
+					Handler: conversation.ModifyConversationFieldHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/conversation"),
 	)
 }

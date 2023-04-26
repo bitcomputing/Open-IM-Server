@@ -7,7 +7,7 @@ import (
 
 var (
 	BadRequest    = Error{HttpStatusCode: http.StatusBadRequest, Code: 400, Message: ""}
-	Unauthorized  = Error{HttpStatusCode: http.StatusBadRequest, Code: 401, Message: ""} // todo change to matching HTTP status code
+	Unauthorized  = Error{HttpStatusCode: http.StatusUnauthorized, Code: 401, Message: ""}
 	InternalError = Error{HttpStatusCode: http.StatusInternalServerError, Code: 500, Message: ""}
 
 	RegisterLimit    = Error{HttpStatusCode: http.StatusOK, Code: constant.RegisterLimit, Message: "用户注册被限制"}
