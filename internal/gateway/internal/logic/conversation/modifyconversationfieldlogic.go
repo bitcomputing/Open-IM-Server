@@ -6,7 +6,7 @@ import (
 	"Open_IM/internal/gateway/internal/svc"
 	"Open_IM/internal/gateway/internal/types"
 	errors "Open_IM/pkg/errors/api"
-	convproto "Open_IM/pkg/proto/conversation"
+	"Open_IM/pkg/proto/conversation"
 	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -29,8 +29,8 @@ func NewModifyConversationFieldLogic(ctx context.Context, svcCtx *svc.ServiceCon
 func (l *ModifyConversationFieldLogic) ModifyConversationField(req *types.ModifyConversationFieldRequest) (resp *types.ModifyConversationFieldResponse, err error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
-	var rpcReq convproto.ModifyConversationFieldReq
-	rpcReq.Conversation = &convproto.Conversation{}
+	var rpcReq conversation.ModifyConversationFieldReq
+	rpcReq.Conversation = &conversation.Conversation{}
 	if err := utils.CopyStructFields(&rpcReq, req); err != nil {
 		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())

@@ -8,7 +8,7 @@ import (
 	"Open_IM/internal/gateway/internal/types"
 	"Open_IM/pkg/common/token_verify"
 	errors "Open_IM/pkg/errors/api"
-	authproto "Open_IM/pkg/proto/auth"
+	"Open_IM/pkg/proto/auth"
 	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -36,7 +36,7 @@ func (l *ForceLogoutLogic) ForceLogout(req *types.ForceLogoutRequest) (resp *typ
 		return nil, err
 	}
 
-	forceLogoutReq := &authproto.ForceLogoutReq{}
+	forceLogoutReq := &auth.ForceLogoutReq{}
 	utils.CopyStructFields(forceLogoutReq, &req)
 	ok, opUserID, errInfo := token_verify.GetUserIDFromToken(token, forceLogoutReq.OperationID)
 	if !ok {

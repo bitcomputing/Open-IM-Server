@@ -8,7 +8,7 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	errors "Open_IM/pkg/errors/api"
-	authproto "Open_IM/pkg/proto/auth"
+	"Open_IM/pkg/proto/auth"
 	sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 
@@ -37,7 +37,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 		return nil, errors.Unauthorized.WriteMessage(errMsg)
 	}
 
-	userRegisterReq := &authproto.UserRegisterReq{
+	userRegisterReq := &auth.UserRegisterReq{
 		UserInfo: &sdk.UserInfo{},
 	}
 	utils.CopyStructFields(userRegisterReq.UserInfo, &req)
@@ -61,7 +61,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 		}
 	}
 
-	userTokenReq := &authproto.UserTokenReq{
+	userTokenReq := &auth.UserTokenReq{
 		Platform:    req.Platform,
 		FromUserID:  req.UserID,
 		OperationID: req.OperationID,

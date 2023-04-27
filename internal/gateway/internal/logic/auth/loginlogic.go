@@ -7,7 +7,7 @@ import (
 	"Open_IM/internal/gateway/internal/types"
 	"Open_IM/pkg/common/config"
 	errors "Open_IM/pkg/errors/api"
-	authproto "Open_IM/pkg/proto/auth"
+	"Open_IM/pkg/proto/auth"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -34,7 +34,7 @@ func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, 
 		return nil, errors.Unauthorized.WriteMessage(errMsg)
 	}
 
-	userTokenReq := &authproto.UserTokenReq{
+	userTokenReq := &auth.UserTokenReq{
 		Platform:    req.Platform,
 		FromUserID:  req.UserID,
 		OpUserID:    "",
