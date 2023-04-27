@@ -196,3 +196,130 @@ type ModifyConversationFieldRequest {
 type ModifyConversationFieldResponse {
 	CommResp
 }
+
+type AddFriendRequest {
+	ParamsCommFriend
+	ReqMsg string `json:"reqMsg"`
+}
+
+type ParamsCommFriend {
+	OperationID string `json:"operationID" validate:"required"`
+	ToUserID    string `json:"toUserID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type AddFriendResponse {
+	CommResp
+}
+
+type DeleteFriendRequest {
+	ParamsCommFriend
+}
+
+type DeleteFriendResponse {
+	CommResp
+}
+
+type GetFriendApplyListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendApplyListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSelfFriendApplyListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetSelfFriendApplyListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetFriendListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RespondFriendApplyRequest {
+	ParamsCommFriend
+	Flag      int32  `json:"flag" validate:"required,oneof=-1 0 1"`
+	HandleMsg string `json:"handleMsg"`
+}
+
+type RespondFriendApplyResponse {
+	CommResp
+}
+
+type SetFriendRemarkRequest {
+	ParamsCommFriend
+	Remark string `json:"remark"`
+}
+
+type SetFriendRemarkResponse {
+	CommResp
+}
+
+type AddFriendBlacklistRequest {
+	ParamsCommFriend
+}
+
+type AddFriendBlacklistResponse {
+	CommResp
+}
+
+type GetFriendBlacklistRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendBlacklistResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RemoveFriendBlacklistRequest {
+	ParamsCommFriend
+}
+
+type RemoveFriendBlacklistResponse {
+	CommResp
+}
+
+type ImportFriendRequest {
+	FriendUserIDList []string `json:"friendUserIDList" validate:"required"`
+	OperationID      string   `json:"operationID" validate:"required"`
+	FromUserID       string   `json:"fromUserID" validate:"required"`
+}
+
+type ImportFriendResponse {
+	CommResp
+	UserIDResultList []UserIDResult `json:"data"`
+}
+
+type UserIDResult {
+	UserID string `json:"userID"`
+	Result int32  `json:"result"`
+}
+
+type CheckFriendRequest {
+	ParamsCommFriend
+}
+
+type CheckFriendResponse {
+	CommResp
+	Response IsFriend `json:"data"`
+}
+
+type IsFriend {
+	Friend bool `json:"isFriend"`
+}

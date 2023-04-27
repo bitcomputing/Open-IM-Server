@@ -10,4 +10,5 @@ type Config struct {
 	AuthClient         zrpc.RpcClientConf
 	UserClient         zrpc.RpcClientConf
 	ConversationClient zrpc.RpcClientConf
+	FriendClient       zrpc.RpcClientConf
 }

@@ -19,3 +19,9 @@ ConversationClient:
       - 127.0.0.1:2379
     Key: conversation.rpc
   Timeout: 3000
+FriendClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: friend.rpc
+  Timeout: 3000

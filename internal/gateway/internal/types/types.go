@@ -197,3 +197,130 @@ type ModifyConversationFieldRequest struct {
 type ModifyConversationFieldResponse struct {
 	CommResp
 }
+
+type AddFriendRequest struct {
+	ParamsCommFriend
+	ReqMsg string `json:"reqMsg"`
+}
+
+type ParamsCommFriend struct {
+	OperationID string `json:"operationID" validate:"required"`
+	ToUserID    string `json:"toUserID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type AddFriendResponse struct {
+	CommResp
+}
+
+type DeleteFriendRequest struct {
+	ParamsCommFriend
+}
+
+type DeleteFriendResponse struct {
+	CommResp
+}
+
+type GetFriendApplyListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendApplyListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSelfFriendApplyListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetSelfFriendApplyListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetFriendListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RespondFriendApplyRequest struct {
+	ParamsCommFriend
+	Flag      int32  `json:"flag" validate:"required,oneof=-1 0 1"`
+	HandleMsg string `json:"handleMsg"`
+}
+
+type RespondFriendApplyResponse struct {
+	CommResp
+}
+
+type SetFriendRemarkRequest struct {
+	ParamsCommFriend
+	Remark string `json:"remark"`
+}
+
+type SetFriendRemarkResponse struct {
+	CommResp
+}
+
+type AddFriendBlacklistRequest struct {
+	ParamsCommFriend
+}
+
+type AddFriendBlacklistResponse struct {
+	CommResp
+}
+
+type GetFriendBlacklistRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendBlacklistResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RemoveFriendBlacklistRequest struct {
+	ParamsCommFriend
+}
+
+type RemoveFriendBlacklistResponse struct {
+	CommResp
+}
+
+type ImportFriendRequest struct {
+	FriendUserIDList []string `json:"friendUserIDList" validate:"required"`
+	OperationID      string   `json:"operationID" validate:"required"`
+	FromUserID       string   `json:"fromUserID" validate:"required"`
+}
+
+type ImportFriendResponse struct {
+	CommResp
+	UserIDResultList []UserIDResult `json:"data"`
+}
+
+type UserIDResult struct {
+	UserID string `json:"userID"`
+	Result int32  `json:"result"`
+}
+
+type CheckFriendRequest struct {
+	ParamsCommFriend
+}
+
+type CheckFriendResponse struct {
+	CommResp
+	Response IsFriend `json:"data"`
+}
+
+type IsFriend struct {
+	Friend bool `json:"isFriend"`
+}

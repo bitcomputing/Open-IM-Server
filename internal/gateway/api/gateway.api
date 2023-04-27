@@ -77,3 +77,59 @@ service gateway {
 	@handler ModifyConversationField
 	post /modify_conversation_field (ModifyConversationFieldRequest) returns (ModifyConversationFieldResponse)
 }
+
+@server(
+	group: friend
+	prefix: /friend
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Add a friend"
+	@handler AddFriend
+	post /add_friend (AddFriendRequest) returns (AddFriendResponse)
+	
+	@doc "Delete a friend"
+	@handler DeleteFriend
+	post /delete_friend (DeleteFriendRequest) returns (DeleteFriendResponse)
+	
+	@doc "Get friend apply list"
+	@handler GetFriendApplyList
+	post /get_friend_apply_list (GetFriendApplyListRequest) returns (GetFriendApplyListResponse)
+	
+	@doc "Get self friend apply list"
+	@handler GetSelfFriendApplyList
+	post /get_self_friend_apply_list (GetSelfFriendApplyListRequest) returns (GetSelfFriendApplyListResponse)
+	
+	@doc "Get friend list"
+	@handler GetFriendList
+	post /get_friend_list (GetFriendListRequest) returns (GetFriendListResponse)
+	
+	@doc "Respond to a friend request"
+	@handler RespondFriendApply
+	post /add_friend_response (RespondFriendApplyRequest) returns (RespondFriendApplyResponse)
+	
+	@doc "Set friend remark"
+	@handler SetFriendRemark
+	post /set_friend_remark (SetFriendRemarkRequest) returns (SetFriendRemarkResponse)
+	
+	@doc "Add friend blacklist"
+	@handler AddFriendBlacklist
+	post /add_black (AddFriendBlacklistRequest) returns (AddFriendBlacklistResponse)
+	
+	@doc "Get friend blacklist"
+	@handler GetFriendBlacklist
+	post /get_black_list (GetFriendBlacklistRequest) returns (GetFriendBlacklistResponse)
+	
+	@doc "Remove friend blacklist"
+	@handler RemoveFriendBlacklist
+	post /remove_black (RemoveFriendBlacklistRequest) returns (RemoveFriendBlacklistResponse)
+	
+	@doc "Import friend"
+	@handler ImportFriend
+	post /import_friend (ImportFriendRequest) returns (ImportFriendResponse)
+	
+	@doc "Check friend"
+	@handler CheckFriend
+	post /is_friend (CheckFriendRequest) returns (CheckFriendResponse)
+}

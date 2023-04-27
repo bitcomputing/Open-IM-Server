@@ -7,6 +7,7 @@ import (
 	auth "Open_IM/internal/gateway/internal/handler/auth"
 	client "Open_IM/internal/gateway/internal/handler/client"
 	conversation "Open_IM/internal/gateway/internal/handler/conversation"
+	friend "Open_IM/internal/gateway/internal/handler/friend"
 	"Open_IM/internal/gateway/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -103,5 +104,74 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/conversation"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/add_friend",
+					Handler: friend.AddFriendHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/delete_friend",
+					Handler: friend.DeleteFriendHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_friend_apply_list",
+					Handler: friend.GetFriendApplyListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_self_friend_apply_list",
+					Handler: friend.GetSelfFriendApplyListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_friend_list",
+					Handler: friend.GetFriendListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/add_friend_response",
+					Handler: friend.RespondFriendApplyHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_friend_remark",
+					Handler: friend.SetFriendRemarkHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/add_black",
+					Handler: friend.AddFriendBlacklistHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_black_list",
+					Handler: friend.GetFriendBlacklistHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/remove_black",
+					Handler: friend.RemoveFriendBlacklistHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/import_friend",
+					Handler: friend.ImportFriendHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/is_friend",
+					Handler: friend.CheckFriendHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/friend"),
 	)
 }
