@@ -24,6 +24,7 @@ func BatchSetConversationsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
 			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			return
 		}
 
 		l := conversation.NewBatchSetConversationsLogic(r.Context(), svcCtx)

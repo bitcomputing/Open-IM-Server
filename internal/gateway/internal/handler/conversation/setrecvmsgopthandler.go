@@ -24,6 +24,7 @@ func SetRecvMsgOptHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
 			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			return
 		}
 
 		l := conversation.NewSetRecvMsgOptLogic(r.Context(), svcCtx)

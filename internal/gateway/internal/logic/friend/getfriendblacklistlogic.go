@@ -10,7 +10,7 @@ import (
 	"Open_IM/pkg/common/token_verify"
 	errors "Open_IM/pkg/errors/api"
 	"Open_IM/pkg/proto/friend"
-	sdkproto "Open_IM/pkg/proto/sdk_ws"
+	sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -58,9 +58,9 @@ func (l *GetFriendBlacklistLogic) GetFriendBlacklist(req *types.GetFriendBlackli
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
-	blackUserInfoList := []*sdkproto.PublicUserInfo{}
+	blackUserInfoList := []*sdk.PublicUserInfo{}
 	for _, v := range rpcResp.BlackUserInfoList {
-		item := sdkproto.PublicUserInfo{}
+		item := sdk.PublicUserInfo{}
 		if err := utils.CopyStructFields(&item, v); err != nil {
 			logger.Error(err)
 			return nil, errors.InternalError.WriteMessage(err.Error())

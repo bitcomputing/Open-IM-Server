@@ -8,6 +8,8 @@ import (
 	client "Open_IM/internal/gateway/internal/handler/client"
 	conversation "Open_IM/internal/gateway/internal/handler/conversation"
 	friend "Open_IM/internal/gateway/internal/handler/friend"
+	group "Open_IM/internal/gateway/internal/handler/group"
+	supergroup "Open_IM/internal/gateway/internal/handler/supergroup"
 	"Open_IM/internal/gateway/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -173,5 +175,148 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/friend"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/create_group",
+					Handler: group.CreateGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_group_info",
+					Handler: group.SetGroupInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/join_group",
+					Handler: group.JoinGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/quit_group",
+					Handler: group.QuitGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/group_application_response",
+					Handler: group.RespondGroupApplicationHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/transfer_group",
+					Handler: group.TransferGroupOwnerHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_recv_group_applicationList",
+					Handler: group.GetRecvGroupApplicationListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_user_req_group_applicationList",
+					Handler: group.GetUserReqGroupApplicationListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_groups_info",
+					Handler: group.GetGroupsInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/kick_group",
+					Handler: group.KickGroupMemberHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_group_all_member_list",
+					Handler: group.GetGroupAllMemberListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_group_members_info",
+					Handler: group.GetGroupMembersInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/invite_user_to_group",
+					Handler: group.InviteUserToGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/invite_user_to_groups",
+					Handler: group.InviteUserToGroupsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_joined_group_list",
+					Handler: group.GetJoinedGroupListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/dismiss_group",
+					Handler: group.DismissGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/mute_group_member",
+					Handler: group.MuteGroupMemberHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/cancel_mute_group_member",
+					Handler: group.CancelMuteGroupMemberHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/mute_group",
+					Handler: group.MuteGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/cancel_mute_group",
+					Handler: group.CancelMuteGroupHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_group_member_nickname",
+					Handler: group.SetGroupMemberNicknameHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_group_member_info",
+					Handler: group.SetGroupMemberInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_group_abstract_info",
+					Handler: group.GetGroupAbstractInfoHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/group"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_joined_group_list",
+					Handler: supergroup.GetJoinedSuperGroupListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_groups_info",
+					Handler: supergroup.GetSuperGroupsInfoHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/super_group"),
 	)
 }

@@ -24,6 +24,7 @@ func LoginHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
 			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			return
 		}
 
 		l := auth.NewLoginLogic(r.Context(), svcCtx)

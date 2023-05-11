@@ -25,3 +25,9 @@ FriendClient:
       - 127.0.0.1:2379
     Key: friend.rpc
   Timeout: 3000
+GroupClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: group.rpc
+  Timeout: 3000

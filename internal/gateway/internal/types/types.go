@@ -324,3 +324,290 @@ type CheckFriendResponse struct {
 type IsFriend struct {
 	Friend bool `json:"isFriend"`
 }
+
+type CreateGroupRequest struct {
+	MemberList   []*GroupAddMemberInfo `json:"memberList"`
+	OwnerUserID  string                `json:"ownerUserID"`
+	GroupType    int32                 `json:"groupType"`
+	GroupName    string                `json:"groupName"`
+	Notification string                `json:"notification"`
+	Introduction string                `json:"introduction"`
+	FaceURL      string                `json:"faceURL"`
+	Ex           string                `json:"ex"`
+	OperationID  string                `json:"operationID" validate:"required"`
+	GroupID      string                `json:"groupID"`
+}
+
+type GroupAddMemberInfo struct {
+	UserID    string `json:"userID" validate:"required"`
+	RoleLevel int32  `json:"roleLevel" validate:"required,oneof= 1 3"`
+}
+
+type CreateGroupResponse struct {
+	CommResp
+	Data map[string]interface{} `json:"data"`
+}
+
+type SetGroupInfoRequest struct {
+	GroupID           string `json:"groupID" validate:"required"`
+	GroupName         string `json:"groupName"`
+	Notification      string `json:"notification"`
+	Introduction      string `json:"introduction"`
+	FaceURL           string `json:"faceURL"`
+	Ex                string `json:"ex"`
+	OperationID       string `json:"operationID" validate:"required"`
+	NeedVerification  *int32 `json:"needVerification"`
+	LookMemberInfo    *int32 `json:"lookMemberInfo"`
+	ApplyMemberFriend *int32 `json:"applyMemberFriend"`
+}
+
+type SetGroupInfoResponse struct {
+	CommResp
+}
+
+type JoinGroupRequest struct {
+	GroupID       string `json:"groupID" validate:"required"`
+	ReqMessage    string `json:"reqMessage"`
+	OperationID   string `json:"operationID" validate:"required"`
+	JoinSource    int32  `json:"joinSource"`
+	InviterUserID string `json:"inviterUserID"`
+}
+
+type JoinGroupResponse struct {
+	CommResp
+}
+
+type QuitGroupRequest struct {
+	GroupID     string `json:"groupID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type QuitGroupResponse struct {
+	CommResp
+}
+
+type RespondGroupApplicationRequest struct {
+	OperationID  string `json:"operationID" validate:"required"`
+	GroupID      string `json:"groupID" validate:"required"`
+	FromUserID   string `json:"fromUserID" validate:"required"` // application from FromUserID
+	HandledMsg   string `json:"handledMsg"`
+	HandleResult int32  `json:"handleResult" validate:"required,oneof=-1 1"`
+}
+
+type RespondGroupApplicationResponse struct {
+	CommResp
+}
+
+type TransferGroupOwnerRequest struct {
+	GroupID        string `json:"groupID" validate:"required"`
+	OldOwnerUserID string `json:"oldOwnerUserID" validate:"required"`
+	NewOwnerUserID string `json:"newOwnerUserID" validate:"required"`
+	OperationID    string `json:"operationID" validate:"required"`
+}
+
+type TransferGroupOwnerResponse struct {
+	CommResp
+}
+
+type GetRecvGroupApplicationListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetRecvGroupApplicationListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetUserReqGroupApplicationListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type GetUserReqGroupApplicationListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetGroupsInfoRequest struct {
+	GroupIDList []string `json:"groupIDList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type GetGroupsInfoResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type KickGroupMemberRequest struct {
+	GroupID          string   `json:"groupID" validate:"required"`
+	KickedUserIDList []string `json:"kickedUserIDList" validate:"required"`
+	Reason           string   `json:"reason"`
+	OperationID      string   `json:"operationID" validate:"required"`
+}
+
+type KickGroupMemberResponse struct {
+	CommResp
+	UserIDResultList []*UserIDResult `json:"data"`
+}
+
+type GetGroupAllMemberListRequest struct {
+	GroupID     string `json:"groupID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+	Offset      int32  `json:"offset"`
+	Count       int32  `json:"count"`
+}
+
+type GetGroupAllMemberListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetGroupMembersInfoRequest struct {
+	GroupID     string   `json:"groupID" validate:"required"`
+	MemberList  []string `json:"memberList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+	NoCache     bool     `json:"noCache"`
+}
+
+type GetGroupMembersInfoResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type InviteUserToGroupRequest struct {
+	GroupID           string   `json:"groupID" validate:"required"`
+	InvitedUserIDList []string `json:"invitedUserIDList" validate:"required"`
+	Reason            string   `json:"reason"`
+	OperationID       string   `json:"operationID" validate:"required"`
+}
+
+type InviteUserToGroupResponse struct {
+	CommResp
+	UserIDResultList []*UserIDResult `json:"data"`
+}
+
+type InviteUserToGroupsRequest struct {
+	GroupIDList   string `json:"groupIDList" validate:"required"`
+	InvitedUserID string `json:"invitedUserID" validate:"required"`
+	Reason        string `json:"reason"`
+	OperationID   string `json:"operationID" validate:"required"`
+}
+
+type InviteUserToGroupsResponse struct {
+	CommResp
+}
+
+type GetJoinedGroupListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetJoinedGroupListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type DismissGroupRequest struct {
+	GroupID     string `json:"groupID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type DismissGroupResponse struct {
+	CommResp
+}
+
+type MuteGroupMemberRequest struct {
+	OperationID  string `json:"operationID" validate:"required"`
+	GroupID      string `json:"groupID" validate:"required"`
+	UserID       string `json:"userID" validate:"required"`
+	MutedSeconds uint32 `json:"mutedSeconds" validate:"required"`
+}
+
+type MuteGroupMemberResponse struct {
+	CommResp
+}
+
+type CancelMuteGroupMemberRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type CancelMuteGroupMemberResponse struct {
+	CommResp
+}
+
+type MuteGroupRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+}
+
+type MuteGroupResponse struct {
+	CommResp
+}
+
+type CancelMuteGroupRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+}
+
+type CancelMuteGroupResponse struct {
+	CommResp
+}
+
+type SetGroupMemberNicknameRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+	Nickname    string `json:"nickname"`
+}
+
+type SetGroupMemberNicknameResponse struct {
+	CommResp
+}
+
+type SetGroupMemberInfoRequest struct {
+	OperationID string  `json:"operationID" validate:"required"`
+	GroupID     string  `json:"groupID" validate:"required"`
+	UserID      string  `json:"userID" validate:"required"`
+	Nickname    *string `json:"nickname"`
+	FaceURL     *string `json:"userGroupFaceUrl"`
+	RoleLevel   *int32  `json:"roleLevel" validate:"gte=1,lte=3"`
+	Ex          *string `json:"ex"`
+}
+
+type SetGroupMemberInfoResponse struct {
+	CommResp
+}
+
+type GetGroupAbstractInfoRequest struct {
+	OperationID string `json:"operationID"`
+	GroupID     string `json:"groupID"`
+}
+
+type GetGroupAbstractInfoResponse struct {
+	CommResp
+	GroupMemberNumber   int32  `json:"groupMemberNumber"`
+	GroupMemberListHash uint64 `json:"groupMemberListHash"`
+}
+
+type GetJoinedSuperGroupListRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetJoinedSuperGroupListResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSuperGroupsInfoRequest struct {
+	GroupIDList []string `json:"groupIDList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type GetSuperGroupsInfoResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}

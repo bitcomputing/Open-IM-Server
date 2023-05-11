@@ -133,3 +133,119 @@ service gateway {
 	@handler CheckFriend
 	post /is_friend (CheckFriendRequest) returns (CheckFriendResponse)
 }
+
+@server(
+	group: group
+	prefix: /group
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Create group"
+	@handler CreateGroup
+	post /create_group (CreateGroupRequest) returns (CreateGroupResponse)
+	
+	@doc "Set group info"
+	@handler SetGroupInfo
+	post /set_group_info (SetGroupInfoRequest) returns (SetGroupInfoResponse)
+	
+	@doc "Join group"
+	@handler JoinGroup
+	post /join_group (JoinGroupRequest) returns (JoinGroupResponse)
+	
+	@doc "Quit group"
+	@handler QuitGroup
+	post /quit_group (QuitGroupRequest) returns (QuitGroupResponse)
+	
+	@doc "Respond group application"
+	@handler RespondGroupApplication
+	post /group_application_response (RespondGroupApplicationRequest) returns (RespondGroupApplicationResponse)
+	
+	@doc "Transfer group owner"
+	@handler TransferGroupOwner
+	post /transfer_group (TransferGroupOwnerRequest) returns (TransferGroupOwnerResponse)
+	
+	@doc "Get recv group application list"
+	@handler GetRecvGroupApplicationList
+	post /get_recv_group_applicationList (GetRecvGroupApplicationListRequest) returns (GetRecvGroupApplicationListResponse)
+	
+	@doc "Get user req group application list"
+	@handler GetUserReqGroupApplicationList
+	post /get_user_req_group_applicationList (GetUserReqGroupApplicationListRequest) returns (GetUserReqGroupApplicationListResponse)
+	
+	@doc "Get groups info"
+	@handler GetGroupsInfo
+	post /get_groups_info (GetGroupsInfoRequest) returns (GetGroupsInfoResponse)
+	
+	@doc "Kick group member"
+	@handler KickGroupMember
+	post /kick_group (KickGroupMemberRequest) returns (KickGroupMemberResponse)
+	
+	@doc "Get group all member list"
+	@handler GetGroupAllMemberList
+	post /get_group_all_member_list (GetGroupAllMemberListRequest) returns (GetGroupAllMemberListResponse)
+	
+	@doc "Get group members info"
+	@handler GetGroupMembersInfo
+	post /get_group_members_info (GetGroupMembersInfoRequest) returns (GetGroupMembersInfoResponse)
+	
+	@doc "Invite user to group"
+	@handler InviteUserToGroup
+	post /invite_user_to_group (InviteUserToGroupRequest) returns (InviteUserToGroupResponse)
+	
+	@doc "Invite user to groups"
+	@handler InviteUserToGroups
+	post /invite_user_to_groups (InviteUserToGroupsRequest) returns (InviteUserToGroupsResponse)
+	
+	@doc "Get joined group list"
+	@handler GetJoinedGroupList
+	post /get_joined_group_list (GetJoinedGroupListRequest) returns (GetJoinedGroupListResponse)
+	
+	@doc "Dismiss group"
+	@handler DismissGroup
+	post /dismiss_group (DismissGroupRequest) returns (DismissGroupResponse)
+	
+	@doc "Mute group member"
+	@handler MuteGroupMember
+	post /mute_group_member (MuteGroupMemberRequest) returns (MuteGroupMemberResponse)
+	
+	@doc "Cancel mute group member"
+	@handler CancelMuteGroupMember
+	post /cancel_mute_group_member (CancelMuteGroupMemberRequest) returns (CancelMuteGroupMemberResponse)
+	
+	@doc "Mute group"
+	@handler MuteGroup
+	post /mute_group (MuteGroupRequest) returns (MuteGroupResponse)
+	
+	@doc "Cancel mute group"
+	@handler CancelMuteGroup
+	post /cancel_mute_group (CancelMuteGroupRequest) returns (CancelMuteGroupResponse)
+	
+	@doc "Set group member nickname"
+	@handler SetGroupMemberNickname
+	post /set_group_member_nickname (SetGroupMemberNicknameRequest) returns (SetGroupMemberNicknameResponse)
+	
+	@doc "Set group member info"
+	@handler SetGroupMemberInfo
+	post /set_group_member_info (SetGroupMemberInfoRequest) returns (SetGroupMemberInfoResponse)
+	
+	@doc "Get group abstract info"
+	@handler GetGroupAbstractInfo
+	post /get_group_abstract_info (GetGroupAbstractInfoRequest) returns (GetGroupAbstractInfoResponse)
+}
+
+@server(
+	group: supergroup
+	prefix: /super_group
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Get joined super group list"
+	@handler GetJoinedSuperGroupList
+	post /get_joined_group_list (GetJoinedSuperGroupListRequest) returns (GetJoinedSuperGroupListResponse)
+	
+	@doc "Get super groups info"
+	@handler GetSuperGroupsInfo
+	post /get_groups_info (GetSuperGroupsInfoRequest) returns (GetSuperGroupsInfoResponse)
+}
