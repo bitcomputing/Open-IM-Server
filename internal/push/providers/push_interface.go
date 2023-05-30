@@ -1,11 +1,14 @@
-package push
+package providers
 
-import "Open_IM/pkg/common/constant"
+import (
+	"Open_IM/pkg/common/constant"
+	"context"
+)
 
 var PushTerminal = []int{constant.IOSPlatformID, constant.AndroidPlatformID, constant.WebPlatformID}
 
 type OfflinePusher interface {
-	Push(userIDList []string, title, detailContent, operationID string, opts PushOpts) (resp string, err error)
+	Push(ctx context.Context, userIDList []string, title, detailContent, operationID string, opts PushOpts) (resp string, err error)
 }
 
 type PushOpts struct {

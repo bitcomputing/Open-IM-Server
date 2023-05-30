@@ -6,6 +6,9 @@ import (
 	"Open_IM/pkg/common/kafka"
 	promePkg "Open_IM/pkg/common/prometheus"
 	"fmt"
+
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/zrpc"
 )
 
 const OnlineTopicBusy = 1
@@ -45,6 +48,21 @@ func Init() {
 	producer = kafka.NewKafkaProducer(config.Config.Kafka.Ms2pschat.Addr, config.Config.Kafka.Ms2pschat.Topic)
 	producerToModify = kafka.NewKafkaProducer(config.Config.Kafka.MsgToModify.Addr, config.Config.Kafka.MsgToModify.Topic)
 	producerToMongo = kafka.NewKafkaProducer(config.Config.Kafka.MsgToMongo.Addr, config.Config.Kafka.MsgToMongo.Topic)
+	pushClient = pushclient.NewPushClient(zrpc.RpcClientConf{
+		Etcd: discov.EtcdConf{
+			Hosts: config.Config.ClientConfigs.Push.Disconvery.Hosts,
+			Key:   config.Config.ClientConfigs.Push.Disconvery.Key,
+		},
+		Timeout:       config.Config.ClientConfigs.Push.Timeout,
+		KeepaliveTime: 0,
+		Middlewares: zrpc.ClientMiddlewaresConf{
+			Trace:      config.Config.ClientConfigs.Push.Middlewares.Trace,
+			Duration:   config.Config.ClientConfigs.Push.Middlewares.Duration,
+			Prometheus: config.Config.ClientConfigs.Push.Middlewares.Prometheus,
+			Breaker:    config.Config.ClientConfigs.Push.Middlewares.Breaker,
+			Timeout:    config.Config.ClientConfigs.Push.Middlewares.Timeout,
+		},
+	})
 }
 
 func Run(promethuesPort int) {

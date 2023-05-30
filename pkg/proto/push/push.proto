@@ -8,18 +8,21 @@ message PushMsgReq {
   server_api_params.MsgData msgData = 2;
   string pushToUserID = 3;
 }
+
 message PushMsgResp{
   int32   ResultCode = 1;
 }
-message DelUserPushTokenReq{
-  string  operationID = 1;
-  string userID =2;
-  int32 platformID = 3;
-}
-message DelUserPushTokenResp{
-  int32  errCode = 1;
-  string errMsg = 2;
-}
+
+// message DelUserPushTokenReq{
+//   string  operationID = 1;
+//   string userID =2;
+//   int32 platformID = 3;
+// }
+
+// message DelUserPushTokenResp{
+//   int32  errCode = 1;
+//   string errMsg = 2;
+// }
 
 //message InternalPushMsgReq{
 //  int32 ReqIdentifier = 1;
@@ -43,7 +46,7 @@ message DelUserPushTokenResp{
 
 service PushMsgService {
   rpc PushMsg(PushMsgReq) returns(PushMsgResp);
-  rpc DelUserPushToken(DelUserPushTokenReq) returns(DelUserPushTokenResp);
-//  rpc InternalPushMsg(InternalPushMsgReq)returns(PushMsgResp);
+  // rpc DelUserPushToken(DelUserPushTokenReq) returns(DelUserPushTokenResp);
+	// rpc InternalPushMsg(InternalPushMsgReq)returns(PushMsgResp);
 }
 

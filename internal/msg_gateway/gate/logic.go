@@ -8,7 +8,6 @@ import (
 	promePkg "Open_IM/pkg/common/prometheus"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbChat "Open_IM/pkg/proto/msg"
-	push "Open_IM/pkg/proto/push"
 	pbRtc "Open_IM/pkg/proto/rtc"
 	sdk_ws "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
@@ -184,33 +183,38 @@ func (ws *WServer) pullMsgBySeqListResp(conn *UserConn, m *Req, pb *sdk_ws.PullM
 		len(mReply.Data))
 	ws.sendMsg(conn, mReply)
 }
+
 func (ws *WServer) userLogoutReq(conn *UserConn, m *Req) {
 	log.NewInfo(m.OperationID, "Ws call success to userLogoutReq start", m.SendID, m.ReqIdentifier, m.MsgIncr, string(m.Data))
 
-	rpcReq := push.DelUserPushTokenReq{}
-	rpcReq.UserID = m.SendID
-	rpcReq.PlatformID = conn.PlatformID
-	rpcReq.OperationID = m.OperationID
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImPushName, m.OperationID)
-	if grpcConn == nil {
-		errMsg := rpcReq.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(rpcReq.OperationID, errMsg)
-		ws.userLogoutResp(conn, m)
-		return
-	}
-	msgClient := push.NewPushMsgServiceClient(grpcConn)
-	reply, err := msgClient.DelUserPushToken(context.Background(), &rpcReq)
-	if err != nil {
-		log.NewError(rpcReq.OperationID, "DelUserPushToken err", err.Error())
+	// rpcReq := push.DelUserPushTokenReq{}
+	// rpcReq.UserID = m.SendID
+	// rpcReq.PlatformID = conn.PlatformID
+	// rpcReq.OperationID = m.OperationID
+	// grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImPushName, m.OperationID)
+	// if grpcConn == nil {
+	// 	errMsg := rpcReq.OperationID + "getcdv3.GetDefaultConn == nil"
+	// 	log.NewError(rpcReq.OperationID, errMsg)
+	// 	ws.userLogoutResp(conn, m)
+	// 	return
+	// }
+	// msgClient := push.NewPushMsgServiceClient(grpcConn)
+	// reply, err := msgClient.DelUserPushToken(context.Background(), &rpcReq)
+	// if err != nil {
+	// 	log.NewError(rpcReq.OperationID, "DelUserPushToken err", err.Error())
 
-		ws.userLogoutResp(conn, m)
-	} else {
-		log.NewInfo(rpcReq.OperationID, "rpc call success to DelUserPushToken", reply.String())
-		ws.userLogoutResp(conn, m)
+	// 	ws.userLogoutResp(conn, m)
+	// } else {
+	// 	log.NewInfo(rpcReq.OperationID, "rpc call success to DelUserPushToken", reply.String())
+	// 	ws.userLogoutResp(conn, m)
+	// }
+	// ws.userLogoutResp(conn, m)
+	if err := db.DB.DelFcmToken(m.SendID, int(conn.PlatformID)); err != nil {
+		log.NewError(m.OperationID, "DelUserPushToken err", err.Error())
 	}
 	ws.userLogoutResp(conn, m)
-
 }
+
 func (ws *WServer) userLogoutResp(conn *UserConn, m *Req) {
 	mReply := Resp{
 		ReqIdentifier: m.ReqIdentifier,
@@ -220,6 +224,7 @@ func (ws *WServer) userLogoutResp(conn *UserConn, m *Req) {
 	ws.sendMsg(conn, mReply)
 	_ = conn.Close()
 }
+
 func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 	log.NewInfo(m.OperationID, "Ws call success to sendMsgReq start", m.MsgIncr, m.ReqIdentifier, m.SendID)
 
@@ -261,6 +266,7 @@ func (ws *WServer) sendMsgReq(conn *UserConn, m *Req) {
 	}
 
 }
+
 func (ws *WServer) sendMsgResp(conn *UserConn, m *Req, pb *pbChat.SendMsgResp) {
 	var mReplyData sdk_ws.UserSendMsgResp
 	mReplyData.ClientMsgID = pb.GetClientMsgID()

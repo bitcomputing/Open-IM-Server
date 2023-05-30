@@ -1,4 +1,4 @@
-package logic
+package push
 
 import (
 	cbApi "Open_IM/pkg/call_back_struct"
@@ -6,13 +6,16 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/http"
-	"Open_IM/pkg/common/log"
 	commonPb "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
+	"context"
 	http2 "net/http"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func callbackOfflinePush(operationID string, userIDList []string, msg *commonPb.MsgData, offlinePushUserIDList *[]string) cbApi.CommonCallbackResp {
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	callbackResp := cbApi.CommonCallbackResp{OperationID: operationID}
 	if !config.Config.Callback.CallbackOfflinePush.Enable {
 		return callbackResp
@@ -56,11 +59,12 @@ func callbackOfflinePush(operationID string, userIDList []string, msg *commonPb.
 			msg.OfflinePushInfo = resp.OfflinePushInfo
 		}
 	}
-	log.NewDebug(operationID, utils.GetSelfFuncName(), offlinePushUserIDList, resp.UserIDList)
+	logger.Debug(offlinePushUserIDList, resp.UserIDList)
 	return callbackResp
 }
 
 func callbackOnlinePush(operationID string, userIDList []string, msg *commonPb.MsgData) cbApi.CommonCallbackResp {
+	// logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	callbackResp := cbApi.CommonCallbackResp{OperationID: operationID}
 	if !config.Config.Callback.CallbackOnlinePush.Enable || utils.IsContain(msg.SendID, userIDList) {
 		return callbackResp
@@ -96,16 +100,17 @@ func callbackOnlinePush(operationID string, userIDList []string, msg *commonPb.M
 			return callbackResp
 		}
 	}
-	if resp.ErrCode == constant.CallbackHandleSuccess && resp.ActionCode == constant.ActionAllow {
-		//if resp.OfflinePushInfo != nil {
-		//	msg.OfflinePushInfo = resp.OfflinePushInfo
-		//}
-	}
+	// if resp.ErrCode == constant.CallbackHandleSuccess && resp.ActionCode == constant.ActionAllow {
+	//if resp.OfflinePushInfo != nil {
+	//	msg.OfflinePushInfo = resp.OfflinePushInfo
+	//}
+	// }
 	return callbackResp
 }
 
 func callbackBeforeSuperGroupOnlinePush(operationID string, groupID string, msg *commonPb.MsgData, pushToUserList *[]string) cbApi.CommonCallbackResp {
-	log.Debug(operationID, utils.GetSelfFuncName(), groupID, msg.String(), pushToUserList)
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
+	logger.Debug(groupID, msg.String(), pushToUserList)
 	callbackResp := cbApi.CommonCallbackResp{OperationID: operationID}
 	if !config.Config.Callback.CallbackBeforeSuperGroupOnlinePush.Enable {
 		return callbackResp
@@ -147,7 +152,7 @@ func callbackBeforeSuperGroupOnlinePush(operationID string, groupID string, msg 
 		//	msg.OfflinePushInfo = resp.OfflinePushInfo
 		//}
 	}
-	log.NewDebug(operationID, utils.GetSelfFuncName(), pushToUserList, resp.UserIDList)
+	logger.Debug(pushToUserList, resp.UserIDList)
 	return callbackResp
 
 }

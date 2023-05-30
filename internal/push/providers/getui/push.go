@@ -1,12 +1,13 @@
 package getui
 
 import (
-	"Open_IM/internal/push"
+	push "Open_IM/internal/push/providers"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/utils"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"errors"
 
@@ -155,7 +156,7 @@ func newGetuiClient() *Getui {
 	return &Getui{}
 }
 
-func (g *Getui) Push(userIDList []string, title, detailContent, operationID string, opts push.PushOpts) (resp string, err error) {
+func (g *Getui) Push(ctx context.Context, userIDList []string, title, detailContent, operationID string, opts push.PushOpts) (resp string, err error) {
 	token, err := db.DB.GetGetuiToken()
 	log.NewDebug(operationID, utils.GetSelfFuncName(), "token：", token, userIDList)
 	if err != nil {

@@ -1,11 +1,12 @@
 package push
 
 import (
-	"Open_IM/internal/push"
-	"Open_IM/internal/push/jpush/common"
-	"Open_IM/internal/push/jpush/requestBody"
+	push "Open_IM/internal/push/providers"
+	"Open_IM/internal/push/providers/jpush/common"
+	"Open_IM/internal/push/providers/jpush/requestBody"
 	"Open_IM/pkg/common/config"
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -33,7 +34,7 @@ func (j *JPush) SetAlias(cid, alias string) (resp string, err error) {
 	return resp, nil
 }
 
-func (j *JPush) Push(accounts []string, title, detailContent, operationID string, opts push.PushOpts) (string, error) {
+func (j *JPush) Push(ctx context.Context, accounts []string, title, detailContent, operationID string, opts push.PushOpts) (string, error) {
 
 	var pf requestBody.Platform
 	pf.SetAll()

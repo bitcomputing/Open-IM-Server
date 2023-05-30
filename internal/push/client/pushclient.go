@@ -10,7 +10,7 @@ import (
 
 type PushClient interface {
 	PushMsg(ctx context.Context, in *pbpush.PushMsgReq, opts ...grpc.CallOption) (*pbpush.PushMsgResp, error)
-	DelUserPushToken(ctx context.Context, in *pbpush.DelUserPushTokenReq, opts ...grpc.CallOption) (*pbpush.DelUserPushTokenResp, error)
+	// DelUserPushToken(ctx context.Context, in *pbpush.DelUserPushTokenReq, opts ...grpc.CallOption) (*pbpush.DelUserPushTokenResp, error)
 }
 
 type pushClient struct {
@@ -28,7 +28,7 @@ func (c *pushClient) PushMsg(ctx context.Context, in *pbpush.PushMsgReq, opts ..
 	return client.PushMsg(ctx, in, opts...)
 }
 
-func (c *pushClient) DelUserPushToken(ctx context.Context, in *pbpush.DelUserPushTokenReq, opts ...grpc.CallOption) (*pbpush.DelUserPushTokenResp, error) {
-	client := pbpush.NewPushMsgServiceClient(c.client.Conn())
-	return client.DelUserPushToken(ctx, in, opts...)
-}
+// func (c *pushClient) DelUserPushToken(ctx context.Context, in *pbpush.DelUserPushTokenReq, opts ...grpc.CallOption) (*pbpush.DelUserPushTokenResp, error) {
+// 	client := pbpush.NewPushMsgServiceClient(c.client.Conn())
+// 	return client.DelUserPushToken(ctx, in, opts...)
+// }

@@ -4,18 +4,19 @@
 ** author("fg,Gordon@tuoyun.net").
 ** time(2021/5/13 10:33).
  */
-package logic
+package push
 
 import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	kfk "Open_IM/pkg/common/kafka"
-	"Open_IM/pkg/common/log"
 	pbChat "Open_IM/pkg/proto/msg"
 	pbPush "Open_IM/pkg/proto/push"
 	"Open_IM/pkg/utils"
+	"context"
 
 	"github.com/Shopify/sarama"
+	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -34,10 +35,10 @@ func (ms *PushConsumerHandler) Init() {
 		config.Config.Kafka.ConsumerGroupID.MsgToPush)
 }
 func (ms *PushConsumerHandler) handleMs2PsChat(msg []byte) {
-	log.NewDebug("", "msg come from kafka  And push!!!", "msg", string(msg))
+	logx.Debug("", "msg come from kafka  And push!!!", "msg", string(msg))
 	msgFromMQ := pbChat.PushMsgDataToMQ{}
 	if err := proto.Unmarshal(msg, &msgFromMQ); err != nil {
-		log.Error("", "push Unmarshal msg err", "msg", string(msg), "err", err.Error())
+		logx.Error("", "push Unmarshal msg err", "msg", string(msg), "err", err.Error())
 		return
 	}
 	pbData := &pbPush.PushMsgReq{
@@ -52,9 +53,9 @@ func (ms *PushConsumerHandler) handleMs2PsChat(msg []byte) {
 	}
 	switch msgFromMQ.MsgData.SessionType {
 	case constant.SuperGroupChatType:
-		MsgToSuperGroupUser(pbData)
+		MsgToSuperGroupUser(context.Background(), pbData)
 	default:
-		MsgToUser(pbData)
+		MsgToUser(context.Background(), pbData)
 	}
 	//Call push module to send message to the user
 	//MsgToUser((*pbPush.PushMsgReq)(&msgFromMQ))
@@ -64,7 +65,7 @@ func (PushConsumerHandler) Cleanup(_ sarama.ConsumerGroupSession) error { return
 func (ms *PushConsumerHandler) ConsumeClaim(sess sarama.ConsumerGroupSession,
 	claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		log.NewDebug("", "kafka get info to mysql", "msgTopic", msg.Topic, "msgPartition", msg.Partition, "msg", string(msg.Value))
+		logx.Debug("", "kafka get info to mysql", "msgTopic", msg.Topic, "msgPartition", msg.Partition, "msg", string(msg.Value))
 		ms.msgHandle[msg.Topic](msg.Value)
 		sess.MarkMessage(msg, "")
 	}

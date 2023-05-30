@@ -1,10 +1,11 @@
 package mobpush
 
 import (
-	"Open_IM/internal/push"
-	"Open_IM/internal/push/mobpush/common"
-	"Open_IM/internal/push/mobpush/requestParams"
+	push "Open_IM/internal/push/providers"
+	"Open_IM/internal/push/providers/mobpush/common"
+	"Open_IM/internal/push/providers/mobpush/requestParams"
 	"Open_IM/pkg/common/config"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -25,7 +26,7 @@ func newGetuiClient() *MobPush {
 	return &MobPush{}
 }
 
-func (j *MobPush) Push(accounts []string, alert, detailContent, operationID string, opts push.PushOpts) (string, error) {
+func (j *MobPush) Push(ctx context.Context, accounts []string, alert, detailContent, operationID string, opts push.PushOpts) (string, error) {
 
 	var target requestParams.PushTarget
 

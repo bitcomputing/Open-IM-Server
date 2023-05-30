@@ -1,14 +1,15 @@
 package fcm
 
 import (
-	"Open_IM/internal/push"
+	push "Open_IM/internal/push/providers"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	"context"
-	go_redis "github.com/go-redis/redis/v8"
 	"path/filepath"
 	"strconv"
+
+	go_redis "github.com/go-redis/redis/v8"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
@@ -24,6 +25,7 @@ type Fcm struct {
 func NewFcm() *Fcm {
 	return newFcmClient()
 }
+
 func newFcmClient() *Fcm {
 	opt := option.WithCredentialsFile(filepath.Join(config.Root, "config", config.Config.Push.Fcm.ServiceAccount))
 	fcmApp, err := firebase.NewApp(context.Background(), nil, opt)
@@ -42,12 +44,11 @@ func newFcmClient() *Fcm {
 	fcmMsgClient, err := fcmApp.Messaging(ctx)
 	if err != nil {
 		panic(err.Error())
-		return nil
 	}
 	return &Fcm{FcmMsgCli: fcmMsgClient}
 }
 
-func (f *Fcm) Push(accounts []string, title, detailContent, operationID string, opts push.PushOpts) (string, error) {
+func (f *Fcm) Push(ctx context.Context, accounts []string, title, detailContent, operationID string, opts push.PushOpts) (string, error) {
 	// accounts->registrationToken
 	allTokens := make(map[string][]string, 0)
 	for _, account := range accounts {
@@ -66,7 +67,6 @@ func (f *Fcm) Push(accounts []string, title, detailContent, operationID string, 
 	notification.Body = detailContent
 	notification.Title = title
 	var messages []*messaging.Message
-	ctx := context.Background()
 	for uid, personTokens := range allTokens {
 		apns := &messaging.APNSConfig{Payload: &messaging.APNSPayload{Aps: &messaging.Aps{Sound: opts.IOSPushSound}}}
 		messageCount := len(messages)
