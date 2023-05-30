@@ -41,7 +41,7 @@ func MsgToUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	logger := logx.WithContext(ctx).WithFields(logx.Field("op", pushMsg.OperationID))
 	var wsResult []*pbRelay.SingelMsgToUserResultList
 	isOfflinePush := utils.GetSwitchFromOptions(pushMsg.MsgData.Options, constant.IsOfflinePush)
-	logger.Debug("Get msg from msg_transfer And push msg", pushMsg.String())
+	logger.Debugv(pushMsg)
 	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
 
 	var UIDList = []string{pushMsg.PushToUserID}
@@ -158,7 +158,7 @@ func MsgToSuperGroupUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	logger := logx.WithContext(ctx).WithFields(logx.Field("op", pushMsg.OperationID))
 	var wsResult []*pbRelay.SingelMsgToUserResultList
 	isOfflinePush := utils.GetSwitchFromOptions(pushMsg.MsgData.Options, constant.IsOfflinePush)
-	logger.Debug("Get super group msg from msg_transfer And push msg", pushMsg.String(), config.Config.Callback.CallbackBeforeSuperGroupOnlinePush.Enable)
+	logger.Debugv(pushMsg.String())
 	var pushToUserIDList []string
 	if config.Config.Callback.CallbackBeforeSuperGroupOnlinePush.Enable {
 		callbackResp := callbackBeforeSuperGroupOnlinePush(pushMsg.OperationID, pushMsg.PushToUserID, pushMsg.MsgData, &pushToUserIDList)
