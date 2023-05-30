@@ -15,6 +15,7 @@ import (
 	"time"
 
 	go_redis "github.com/go-redis/redis/v8"
+	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -253,11 +254,12 @@ func (d *DataBases) SetMessageToCache(msgList []*pbChat.MsgDataToMQ, uid string,
 }
 func (d *DataBases) DeleteMessageFromCache(msgList []*pbChat.MsgDataToMQ, uid string, operationID string) error {
 	ctx := context.Background()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	for _, msg := range msgList {
 		key := messageCache + uid + "_" + strconv.Itoa(int(msg.MsgData.Seq))
 		err := d.RDB.Del(ctx, key).Err()
 		if err != nil {
-			log2.NewWarn(operationID, utils.GetSelfFuncName(), "redis failed", "args:", key, uid, err.Error(), msgList)
+			logger.Error("redis failed", "args:", key, uid, err.Error(), msgList)
 		}
 	}
 	return nil

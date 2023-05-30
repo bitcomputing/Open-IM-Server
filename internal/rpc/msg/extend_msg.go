@@ -5,9 +5,10 @@ import (
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/proto/msg"
-	"Open_IM/pkg/proto/sdk_ws"
+	server_api_params "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
+
 	go_redis "github.com/go-redis/redis/v8"
 
 	"time"
@@ -132,7 +133,7 @@ func (rpc *rpcChat) SetMessageReactionExtensions(ctx context.Context, req *msg.S
 				temp.LatestUpdateTime = utils.GetCurrentTimestampByMill()
 				setValue[k] = temp
 			}
-			err = db.DB.InsertOrUpdateReactionExtendMsgSet(req.SourceID, req.SessionType, req.ClientMsgID, req.MsgFirstModifyTime, setValue)
+			err = db.DB.InsertOrUpdateReactionExtendMsgSet(req.SourceID, req.SessionType, req.ClientMsgID, req.MsgFirstModifyTime, setValue, req.OperationID)
 			if err != nil {
 				for _, value := range setValue {
 					temp := new(msg.KeyValueResp)
@@ -449,7 +450,7 @@ func (rpc *rpcChat) DeleteMessageReactionExtensions(ctx context.Context, req *ms
 			temp.TypeKey = v.TypeKey
 			setValue[v.TypeKey] = temp
 		}
-		err = db.DB.DeleteReactionExtendMsgSet(req.SourceID, req.SessionType, req.ClientMsgID, req.MsgFirstModifyTime, setValue)
+		err = db.DB.DeleteReactionExtendMsgSet(req.SourceID, req.SessionType, req.ClientMsgID, req.MsgFirstModifyTime, setValue, req.OperationID)
 		if err != nil {
 			for _, value := range setValue {
 				temp := new(msg.KeyValueResp)

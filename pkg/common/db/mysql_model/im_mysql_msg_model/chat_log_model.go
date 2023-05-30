@@ -19,7 +19,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func InsertMessageToChatLog(msg pbMsg.MsgDataToMQ) error {
+func InsertMessageToChatLog(msg *pbMsg.MsgDataToMQ) error {
 	chatLog := new(db.ChatLog)
 	copier.Copy(chatLog, msg.MsgData)
 	switch msg.MsgData.SessionType {

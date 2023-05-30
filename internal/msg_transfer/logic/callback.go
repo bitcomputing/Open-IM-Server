@@ -6,10 +6,10 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/http"
-	"Open_IM/pkg/common/log"
 	pbChat "Open_IM/pkg/proto/msg"
-	"Open_IM/pkg/utils"
 	http2 "net/http"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func callbackAfterConsumeGroupMsg(msg []*pbChat.MsgDataToMQ, triggerID string) cbApi.CommonCallbackResp {
@@ -26,7 +26,7 @@ func callbackAfterConsumeGroupMsg(msg []*pbChat.MsgDataToMQ, triggerID string) c
 				GroupID:           v.MsgData.GroupID,
 			}
 			resp := &cbApi.CallbackAfterConsumeGroupMsgResp{CommonCallbackResp: &callbackResp}
-			defer log.NewDebug(triggerID, utils.GetSelfFuncName(), req, *resp)
+			defer logx.Debug(triggerID, req, *resp)
 			if err := http.CallBackPostReturn(config.Config.Callback.CallbackUrl, constant.CallbackAfterConsumeGroupMsgCommand, req, resp, config.Config.Callback.CallbackAfterConsumeGroupMsg.CallbackTimeOut); err != nil {
 				callbackResp.ErrCode = http2.StatusInternalServerError
 				callbackResp.ErrMsg = err.Error()
@@ -35,7 +35,7 @@ func callbackAfterConsumeGroupMsg(msg []*pbChat.MsgDataToMQ, triggerID string) c
 		}
 	}
 
-	log.NewDebug(triggerID, utils.GetSelfFuncName(), msg)
+	logx.Debug(triggerID, msg)
 
 	return callbackResp
 }

@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gogo/protobuf/sortkeys"
+	"github.com/zeromicro/go-zero/core/logx"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -95,7 +96,8 @@ func (d *DataBases) GetMinSeqFromMongo2(uid string) (MinSeq uint32, err error) {
 
 // deleteMsgByLogic
 func (d *DataBases) DelMsgBySeqList(userID string, seqList []uint32, operationID string) (totalUnExistSeqList []uint32, err error) {
-	log.Debug(operationID, utils.GetSelfFuncName(), "args ", userID, seqList)
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
+	logger.Debug("args ", userID, seqList)
 	sortkeys.Uint32s(seqList)
 	suffixUserID2SubSeqList := func(uid string, seqList []uint32) map[string][]uint32 {
 		t := make(map[string][]uint32)
@@ -119,7 +121,7 @@ func (d *DataBases) DelMsgBySeqList(userID string, seqList []uint32, operationID
 			defer wg.Done()
 			unexistSeqList, err := d.DelMsgBySeqListInOneDoc(suffixUserID, subSeqList, operationID)
 			if err != nil {
-				log.Error(operationID, "DelMsgBySeqListInOneDoc failed ", err.Error(), suffixUserID, subSeqList)
+				logger.Error("DelMsgBySeqListInOneDoc failed ", err.Error(), suffixUserID, subSeqList)
 				return
 			}
 			lock.Lock()
@@ -183,16 +185,18 @@ func (d *DataBases) DelMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgData,
 }
 
 func (d *DataBases) ReplaceMsgBySeq(uid string, msg *open_im_sdk.MsgData, operationID string) error {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, *msg)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
+	logger.Info(uid, msg)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	uid = getSeqUid(uid, msg.Seq)
 	seqIndex := getMsgIndex(msg.Seq)
 	s := fmt.Sprintf("msg.%d.msg", seqIndex)
-	log.NewDebug(operationID, utils.GetSelfFuncName(), seqIndex, s)
+	logger.Debug(seqIndex, s)
 	bytes, err := proto.Marshal(msg)
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "proto marshal", err.Error())
+		logger.Error("proto marshal", err.Error())
 		return utils.Wrap(err, "")
 	}
 	updateResult, err := c.UpdateOne(
@@ -200,23 +204,27 @@ func (d *DataBases) ReplaceMsgBySeq(uid string, msg *open_im_sdk.MsgData, operat
 		bson.M{"$set": bson.M{s: bytes}})
 	log.NewInfo(operationID, utils.GetSelfFuncName(), updateResult)
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "UpdateOne", err.Error())
+		logger.Error("UpdateOne", err.Error())
 		return utils.Wrap(err, "")
 	}
 	return nil
 }
 
 func (d *DataBases) GetMsgBySeqIndex(uid string, seq uint32, operationID string) (*open_im_sdk.MsgData, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	uid = getSeqUid(uid, seq)
 	seqIndex := getMsgIndex(seq)
 	result, err := c.Find(ctx, bson.M{"msg": bson.M{"$slice": []int{seqIndex, 1}}})
 	if err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 	var msgInfos []MsgInfo
 	if err := result.Decode(&msgInfos); err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 	if len(msgInfos) < 1 {
@@ -224,25 +232,30 @@ func (d *DataBases) GetMsgBySeqIndex(uid string, seq uint32, operationID string)
 	}
 	var msg open_im_sdk.MsgData
 	if err := proto.Unmarshal(msgInfos[0].Msg, &msg); err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 	return &msg, nil
 }
 
-func (d *DataBases) ReplaceMsgByIndex(uid string, msg *open_im_sdk.MsgData, index int) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) ReplaceMsgByIndex(uid string, msg *open_im_sdk.MsgData, index int, operationID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	uid = getSeqUid(uid, msg.Seq)
 	seqIndex := getMsgIndex(msg.Seq)
 	s := fmt.Sprintf("msg.%d.msg", seqIndex)
 	bytes, err := proto.Marshal(msg)
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	_, err = c.UpdateOne(
 		ctx, bson.M{"uid": uid},
 		bson.M{"$set": bson.M{s: bytes}})
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	return nil
@@ -474,8 +487,7 @@ func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operatio
 		}
 	}
 	if len(hasSeqList) != len(seqList) {
-		var diff []uint32
-		diff = utils.Difference(hasSeqList, seqList)
+		diff := utils.Difference(hasSeqList, seqList)
 		exceptionMSg := genExceptionMessageBySeqList(diff)
 		seqMsg = append(seqMsg, exceptionMSg...)
 
@@ -483,6 +495,7 @@ func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operatio
 	return seqMsg, nil
 }
 func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, indexes map[uint32]int, err error) {
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	var hasSeqList []uint32
 	indexes = make(map[uint32]int)
 	singleCount := 0
@@ -505,14 +518,14 @@ func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uin
 	sChat := UserChat{}
 	for seqUid, value := range m {
 		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
-			log.NewError(operationID, "not find seqGroupID", seqUid, value, groupID, seqList, err.Error())
+			logger.Error("not find seqGroupID", seqUid, value, groupID, seqList, err.Error())
 			continue
 		}
 		singleCount = 0
 		for i := 0; i < len(sChat.Msg); i++ {
 			msg := new(open_im_sdk.MsgData)
 			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, value, groupID, seqList, err.Error())
+				logger.Error("Unmarshal err", seqUid, value, groupID, seqList, err.Error())
 				return nil, nil, err
 			}
 			if isContainInt32(msg.Seq, value) {
@@ -527,8 +540,7 @@ func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uin
 		}
 	}
 	if len(hasSeqList) != len(seqList) {
-		var diff []uint32
-		diff = utils.Difference(hasSeqList, seqList)
+		diff := utils.Difference(hasSeqList, seqList)
 		exceptionMSg := genExceptionSuperGroupMessageBySeqList(diff, groupID)
 		seqMsg = append(seqMsg, exceptionMSg...)
 	}
@@ -591,10 +603,11 @@ func genExceptionSuperGroupMessageBySeqList(seqList []uint32, groupID string) (e
 }
 
 func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", m.OperationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	newTime := getCurrentTimestampByMill()
-	operationID := ""
 	seqUid := getSeqUid(uid, m.MsgData.Seq)
 	filter := bson.M{"uid": seqUid}
 	var err error
@@ -604,20 +617,20 @@ func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgD
 		return utils.Wrap(err, "")
 	}
 	err = c.FindOneAndUpdate(ctx, filter, bson.M{"$push": bson.M{"msg": sMsg}}).Err()
-	log.NewWarn(operationID, "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
+	logger.Info("get mgoSession cost time", getCurrentTimestampByMill()-newTime)
 	if err != nil {
 		sChat := UserChat{}
 		sChat.UID = seqUid
 		sChat.Msg = append(sChat.Msg, sMsg)
 		if _, err = c.InsertOne(ctx, &sChat); err != nil {
-			log.NewDebug(operationID, "InsertOne failed", filter)
+			logger.Debug("InsertOne failed", filter)
 			return utils.Wrap(err, "")
 		}
 	} else {
-		log.NewDebug(operationID, "FindOneAndUpdate ok", filter)
+		logger.Debug("FindOneAndUpdate ok", filter)
 	}
 
-	log.NewDebug(operationID, "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
+	logger.Debug("find mgo uid cost time", getCurrentTimestampByMill()-newTime)
 	return nil
 }
 
