@@ -21,8 +21,8 @@ type GroupMemberUserIDListHash struct {
 var CacheGroupMemberUserIDList = make(map[string]*GroupMemberUserIDListHash, 0)
 var CacheGroupMtx sync.RWMutex
 
-func GetGroupMemberUserIDList(groupID string, operationID string) ([]string, error) {
-	groupHashRemote, err := GetGroupMemberUserIDListHashFromRemote(groupID)
+func GetGroupMemberUserIDList(ctx context.Context, groupID string, operationID string) ([]string, error) {
+	groupHashRemote, err := GetGroupMemberUserIDListHashFromRemote(ctx, groupID)
 	if err != nil {
 		CacheGroupMtx.Lock()
 		defer CacheGroupMtx.Unlock()
@@ -55,8 +55,8 @@ func GetGroupMemberUserIDList(groupID string, operationID string) ([]string, err
 	return memberUserIDListRemote, nil
 }
 
-func GetGroupMemberUserIDListHashFromRemote(groupID string) (uint64, error) {
-	return rocksCache.GetGroupMemberListHashFromCache(groupID)
+func GetGroupMemberUserIDListHashFromRemote(ctx context.Context, groupID string) (uint64, error) {
+	return rocksCache.GetGroupMemberListHashFromCache(ctx, groupID)
 }
 
 func GetGroupMemberUserIDListFromRemote(groupID string, operationID string) ([]string, error) {

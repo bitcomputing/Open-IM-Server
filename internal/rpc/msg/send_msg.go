@@ -109,8 +109,8 @@ func userIsMuteAndIsAdminInGroup(groupID, userID string) (isMute bool, isAdmin b
 	return false, groupMemberInfo.RoleLevel > constant.GroupOrdinaryUsers, nil
 }
 
-func groupIsMuted(groupID string) (bool, error) {
-	groupInfo, err := rocksCache.GetGroupInfoFromCache(groupID)
+func groupIsMuted(ctx context.Context, groupID string) (bool, error) {
+	groupInfo, err := rocksCache.GetGroupInfoFromCache(ctx, groupID)
 	if err != nil {
 		return false, utils.Wrap(err, "GetGroupInfoFromCache failed")
 	}
@@ -120,7 +120,7 @@ func groupIsMuted(groupID string) (bool, error) {
 	return false, nil
 }
 
-func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, string, []string) {
+func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMsgReq) (bool, int32, string, []string) {
 	switch data.MsgData.SessionType {
 	case constant.SingleChatType:
 		if utils.IsContain(data.MsgData.SendID, config.Config.Manager.AppManagerUid) {
@@ -178,7 +178,7 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 			return true, 0, "", nil
 		}
 	case constant.GroupChatType:
-		userIDList, err := utils2.GetGroupMemberUserIDList(data.MsgData.GroupID, data.OperationID)
+		userIDList, err := utils2.GetGroupMemberUserIDList(ctx, data.MsgData.GroupID, data.OperationID)
 		if err != nil {
 			errMsg := data.OperationID + err.Error()
 			log.NewError(data.OperationID, errMsg)
@@ -206,7 +206,7 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 		if isAdmin {
 			return true, 0, "", userIDList
 		}
-		isMute, err = groupIsMuted(data.MsgData.GroupID)
+		isMute, err = groupIsMuted(ctx, data.MsgData.GroupID)
 		if err != nil {
 			errMsg := data.OperationID + err.Error()
 			return false, 223, errMsg, nil
@@ -216,7 +216,7 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 		}
 		return true, 0, "", userIDList
 	case constant.SuperGroupChatType:
-		groupInfo, err := rocksCache.GetGroupInfoFromCache(data.MsgData.GroupID)
+		groupInfo, err := rocksCache.GetGroupInfoFromCache(ctx, data.MsgData.GroupID)
 		if err != nil {
 			return false, 201, err.Error(), nil
 		}
@@ -252,7 +252,7 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 		if groupInfo.GroupType == constant.SuperGroup {
 			return true, 0, "", nil
 		} else {
-			userIDList, err := utils2.GetGroupMemberUserIDList(data.MsgData.GroupID, data.OperationID)
+			userIDList, err := utils2.GetGroupMemberUserIDList(ctx, data.MsgData.GroupID, data.OperationID)
 			if err != nil {
 				errMsg := data.OperationID + err.Error()
 				log.NewError(data.OperationID, errMsg)
@@ -280,7 +280,7 @@ func (rpc *rpcChat) messageVerification(data *pbChat.SendMsgReq) (bool, int32, s
 			if isAdmin {
 				return true, 0, "", userIDList
 			}
-			isMute, err = groupIsMuted(data.MsgData.GroupID)
+			isMute, err = groupIsMuted(ctx, data.MsgData.GroupID)
 			if err != nil {
 				errMsg := data.OperationID + err.Error()
 				return false, 223, errMsg, nil
@@ -343,7 +343,7 @@ func (rpc *rpcChat) encapsulateMsgData(msg *sdk_ws.MsgData) {
 		utils.SetSwitchFromOptions(msg.Options, constant.IsOfflinePush, false)
 	}
 }
-func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.SendMsgResp, error) {
+func (rpc *rpcChat) SendMsg(ctx context.Context, pb *pbChat.SendMsgReq) (*pbChat.SendMsgResp, error) {
 	replay := pbChat.SendMsgResp{}
 	log.Info(pb.OperationID, "rpc sendMsg come here ", pb.String())
 	flag, errCode, errMsg := isMessageHasReadEnabled(pb)
@@ -388,7 +388,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0, "")
 		}
 		t1 = time.Now()
-		flag, errCode, errMsg, _ = rpc.messageVerification(pb)
+		flag, errCode, errMsg, _ = rpc.messageVerification(ctx, pb)
 		log.Debug(pb.OperationID, "messageVerification ", flag, " cost time: ", time.Since(t1))
 		if !flag {
 			return returnMsg(&replay, pb, errCode, errMsg, "", 0, "")
@@ -443,7 +443,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0, "")
 		}
 		var memberUserIDList []string
-		if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(pb); !flag {
+		if flag, errCode, errMsg, memberUserIDList = rpc.messageVerification(ctx, pb); !flag {
 			promePkg.PromeInc(promePkg.GroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, errCode, errMsg, "", 0, "")
 		}
@@ -540,14 +540,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 						conversationReq.UserIDList = pb.MsgData.AtUserIDList
 						conversation.GroupAtType = constant.AtMe
 					}
-					etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, pb.OperationID)
-					if etcdConn == nil {
-						errMsg := pb.OperationID + "getcdv3.GetDefaultConn == nil"
-						log.NewError(pb.OperationID, errMsg)
-						return
-					}
-					client := pbConversation.NewConversationClient(etcdConn)
-					conversationReply, err := client.ModifyConversationField(context.Background(), &conversationReq)
+					conversationReply, err := rpc.conversationClient.ModifyConversationField(ctx, &conversationReq)
 					if err != nil {
 						log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
 					} else if conversationReply.CommonResp.ErrCode != 0 {
@@ -556,14 +549,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 					if tag {
 						conversationReq.UserIDList = utils.DifferenceString(atUserID, memberUserIDList)
 						conversation.GroupAtType = constant.AtAll
-						etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, pb.OperationID)
-						if etcdConn == nil {
-							errMsg := pb.OperationID + "getcdv3.GetDefaultConn == nil"
-							log.NewError(pb.OperationID, errMsg)
-							return
-						}
-						client := pbConversation.NewConversationClient(etcdConn)
-						conversationReply, err := client.ModifyConversationField(context.Background(), &conversationReq)
+						conversationReply, err := rpc.conversationClient.ModifyConversationField(ctx, &conversationReq)
 						if err != nil {
 							log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
 						} else if conversationReply.CommonResp.ErrCode != 0 {
@@ -611,7 +597,7 @@ func (rpc *rpcChat) SendMsg(_ context.Context, pb *pbChat.SendMsgReq) (*pbChat.S
 			log.NewDebug(pb.OperationID, utils.GetSelfFuncName(), "callbackBeforeSendSuperGroupMsg result", "end rpc and return", callbackResp)
 			return returnMsg(&replay, pb, int32(callbackResp.ErrCode), callbackResp.ErrMsg, "", 0, "")
 		}
-		if flag, errCode, errMsg, _ = rpc.messageVerification(pb); !flag {
+		if flag, errCode, errMsg, _ = rpc.messageVerification(ctx, pb); !flag {
 			promePkg.PromeInc(promePkg.WorkSuperGroupChatMsgProcessFailedCounter)
 			return returnMsg(&replay, pb, errCode, errMsg, "", 0, "")
 		}

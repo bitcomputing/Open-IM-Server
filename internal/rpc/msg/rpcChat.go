@@ -1,6 +1,7 @@
 package msg
 
 import (
+	conversationclient "Open_IM/internal/rpc/conversation/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
@@ -17,6 +18,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/zrpc"
 
 	"google.golang.org/grpc"
 )
@@ -34,6 +37,7 @@ type rpcChat struct {
 	delMsgCh       chan deleteMsg
 	dMessageLocker MessageLocker
 	msg.UnimplementedMsgServer
+	conversationClient conversationclient.ConversationClient
 }
 
 type deleteMsg struct {
@@ -51,6 +55,21 @@ func NewRpcChatServer(port int) *rpcChat {
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
 		etcdAddr:        config.Config.Etcd.EtcdAddr,
 		dMessageLocker:  NewLockerMessage(),
+		conversationClient: conversationclient.NewConversationClient(zrpc.RpcClientConf{
+			Etcd: discov.EtcdConf{
+				Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
+				Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
+			},
+			Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
+			KeepaliveTime: 0,
+			Middlewares: zrpc.ClientMiddlewaresConf{
+				Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
+				Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
+				Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
+				Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
+				Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
+			},
+		}),
 	}
 	rc.messageWriter = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic)
 	//rc.offlineProducer = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschatOffline.Addr, config.Config.Kafka.Ws2mschatOffline.Topic)

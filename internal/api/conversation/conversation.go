@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	client "Open_IM/internal/rpc/conversation/client"
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/log"
@@ -9,11 +10,35 @@ import (
 	pbUser "Open_IM/pkg/proto/user"
 	"Open_IM/pkg/utils"
 	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/zrpc"
 )
 
+var (
+	conversationClient client.ConversationClient
+)
+
+func init() {
+	conversationClient = client.NewConversationClient(zrpc.RpcClientConf{
+		Etcd: discov.EtcdConf{
+			Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
+			Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
+		},
+		Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
+		KeepaliveTime: 0,
+		Middlewares: zrpc.ClientMiddlewaresConf{
+			Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
+			Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
+			Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
+			Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
+			Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
+		},
+	})
+}
 func SetConversation(c *gin.Context) {
 	var (
 		req   api.SetConversationReq
@@ -51,6 +76,7 @@ func SetConversation(c *gin.Context) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp)
 	c.JSON(http.StatusOK, resp)
 }
+
 func ModifyConversationField(c *gin.Context) {
 	var (
 		req   api.ModifyConversationFieldReq
@@ -69,15 +95,8 @@ func ModifyConversationField(c *gin.Context) {
 	if err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbConversation.NewConversationClient(etcdConn)
-	respPb, err := client.ModifyConversationField(context.Background(), &reqPb)
+
+	respPb, err := conversationClient.ModifyConversationField(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -312,17 +331,17 @@ func SetRecvMsgOpt(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-//Deprecated
+// Deprecated
 func SetReceiveMessageOpt(c *gin.Context) {
 
 }
 
-//Deprecated
+// Deprecated
 func GetReceiveMessageOpt(c *gin.Context) {
 
 }
 
-//Deprecated
+// Deprecated
 func GetAllConversationMessageOpt(c *gin.Context) {
 
 }

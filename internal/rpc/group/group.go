@@ -1,6 +1,7 @@
 package group
 
 import (
+	conversationclient "Open_IM/internal/rpc/conversation/client"
 	chat "Open_IM/internal/rpc/msg"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
@@ -28,6 +29,8 @@ import (
 	"time"
 
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/zrpc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -40,15 +43,30 @@ type groupServer struct {
 	etcdSchema      string
 	etcdAddr        []string
 	pbGroup.UnimplementedGroupServer
+	conversationClient conversationclient.ConversationClient
 }
 
 func NewGroupServer(port int) *groupServer {
-	log.NewPrivateLog(constant.LogFileName)
 	return &groupServer{
 		rpcPort:         port,
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImGroupName,
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
 		etcdAddr:        config.Config.Etcd.EtcdAddr,
+		conversationClient: conversationclient.NewConversationClient(zrpc.RpcClientConf{
+			Etcd: discov.EtcdConf{
+				Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
+				Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
+			},
+			Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
+			KeepaliveTime: 0,
+			Middlewares: zrpc.ClientMiddlewaresConf{
+				Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
+				Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
+				Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
+				Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
+				Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
+			},
+		}),
 	}
 }
 
@@ -234,7 +252,7 @@ func (s *groupServer) CreateGroup(ctx context.Context, req *pbGroup.CreateGroupR
 			}
 			okUserIDList = append(okUserIDList, user.UserID)
 		}
-		group, err := rocksCache.GetGroupInfoFromCache(groupId)
+		group, err := rocksCache.GetGroupInfoFromCache(ctx, groupId)
 		if err != nil {
 			log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", err.Error(), groupId)
 			resp.ErrCode = constant.ErrDB.ErrCode
@@ -316,7 +334,7 @@ func (s *groupServer) GetJoinedGroupList(ctx context.Context, req *pbGroup.GetJo
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err2.Error(), v)
 			continue
 		}
-		group, err := rocksCache.GetGroupInfoFromCache(v)
+		group, err := rocksCache.GetGroupInfoFromCache(ctx, v)
 		if err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), v)
 			continue
@@ -351,7 +369,7 @@ func (s *groupServer) InviteUserToGroup(ctx context.Context, req *pbGroup.Invite
 		return &pbGroup.InviteUserToGroupResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
 
-	groupInfo, err := imdb.GetGroupInfoByGroupID(req.GroupID)
+	groupInfo, err := imdb.GetGroupInfoByGroupID(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", req.GroupID, err)
 		return &pbGroup.InviteUserToGroupResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}, nil
@@ -571,7 +589,7 @@ func (s *groupServer) InviteUserToGroups(ctx context.Context, req *pbGroup.Invit
 		return &pbGroup.InviteUserToGroupsResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
 	for _, v := range req.GroupIDList {
-		groupInfo, err := imdb.GetGroupInfoByGroupID(v)
+		groupInfo, err := imdb.GetGroupInfoByGroupID(ctx, v)
 		if err != nil {
 			log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", v, err)
 			return &pbGroup.InviteUserToGroupsResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error() + v}, nil
@@ -597,7 +615,7 @@ func (s *groupServer) InviteUserToGroups(ctx context.Context, req *pbGroup.Invit
 func (s *groupServer) GetGroupAllMember(ctx context.Context, req *pbGroup.GetGroupAllMemberReq) (*pbGroup.GetGroupAllMemberResp, error) {
 	log.NewInfo(req.OperationID, "GetGroupAllMember, args ", req.String())
 	var resp pbGroup.GetGroupAllMemberResp
-	groupInfo, err := rocksCache.GetGroupInfoFromCache(req.GroupID)
+	groupInfo, err := rocksCache.GetGroupInfoFromCache(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), req.GroupID)
 		resp.ErrCode = constant.ErrDB.ErrCode
@@ -605,7 +623,7 @@ func (s *groupServer) GetGroupAllMember(ctx context.Context, req *pbGroup.GetGro
 		return &resp, nil
 	}
 	if groupInfo.GroupType != constant.SuperGroup {
-		memberList, err := rocksCache.GetGroupMembersInfoFromCache(req.Count, req.Offset, req.GroupID)
+		memberList, err := rocksCache.GetGroupMembersInfoFromCache(ctx, req.Count, req.Offset, req.GroupID)
 		if err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), req.GroupID)
 			resp.ErrCode = constant.ErrDB.ErrCode
@@ -671,7 +689,7 @@ func (s *groupServer) getGroupUserLevel(groupID, userID string) (int, error) {
 
 func (s *groupServer) KickGroupMember(ctx context.Context, req *pbGroup.KickGroupMemberReq) (*pbGroup.KickGroupMemberResp, error) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), " rpc args ", req.String())
-	groupInfo, err := rocksCache.GetGroupInfoFromCache(req.GroupID)
+	groupInfo, err := rocksCache.GetGroupInfoFromCache(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetGroupInfoByGroupID", req.GroupID, err.Error())
 		return &pbGroup.KickGroupMemberResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}, nil
@@ -787,13 +805,7 @@ func (s *groupServer) KickGroupMember(ctx context.Context, req *pbGroup.KickGrou
 		reqPb.Conversation.ConversationID = utils.GetConversationIDBySessionType(req.GroupID, constant.SuperGroupChatType)
 		reqPb.Conversation.ConversationType = int32(constant.SuperGroupChatType)
 		reqPb.Conversation.UpdateUnreadCountTime = utils.GetCurrentTimestampByMill()
-		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, req.OperationID)
-		if etcdConn == nil {
-			errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(req.OperationID, errMsg)
-		}
-		client := pbConversation.NewConversationClient(etcdConn)
-		respPb, err := client.ModifyConversationField(context.Background(), &reqPb)
+		respPb, err := s.conversationClient.ModifyConversationField(ctx, &reqPb)
 		if err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), "ModifyConversationField rpc failed, ", reqPb.String(), err.Error())
 		} else {
@@ -867,7 +879,7 @@ func (s *groupServer) GetGroupApplicationList(ctx context.Context, req *pbGroup.
 	resp := pbGroup.GetGroupApplicationListResp{}
 	for _, v := range reply {
 		node := open_im_sdk.GroupRequest{UserInfo: &open_im_sdk.PublicUserInfo{}, GroupInfo: &open_im_sdk.GroupInfo{}}
-		group, err := imdb.GetGroupInfoByGroupID(v.GroupID)
+		group, err := imdb.GetGroupInfoByGroupID(ctx, v.GroupID)
 		if err != nil {
 			log.Error(req.OperationID, "GetGroupInfoByGroupID failed ", err.Error(), v.GroupID)
 			continue
@@ -896,7 +908,7 @@ func (s *groupServer) GetGroupsInfo(ctx context.Context, req *pbGroup.GetGroupsI
 	log.NewInfo(req.OperationID, "GetGroupsInfo args ", req.String())
 	groupsInfoList := make([]*open_im_sdk.GroupInfo, 0)
 	for _, groupID := range req.GroupIDList {
-		groupInfoFromRedis, err := rocksCache.GetGroupInfoFromCache(groupID)
+		groupInfoFromRedis, err := rocksCache.GetGroupInfoFromCache(ctx, groupID)
 		if err != nil {
 			log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", err.Error(), groupID)
 			continue
@@ -935,7 +947,7 @@ func (s *groupServer) GroupApplicationResponse(ctx context.Context, req *pbGroup
 		log.NewError(req.OperationID, "GroupApplicationResponse failed ", err.Error(), req.GroupID, req.FromUserID)
 		return &pbGroup.GroupApplicationResponseResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
 	}
-	groupInfo, err := rocksCache.GetGroupInfoFromCache(req.GroupID)
+	groupInfo, err := rocksCache.GetGroupInfoFromCache(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, "GetGroupInfoFromCache failed ", err.Error(), req.GroupID, req.FromUserID)
 		return &pbGroup.GroupApplicationResponseResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
@@ -1074,7 +1086,7 @@ func (s *groupServer) JoinGroup(ctx context.Context, req *pbGroup.JoinGroupReq) 
 		log.NewError(req.OperationID, "GetUserByUserID failed ", err.Error(), req.OpUserID)
 		return &pbGroup.JoinGroupResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
 	}
-	groupInfo, err := rocksCache.GetGroupInfoFromCache(req.GroupID)
+	groupInfo, err := rocksCache.GetGroupInfoFromCache(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", req.GroupID, err)
 		return &pbGroup.JoinGroupResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
@@ -1183,7 +1195,7 @@ func (s *groupServer) JoinGroup(ctx context.Context, req *pbGroup.JoinGroupReq) 
 
 func (s *groupServer) QuitGroup(ctx context.Context, req *pbGroup.QuitGroupReq) (*pbGroup.QuitGroupResp, error) {
 	log.NewInfo(req.OperationID, "QuitGroup args ", req.String())
-	groupInfo, err := imdb.GetGroupInfoByGroupID(req.GroupID)
+	groupInfo, err := imdb.GetGroupInfoByGroupID(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, "ReduceGroupMemberFromCache rpc call failed ", err.Error())
 		return &pbGroup.QuitGroupResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
@@ -1283,7 +1295,7 @@ func (s *groupServer) SetGroupInfo(ctx context.Context, req *pbGroup.SetGroupInf
 		return &pbGroup.SetGroupInfoResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}}, nil
 	}
 
-	group, err := imdb.GetGroupInfoByGroupID(req.GroupInfoForSet.GroupID)
+	group, err := imdb.GetGroupInfoByGroupID(ctx, req.GroupInfoForSet.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", err.Error(), req.GroupInfoForSet.GroupID)
 		return &pbGroup.SetGroupInfoResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}}, nil
@@ -1401,14 +1413,7 @@ func (s *groupServer) SetGroupInfo(ctx context.Context, req *pbGroup.SetGroupInf
 		conversationReq.FieldType = constant.FieldGroupAtType
 		conversation.GroupAtType = constant.GroupNotification
 		conversationReq.UserIDList = cacheResp.UserIDList
-		nEtcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, req.OperationID)
-		if etcdConn == nil {
-			errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(req.OperationID, errMsg)
-			return &pbGroup.SetGroupInfoResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrInternal.ErrCode, ErrMsg: errMsg}}, nil
-		}
-		nClient := pbConversation.NewConversationClient(nEtcdConn)
-		conversationReply, err := nClient.ModifyConversationField(context.Background(), &conversationReq)
+		conversationReply, err := s.conversationClient.ModifyConversationField(ctx, &conversationReq)
 		if err != nil {
 			log.NewError(conversationReq.OperationID, "ModifyConversationField rpc failed, ", conversationReq.String(), err.Error())
 		} else if conversationReply.CommonResp.ErrCode != 0 {
@@ -1421,7 +1426,7 @@ func (s *groupServer) SetGroupInfo(ctx context.Context, req *pbGroup.SetGroupInf
 func (s *groupServer) TransferGroupOwner(ctx context.Context, req *pbGroup.TransferGroupOwnerReq) (*pbGroup.TransferGroupOwnerResp, error) {
 	log.NewInfo(req.OperationID, "TransferGroupOwner ", req.String())
 
-	groupInfo, err := imdb.GetGroupInfoByGroupID(req.GroupID)
+	groupInfo, err := imdb.GetGroupInfoByGroupID(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", req.GroupID, err)
 		return &pbGroup.TransferGroupOwnerResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
@@ -1465,7 +1470,7 @@ func (s *groupServer) TransferGroupOwner(ctx context.Context, req *pbGroup.Trans
 
 }
 
-func (s *groupServer) GetGroups(_ context.Context, req *pbGroup.GetGroupsReq) (*pbGroup.GetGroupsResp, error) {
+func (s *groupServer) GetGroups(ctx context.Context, req *pbGroup.GetGroupsReq) (*pbGroup.GetGroupsResp, error) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "GetGroups ", req.String())
 	resp := &pbGroup.GetGroupsResp{
 		CommonResp: &pbGroup.CommonResp{},
@@ -1473,7 +1478,7 @@ func (s *groupServer) GetGroups(_ context.Context, req *pbGroup.GetGroupsReq) (*
 		Pagination: &open_im_sdk.ResponsePagination{CurrentPage: req.Pagination.PageNumber, ShowNumber: req.Pagination.ShowNumber},
 	}
 	if req.GroupID != "" {
-		groupInfoDB, err := imdb.GetGroupInfoByGroupID(req.GroupID)
+		groupInfoDB, err := imdb.GetGroupInfoByGroupID(ctx, req.GroupID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return resp, nil
@@ -1575,7 +1580,7 @@ func (s *groupServer) GetUserReqApplicationList(ctx context.Context, req *pbGrou
 	}
 	for _, groupReq := range groupRequests {
 		node := open_im_sdk.GroupRequest{UserInfo: &open_im_sdk.PublicUserInfo{}, GroupInfo: &open_im_sdk.GroupInfo{}}
-		group, err := imdb.GetGroupInfoByGroupID(groupReq.GroupID)
+		group, err := imdb.GetGroupInfoByGroupID(ctx, groupReq.GroupID)
 		if err != nil {
 			log.Error(req.OperationID, "GetGroupInfoByGroupID failed ", err.Error(), groupReq.GroupID)
 			continue
@@ -1618,7 +1623,7 @@ func (s *groupServer) DismissGroup(ctx context.Context, req *pbGroup.DismissGrou
 		log.NewError(req.OperationID, "OperateGroupStatus failed ", req.GroupID, constant.GroupStatusDismissed)
 		return &pbGroup.DismissGroupResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
 	}
-	groupInfo, err := imdb.GetGroupInfoByGroupID(req.GroupID)
+	groupInfo, err := imdb.GetGroupInfoByGroupID(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), req.GroupID)
 		return &pbGroup.DismissGroupResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
@@ -1981,10 +1986,10 @@ func (s *groupServer) SetGroupMemberInfo(ctx context.Context, req *pbGroup.SetGr
 	return resp, nil
 }
 
-func (s *groupServer) GetGroupAbstractInfo(c context.Context, req *pbGroup.GetGroupAbstractInfoReq) (*pbGroup.GetGroupAbstractInfoResp, error) {
+func (s *groupServer) GetGroupAbstractInfo(ctx context.Context, req *pbGroup.GetGroupAbstractInfoReq) (*pbGroup.GetGroupAbstractInfoResp, error) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req.String())
 	resp := &pbGroup.GetGroupAbstractInfoResp{CommonResp: &pbGroup.CommonResp{}}
-	hashCode, err := rocksCache.GetGroupMemberListHashFromCache(req.GroupID)
+	hashCode, err := rocksCache.GetGroupMemberListHashFromCache(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetGroupMemberListHashFromCache failed", req.GroupID, err.Error())
 		resp.CommonResp.ErrCode = constant.ErrDB.ErrCode

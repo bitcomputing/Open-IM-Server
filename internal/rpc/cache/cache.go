@@ -149,12 +149,12 @@ func (s *cacheServer) DelBlackIDListFromCache(_ context.Context, req *pbCache.De
 	return resp, nil
 }
 
-func (s *cacheServer) GetGroupMemberIDListFromCache(_ context.Context, req *pbCache.GetGroupMemberIDListFromCacheReq) (resp *pbCache.GetGroupMemberIDListFromCacheResp, err error) {
+func (s *cacheServer) GetGroupMemberIDListFromCache(ctx context.Context, req *pbCache.GetGroupMemberIDListFromCacheReq) (resp *pbCache.GetGroupMemberIDListFromCacheResp, err error) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req.String())
 	resp = &pbCache.GetGroupMemberIDListFromCacheResp{
 		CommonResp: &pbCache.CommonResp{},
 	}
-	userIDList, err := rocksCache.GetGroupMemberIDListFromCache(req.GroupID)
+	userIDList, err := rocksCache.GetGroupMemberIDListFromCache(ctx, req.GroupID)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetGroupMemberIDListFromCache failed", err.Error())
 		resp.CommonResp.ErrCode = constant.ErrDB.ErrCode

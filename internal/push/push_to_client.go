@@ -173,7 +173,7 @@ func MsgToSuperGroupUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 		logger.Debug("callback userIDList Resp", pushToUserIDList)
 	}
 	if len(pushToUserIDList) == 0 {
-		userIDList, err := utils2.GetGroupMemberUserIDList(pushMsg.MsgData.GroupID, pushMsg.OperationID)
+		userIDList, err := utils2.GetGroupMemberUserIDList(ctx, pushMsg.MsgData.GroupID, pushMsg.OperationID)
 		if err != nil {
 			logger.Error("GetGroupMemberUserIDList failed ", err.Error(), pushMsg.MsgData.GroupID)
 			return

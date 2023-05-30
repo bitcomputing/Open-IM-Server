@@ -100,7 +100,7 @@ func (s *userServer) Run() {
 	log.NewInfo("0", "rpc  user success")
 }
 
-func syncPeerUserConversation(conversation *pbConversation.Conversation, operationID string) error {
+func syncPeerUserConversation(ctx context.Context, conversation *pbConversation.Conversation, operationID string) error {
 	peerUserConversation := db.Conversation{
 		OwnerUserID:      conversation.UserID,
 		ConversationID:   utils.GetConversationIDBySessionType(conversation.OwnerUserID, constant.SingleChatType),
@@ -115,7 +115,7 @@ func syncPeerUserConversation(conversation *pbConversation.Conversation, operati
 		AttachedInfo:     "",
 		Ex:               "",
 	}
-	err := imdb.PeerUserSetConversation(peerUserConversation)
+	err := imdb.PeerUserSetConversation(ctx, peerUserConversation)
 	if err != nil {
 		log.NewError(operationID, utils.GetSelfFuncName(), "SetConversation error", err.Error())
 		return err
@@ -158,7 +158,7 @@ func (s *userServer) BatchSetConversations(ctx context.Context, req *pbUser.Batc
 			log.NewDebug(req.OperationID, utils.GetSelfFuncName(), v.String(), "CopyStructFields failed", err.Error())
 		}
 		//redis op
-		if err := db.DB.SetSingleConversationRecvMsgOpt(req.OwnerUserID, v.ConversationID, v.RecvMsgOpt); err != nil {
+		if err := db.DB.SetSingleConversationRecvMsgOpt(ctx, req.OwnerUserID, v.ConversationID, v.RecvMsgOpt); err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error())
 			resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 			return resp, nil
@@ -166,13 +166,13 @@ func (s *userServer) BatchSetConversations(ctx context.Context, req *pbUser.Batc
 
 		if v.ConversationType == constant.SuperGroupChatType {
 			if v.RecvMsgOpt == constant.ReceiveNotNotifyMessage {
-				if err := db.DB.SetSuperGroupUserReceiveNotNotifyMessage(v.GroupID, v.OwnerUserID); err != nil {
+				if err := db.DB.SetSuperGroupUserReceiveNotNotifyMessage(ctx, v.GroupID, v.OwnerUserID); err != nil {
 					log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error(), v.GroupID, v.OwnerUserID)
 					resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}
 					return resp, nil
 				}
 			} else {
-				if err := db.DB.SetSuperGroupUserReceiveNotifyMessage(v.GroupID, v.OwnerUserID); err != nil {
+				if err := db.DB.SetSuperGroupUserReceiveNotifyMessage(ctx, v.GroupID, v.OwnerUserID); err != nil {
 					log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error(), v.GroupID, err.Error())
 					resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}
 					return resp, nil
@@ -187,9 +187,9 @@ func (s *userServer) BatchSetConversations(ctx context.Context, req *pbUser.Batc
 			continue
 		}
 		if isUpdate {
-			err = rocksCache.DelConversationFromCache(v.OwnerUserID, v.ConversationID)
+			err = rocksCache.DelConversationFromCache(ctx, v.OwnerUserID, v.ConversationID)
 		} else {
-			err = rocksCache.DelUserConversationIDListFromCache(v.OwnerUserID)
+			err = rocksCache.DelUserConversationIDListFromCache(ctx, v.OwnerUserID)
 		}
 		if err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), v.ConversationID, v.OwnerUserID)
@@ -197,7 +197,7 @@ func (s *userServer) BatchSetConversations(ctx context.Context, req *pbUser.Batc
 		resp.Success = append(resp.Success, v.ConversationID)
 		// if is set private msg operation，then peer user need to sync and set tips\
 		if v.ConversationType == constant.SingleChatType && req.NotificationType == constant.ConversationPrivateChatNotification {
-			if err := syncPeerUserConversation(v, req.OperationID); err != nil {
+			if err := syncPeerUserConversation(ctx, v, req.OperationID); err != nil {
 				log.NewError(req.OperationID, utils.GetSelfFuncName(), "syncPeerUserConversation", err.Error())
 			}
 		}
@@ -269,7 +269,7 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 		req.NotificationType = constant.ConversationOptChangeNotification
 	}
 	if req.Conversation.ConversationType == constant.GroupChatType || req.Conversation.ConversationType == constant.SuperGroupChatType {
-		groupInfo, err := imdb.GetGroupInfoByGroupID(req.Conversation.GroupID)
+		groupInfo, err := imdb.GetGroupInfoByGroupID(ctx, req.Conversation.GroupID)
 		if err != nil {
 			log.NewError(req.OperationID, "GetGroupInfoByGroupID failed ", req.Conversation.GroupID, err.Error())
 			resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
@@ -284,13 +284,13 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 
 		if req.Conversation.ConversationType == constant.SuperGroupChatType {
 			if req.Conversation.RecvMsgOpt == constant.ReceiveNotNotifyMessage {
-				if err = db.DB.SetSuperGroupUserReceiveNotNotifyMessage(req.Conversation.GroupID, req.Conversation.OwnerUserID); err != nil {
+				if err = db.DB.SetSuperGroupUserReceiveNotNotifyMessage(ctx, req.Conversation.GroupID, req.Conversation.OwnerUserID); err != nil {
 					log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error(), req.Conversation.GroupID, req.Conversation.OwnerUserID)
 					resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}
 					return resp, nil
 				}
 			} else {
-				if err = db.DB.SetSuperGroupUserReceiveNotifyMessage(req.Conversation.GroupID, req.Conversation.OwnerUserID); err != nil {
+				if err = db.DB.SetSuperGroupUserReceiveNotifyMessage(ctx, req.Conversation.GroupID, req.Conversation.OwnerUserID); err != nil {
 					log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error(), req.Conversation.GroupID, err.Error())
 					resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}
 					return resp, nil
@@ -303,7 +303,7 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 	if err := utils.CopyStructFields(&conversation, req.Conversation); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", *req.Conversation, err.Error())
 	}
-	if err := db.DB.SetSingleConversationRecvMsgOpt(req.Conversation.OwnerUserID, req.Conversation.ConversationID, req.Conversation.RecvMsgOpt); err != nil {
+	if err := db.DB.SetSingleConversationRecvMsgOpt(ctx, req.Conversation.OwnerUserID, req.Conversation.ConversationID, req.Conversation.RecvMsgOpt); err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error())
 		resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 		return resp, nil
@@ -315,9 +315,9 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 		return resp, nil
 	}
 	if isUpdate {
-		err = rocksCache.DelConversationFromCache(req.Conversation.OwnerUserID, req.Conversation.ConversationID)
+		err = rocksCache.DelConversationFromCache(ctx, req.Conversation.OwnerUserID, req.Conversation.ConversationID)
 	} else {
-		err = rocksCache.DelUserConversationIDListFromCache(req.Conversation.OwnerUserID)
+		err = rocksCache.DelUserConversationIDListFromCache(ctx, req.Conversation.OwnerUserID)
 	}
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), req.Conversation.ConversationID, req.Conversation.OwnerUserID)
@@ -326,7 +326,7 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 	// notification
 	if req.Conversation.ConversationType == constant.SingleChatType && req.NotificationType == constant.ConversationPrivateChatNotification {
 		//sync peer user conversation if conversation is singleChatType
-		if err := syncPeerUserConversation(req.Conversation, req.OperationID); err != nil {
+		if err := syncPeerUserConversation(ctx, req.Conversation, req.OperationID); err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), "syncPeerUserConversation", err.Error())
 			resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 			return resp, nil
@@ -346,7 +346,7 @@ func (s *userServer) SetRecvMsgOpt(ctx context.Context, req *pbUser.SetRecvMsgOp
 	if err := utils.CopyStructFields(&conversation, req); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", *req, err.Error())
 	}
-	if err := db.DB.SetSingleConversationRecvMsgOpt(req.OwnerUserID, req.ConversationID, req.RecvMsgOpt); err != nil {
+	if err := db.DB.SetSingleConversationRecvMsgOpt(ctx, req.OwnerUserID, req.ConversationID, req.RecvMsgOpt); err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error())
 		resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 		return resp, nil
@@ -363,13 +363,13 @@ func (s *userServer) SetRecvMsgOpt(ctx context.Context, req *pbUser.SetRecvMsgOp
 		case "super_group":
 			conversation.GroupID = stringList[1]
 			if req.RecvMsgOpt == constant.ReceiveNotNotifyMessage {
-				if err := db.DB.SetSuperGroupUserReceiveNotNotifyMessage(conversation.GroupID, req.OwnerUserID); err != nil {
+				if err := db.DB.SetSuperGroupUserReceiveNotNotifyMessage(ctx, conversation.GroupID, req.OwnerUserID); err != nil {
 					log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error(), conversation.GroupID, req.OwnerUserID)
 					resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 					return resp, nil
 				}
 			} else {
-				if err := db.DB.SetSuperGroupUserReceiveNotifyMessage(conversation.GroupID, req.OwnerUserID); err != nil {
+				if err := db.DB.SetSuperGroupUserReceiveNotifyMessage(ctx, conversation.GroupID, req.OwnerUserID); err != nil {
 					log.NewError(req.OperationID, utils.GetSelfFuncName(), "cache failed, rpc return", err.Error(), conversation.GroupID, req.OwnerUserID)
 					resp.CommonResp = &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}
 					return resp, nil
@@ -385,9 +385,9 @@ func (s *userServer) SetRecvMsgOpt(ctx context.Context, req *pbUser.SetRecvMsgOp
 	}
 
 	if isUpdate {
-		err = rocksCache.DelConversationFromCache(conversation.OwnerUserID, conversation.ConversationID)
+		err = rocksCache.DelConversationFromCache(ctx, conversation.OwnerUserID, conversation.ConversationID)
 	} else {
-		err = rocksCache.DelUserConversationIDListFromCache(conversation.OwnerUserID)
+		err = rocksCache.DelUserConversationIDListFromCache(ctx, conversation.OwnerUserID)
 	}
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), conversation.ConversationID, err.Error())

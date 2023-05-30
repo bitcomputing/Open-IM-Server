@@ -4,6 +4,7 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
+	"context"
 	"fmt"
 
 	"time"
@@ -38,9 +39,9 @@ func InsertIntoGroup(groupInfo db.Group) error {
 	return nil
 }
 
-func GetGroupInfoByGroupID(groupID string) (*db.Group, error) {
+func GetGroupInfoByGroupID(ctx context.Context, groupID string) (*db.Group, error) {
 	var groupInfo db.Group
-	err := db.DB.MysqlDB.DefaultGormDB().Table("groups").Where("group_id=?", groupID).Take(&groupInfo).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Where("group_id=?", groupID).Take(&groupInfo).Error
 	return &groupInfo, err
 }
 

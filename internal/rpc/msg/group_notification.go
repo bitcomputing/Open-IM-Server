@@ -52,8 +52,8 @@ func setOpUserInfo(ctx context.Context, opUserID, groupID string, groupMemberInf
 	return nil
 }
 
-func setGroupInfo(groupID string, groupInfo *open_im_sdk.GroupInfo) error {
-	group, err := imdb.GetGroupInfoByGroupID(groupID)
+func setGroupInfo(ctx context.Context, groupID string, groupInfo *open_im_sdk.GroupInfo) error {
+	group, err := imdb.GetGroupInfoByGroupID(ctx, groupID)
 	if err != nil {
 		return utils.Wrap(err, "GetGroupInfoByGroupID failed")
 	}
@@ -187,7 +187,7 @@ func groupNotification(ctx context.Context, contentType int32, m proto.Message, 
 	n.SendID = sendID
 	if groupID != "" {
 		n.RecvID = groupID
-		group, err := imdb.GetGroupInfoByGroupID(groupID)
+		group, err := imdb.GetGroupInfoByGroupID(ctx, groupID)
 		if err != nil {
 			log.NewError(operationID, "GetGroupInfoByGroupID failed ", err.Error(), groupID)
 		}
@@ -219,7 +219,7 @@ func GroupCreatedNotification(ctx context.Context, operationID, opUserID, groupI
 		log.NewError(operationID, "setOpUserInfo failed ", err.Error(), opUserID, groupID, GroupCreatedTips.OpUser)
 		return
 	}
-	err := setGroupInfo(groupID, GroupCreatedTips.Group)
+	err := setGroupInfo(ctx, groupID, GroupCreatedTips.Group)
 	if err != nil {
 		log.Error(operationID, "setGroupInfo failed ", groupID, GroupCreatedTips.Group)
 		return
@@ -251,7 +251,7 @@ func GroupCreatedNotification(ctx context.Context, operationID, opUserID, groupI
 //	faceURL := ""
 func GroupInfoSetNotification(ctx context.Context, operationID, opUserID, groupID string, groupName, notification, introduction, faceURL string, needVerification, applyMemberFriend, lookMemberInfo *wrapperspb.Int32Value) {
 	GroupInfoChangedTips := open_im_sdk.GroupInfoSetTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, GroupInfoChangedTips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, GroupInfoChangedTips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -282,7 +282,7 @@ func GroupInfoSetNotification(ctx context.Context, operationID, opUserID, groupI
 func GroupMutedNotification(ctx context.Context, operationID, opUserID, groupID string) {
 	tips := open_im_sdk.GroupMutedTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, tips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -296,7 +296,7 @@ func GroupMutedNotification(ctx context.Context, operationID, opUserID, groupID 
 func GroupCancelMutedNotification(ctx context.Context, operationID, opUserID, groupID string) {
 	tips := open_im_sdk.GroupCancelMutedTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, tips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -311,7 +311,7 @@ func GroupMemberMutedNotification(ctx context.Context, operationID, opUserID, gr
 	tips := open_im_sdk.GroupMemberMutedTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}, MutedUser: &open_im_sdk.GroupMemberFullInfo{}}
 	tips.MutedSeconds = mutedSeconds
-	if err := setGroupInfo(groupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, tips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -329,7 +329,7 @@ func GroupMemberMutedNotification(ctx context.Context, operationID, opUserID, gr
 func GroupMemberInfoSetNotification(ctx context.Context, operationID, opUserID, groupID, groupMemberUserID string) {
 	tips := open_im_sdk.GroupMemberInfoSetTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}, ChangedUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, tips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -351,7 +351,7 @@ func GroupMemberRoleLevelChangeNotification(ctx context.Context, operationID, op
 	}
 	tips := open_im_sdk.GroupMemberInfoSetTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}, ChangedUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, tips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -369,7 +369,7 @@ func GroupMemberRoleLevelChangeNotification(ctx context.Context, operationID, op
 func GroupMemberCancelMutedNotification(ctx context.Context, operationID, opUserID, groupID, groupMemberUserID string) {
 	tips := open_im_sdk.GroupMemberCancelMutedTips{Group: &open_im_sdk.GroupInfo{},
 		OpUser: &open_im_sdk.GroupMemberFullInfo{}, MutedUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, tips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -397,7 +397,7 @@ func GroupMemberCancelMutedNotification(ctx context.Context, operationID, opUser
 // 申请进群后调用
 func JoinGroupApplicationNotification(ctx context.Context, req *pbGroup.JoinGroupReq) {
 	JoinGroupApplicationTips := open_im_sdk.JoinGroupApplicationTips{Group: &open_im_sdk.GroupInfo{}, Applicant: &open_im_sdk.PublicUserInfo{}}
-	err := setGroupInfo(req.GroupID, JoinGroupApplicationTips.Group)
+	err := setGroupInfo(ctx, req.GroupID, JoinGroupApplicationTips.Group)
 	if err != nil {
 		log.Error(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID)
 		return
@@ -421,7 +421,7 @@ func JoinGroupApplicationNotification(ctx context.Context, req *pbGroup.JoinGrou
 
 func MemberQuitNotification(ctx context.Context, req *pbGroup.QuitGroupReq) {
 	MemberQuitTips := open_im_sdk.MemberQuitTips{Group: &open_im_sdk.GroupInfo{}, QuitUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(req.GroupID, MemberQuitTips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, MemberQuitTips.Group); err != nil {
 		log.Error(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID)
 		return
 	}
@@ -443,7 +443,7 @@ func MemberQuitNotification(ctx context.Context, req *pbGroup.QuitGroupReq) {
 // 处理进群请求后调用
 func GroupApplicationAcceptedNotification(ctx context.Context, req *pbGroup.GroupApplicationResponseReq) {
 	GroupApplicationAcceptedTips := open_im_sdk.GroupApplicationAcceptedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}, HandleMsg: req.HandledMsg}
-	if err := setGroupInfo(req.GroupID, GroupApplicationAcceptedTips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, GroupApplicationAcceptedTips.Group); err != nil {
 		log.NewError(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID, GroupApplicationAcceptedTips.Group)
 		return
 	}
@@ -469,7 +469,7 @@ func GroupApplicationAcceptedNotification(ctx context.Context, req *pbGroup.Grou
 
 func GroupApplicationRejectedNotification(ctx context.Context, req *pbGroup.GroupApplicationResponseReq) {
 	GroupApplicationRejectedTips := open_im_sdk.GroupApplicationRejectedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}, HandleMsg: req.HandledMsg}
-	if err := setGroupInfo(req.GroupID, GroupApplicationRejectedTips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, GroupApplicationRejectedTips.Group); err != nil {
 		log.NewError(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID, GroupApplicationRejectedTips.Group)
 		return
 	}
@@ -494,7 +494,7 @@ func GroupApplicationRejectedNotification(ctx context.Context, req *pbGroup.Grou
 
 func GroupOwnerTransferredNotification(ctx context.Context, req *pbGroup.TransferGroupOwnerReq) {
 	GroupOwnerTransferredTips := open_im_sdk.GroupOwnerTransferredTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}, NewGroupOwner: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(req.GroupID, GroupOwnerTransferredTips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, GroupOwnerTransferredTips.Group); err != nil {
 		log.NewError(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID)
 		return
 	}
@@ -511,7 +511,7 @@ func GroupOwnerTransferredNotification(ctx context.Context, req *pbGroup.Transfe
 
 func GroupDismissedNotification(ctx context.Context, req *pbGroup.DismissGroupReq) {
 	tips := open_im_sdk.GroupDismissedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(req.GroupID, tips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, tips.Group); err != nil {
 		log.NewError(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID)
 		return
 	}
@@ -532,7 +532,7 @@ func GroupDismissedNotification(ctx context.Context, req *pbGroup.DismissGroupRe
 // 被踢后调用
 func MemberKickedNotification(ctx context.Context, req *pbGroup.KickGroupMemberReq, kickedUserIDList []string) {
 	MemberKickedTips := open_im_sdk.MemberKickedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(req.GroupID, MemberKickedTips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, MemberKickedTips.Group); err != nil {
 		log.Error(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID)
 		return
 	}
@@ -565,7 +565,7 @@ func MemberKickedNotification(ctx context.Context, req *pbGroup.KickGroupMemberR
 // 被邀请进群后调用
 func MemberInvitedNotification(ctx context.Context, operationID, groupID, opUserID, reason string, invitedUserIDList []string) {
 	MemberInvitedTips := open_im_sdk.MemberInvitedTips{Group: &open_im_sdk.GroupInfo{}, OpUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, MemberInvitedTips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, MemberInvitedTips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID)
 		return
 	}
@@ -607,7 +607,7 @@ func MemberInvitedNotification(ctx context.Context, operationID, groupID, opUser
 // 群成员主动申请进群，管理员同意后调用，
 func MemberEnterNotification(ctx context.Context, req *pbGroup.GroupApplicationResponseReq) {
 	MemberEnterTips := open_im_sdk.MemberEnterTips{Group: &open_im_sdk.GroupInfo{}, EntrantUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(req.GroupID, MemberEnterTips.Group); err != nil {
+	if err := setGroupInfo(ctx, req.GroupID, MemberEnterTips.Group); err != nil {
 		log.Error(req.OperationID, "setGroupInfo failed ", err.Error(), req.GroupID, MemberEnterTips.Group)
 		return
 	}
@@ -620,7 +620,7 @@ func MemberEnterNotification(ctx context.Context, req *pbGroup.GroupApplicationR
 
 func MemberEnterDirectlyNotification(ctx context.Context, groupID string, entrantUserID string, operationID string) {
 	MemberEnterTips := open_im_sdk.MemberEnterTips{Group: &open_im_sdk.GroupInfo{}, EntrantUser: &open_im_sdk.GroupMemberFullInfo{}}
-	if err := setGroupInfo(groupID, MemberEnterTips.Group); err != nil {
+	if err := setGroupInfo(ctx, groupID, MemberEnterTips.Group); err != nil {
 		log.Error(operationID, "setGroupInfo failed ", err.Error(), groupID, MemberEnterTips.Group)
 		return
 	}

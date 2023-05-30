@@ -531,13 +531,15 @@ type config struct {
 	} `yaml:"prometheus"`
 
 	ServerConfigs struct {
-		Auth ServerConfig `yaml:"auth"`
-		Push ServerConfig `yaml:"push"`
+		Auth         ServerConfig `yaml:"auth"`
+		Push         ServerConfig `yaml:"push"`
+		Conversation ServerConfig `yaml:"conversation"`
 	} `yaml:"serverConfigs"`
 
 	ClientConfigs struct {
-		Auth ClientConfig `yaml:"auth"`
-		Push ClientConfig `yaml:"push"`
+		Auth         ClientConfig `yaml:"auth"`
+		Push         ClientConfig `yaml:"push"`
+		Conversation ClientConfig `yaml:"conversation"`
 	} `yaml:"clientConfigs"`
 }
 type PConversation struct {

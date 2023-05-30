@@ -158,9 +158,9 @@ func (d *DataBases) DeleteTokenByUidPid(userID string, platformID int, fields []
 	key := uidPidToken + userID + ":" + constant.PlatformIDToName(platformID)
 	return d.RDB.HDel(context.Background(), key, fields...).Err()
 }
-func (d *DataBases) SetSingleConversationRecvMsgOpt(userID, conversationID string, opt int32) error {
+func (d *DataBases) SetSingleConversationRecvMsgOpt(ctx context.Context, userID, conversationID string, opt int32) error {
 	key := conversationReceiveMessageOpt + userID
-	return d.RDB.HSet(context.Background(), key, conversationID, opt).Err()
+	return d.RDB.HSet(ctx, key, conversationID, opt).Err()
 }
 
 func (d *DataBases) GetSingleConversationRecvMsgOpt(userID, conversationID string) (int, error) {
@@ -169,14 +169,14 @@ func (d *DataBases) GetSingleConversationRecvMsgOpt(userID, conversationID strin
 	return utils.StringToInt(result), err
 }
 
-func (d *DataBases) SetSuperGroupUserReceiveNotNotifyMessage(groupID, userID string) error {
+func (d *DataBases) SetSuperGroupUserReceiveNotNotifyMessage(ctx context.Context, groupID, userID string) error {
 	key := superGroupUserNotRecvOfflineMsgOptTemp + groupID
-	return d.RDB.SAdd(context.Background(), key, userID).Err()
+	return d.RDB.SAdd(ctx, key, userID).Err()
 }
 
-func (d *DataBases) SetSuperGroupUserReceiveNotifyMessage(groupID, userID string) error {
+func (d *DataBases) SetSuperGroupUserReceiveNotifyMessage(ctx context.Context, groupID, userID string) error {
 	key := superGroupUserNotRecvOfflineMsgOptTemp + groupID
-	return d.RDB.SRem(context.Background(), key, userID).Err()
+	return d.RDB.SRem(ctx, key, userID).Err()
 }
 
 func (d *DataBases) GetSuperGroupUserReceiveNotNotifyMessageIDList(groupID string) ([]string, error) {
