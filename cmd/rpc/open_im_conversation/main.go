@@ -60,6 +60,8 @@ func main() {
 	})
 	defer s.Stop()
 
+	server.RegisterLegacyDiscovery()
+
 	s.AddUnaryInterceptors(interceptors.ResponseLogger)
 
 	s.Start()
