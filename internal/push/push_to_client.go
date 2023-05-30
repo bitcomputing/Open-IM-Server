@@ -45,7 +45,7 @@ func MsgToUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
 
 	var UIDList = []string{pushMsg.PushToUserID}
-	callbackResp := callbackOnlinePush(pushMsg.OperationID, UIDList, pushMsg.MsgData)
+	callbackResp := callbackOnlinePush(ctx, pushMsg.OperationID, UIDList, pushMsg.MsgData)
 	logger.Debug("OnlinePush callback Resp")
 	if callbackResp.ErrCode != 0 {
 		logger.Error("callbackOnlinePush result: ", callbackResp)
@@ -88,7 +88,7 @@ func MsgToUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 			}
 		}
 		var title, detailContent string
-		callbackResp := callbackOfflinePush(pushMsg.OperationID, UIDList, pushMsg.MsgData, &[]string{})
+		callbackResp := callbackOfflinePush(ctx, pushMsg.OperationID, UIDList, pushMsg.MsgData, &[]string{})
 		logger.Debug("offline callback Resp")
 		if callbackResp.ErrCode != 0 {
 			logger.Error("callbackOfflinePush result: ", callbackResp)
@@ -161,7 +161,7 @@ func MsgToSuperGroupUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	logger.Debugv(pushMsg.String())
 	var pushToUserIDList []string
 	if config.Config.Callback.CallbackBeforeSuperGroupOnlinePush.Enable {
-		callbackResp := callbackBeforeSuperGroupOnlinePush(pushMsg.OperationID, pushMsg.PushToUserID, pushMsg.MsgData, &pushToUserIDList)
+		callbackResp := callbackBeforeSuperGroupOnlinePush(ctx, pushMsg.OperationID, pushMsg.PushToUserID, pushMsg.MsgData, &pushToUserIDList)
 		logger.Debug("offline callback Resp")
 		if callbackResp.ErrCode != 0 {
 			logger.Error("callbackOfflinePush result: ", callbackResp)
@@ -226,7 +226,7 @@ func MsgToSuperGroupUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 		if len(onlineFailedUserIDList) > 0 {
 			var offlinePushUserIDList []string
 			var needOfflinePushUserIDList []string
-			callbackResp := callbackOfflinePush(pushMsg.OperationID, onlineFailedUserIDList, pushMsg.MsgData, &offlinePushUserIDList)
+			callbackResp := callbackOfflinePush(ctx, pushMsg.OperationID, onlineFailedUserIDList, pushMsg.MsgData, &offlinePushUserIDList)
 			logger.Debug("offline callback Resp")
 			if callbackResp.ErrCode != 0 {
 				logger.Error("callbackOfflinePush result: ", callbackResp)
