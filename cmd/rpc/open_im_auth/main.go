@@ -11,9 +11,13 @@ import (
 	"google.golang.org/grpc"
 )
 
+var (
+	rpcPort = flag.Int("port", config.Config.ServerConfigs.Auth.Port, "RpcToken default listen port 10800")
+)
+
 func main() {
 	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.Auth)
-	rpcPort := flag.Int("port", config.Config.ServerConfigs.Auth.Port, "RpcToken default listen port 10800")
+
 	flag.Parse()
 
 	server := auth.NewRpcAuthServer(*rpcPort)
