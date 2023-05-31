@@ -185,9 +185,9 @@ func (d *DataBases) GetSuperGroupUserReceiveNotNotifyMessageIDList(groupID strin
 	return userIDs, nil
 }
 
-func (d *DataBases) SetUserGlobalMsgRecvOpt(userID string, opt int32) error {
+func (d *DataBases) SetUserGlobalMsgRecvOpt(ctx context.Context, userID string, opt int32) error {
 	key := conversationReceiveMessageOpt + userID
-	return d.RDB.HSet(context.Background(), key, GlobalMsgRecvOpt, opt).Err()
+	return d.RDB.HSet(ctx, key, GlobalMsgRecvOpt, opt).Err()
 }
 func (d *DataBases) GetUserGlobalMsgRecvOpt(userID string) (int, error) {
 	key := conversationReceiveMessageOpt + userID

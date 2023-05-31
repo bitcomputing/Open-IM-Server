@@ -97,8 +97,8 @@ func isMessageHasReadEnabled(pb *pbChat.SendMsgReq) (bool, int32, string) {
 	return true, 0, ""
 }
 
-func userIsMuteAndIsAdminInGroup(groupID, userID string) (isMute bool, isAdmin bool, err error) {
-	groupMemberInfo, err := rocksCache.GetGroupMemberInfoFromCache(groupID, userID)
+func userIsMuteAndIsAdminInGroup(ctx context.Context, groupID, userID string) (isMute bool, isAdmin bool, err error) {
+	groupMemberInfo, err := rocksCache.GetGroupMemberInfoFromCache(ctx, groupID, userID)
 	if err != nil {
 		return false, false, utils.Wrap(err, "")
 	}
@@ -195,7 +195,7 @@ func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMs
 				return false, 202, "you are not in group", nil
 			}
 		}
-		isMute, isAdmin, err := userIsMuteAndIsAdminInGroup(data.MsgData.GroupID, data.MsgData.SendID)
+		isMute, isAdmin, err := userIsMuteAndIsAdminInGroup(ctx, data.MsgData.GroupID, data.MsgData.SendID)
 		if err != nil {
 			errMsg := data.OperationID + err.Error()
 			return false, 223, errMsg, nil
@@ -269,7 +269,7 @@ func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMs
 					return false, 202, "you are not in group", nil
 				}
 			}
-			isMute, isAdmin, err := userIsMuteAndIsAdminInGroup(data.MsgData.GroupID, data.MsgData.SendID)
+			isMute, isAdmin, err := userIsMuteAndIsAdminInGroup(ctx, data.MsgData.GroupID, data.MsgData.SendID)
 			if err != nil {
 				errMsg := data.OperationID + err.Error()
 				return false, 223, errMsg, nil
@@ -627,13 +627,7 @@ func (rpc *rpcChat) sendMsgToWriter(m *pbChat.MsgDataToMQ, key string, status st
 	case constant.OnlineStatus:
 		if m.MsgData.ContentType == constant.SignalingNotification {
 			rpcPushMsg := pbPush.PushMsgReq{OperationID: m.OperationID, MsgData: m.MsgData, PushToUserID: key}
-			grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImPushName, m.OperationID)
-			if grpcConn == nil {
-				log.Error(rpcPushMsg.OperationID, "rpc dial failed", "push data", rpcPushMsg.String())
-				return errors.New("grpcConn is nil")
-			}
-			msgClient := pbPush.NewPushMsgServiceClient(grpcConn)
-			_, err := msgClient.PushMsg(context.Background(), &rpcPushMsg)
+			_, err := rpc.pushClient.PushMsg(context.Background(), &rpcPushMsg)
 			if err != nil {
 				log.Error(rpcPushMsg.OperationID, "rpc send failed", rpcPushMsg.OperationID, "push data", rpcPushMsg.String(), "err", err.Error())
 				return err

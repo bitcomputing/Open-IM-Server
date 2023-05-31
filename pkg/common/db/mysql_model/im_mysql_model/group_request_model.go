@@ -4,6 +4,7 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
+	"context"
 	"time"
 )
 
@@ -73,9 +74,9 @@ func GetGroupRequestByGroupID(groupID string) ([]db.GroupRequest, error) {
 }
 
 // received
-func GetGroupApplicationList(userID string) ([]db.GroupRequest, error) {
+func GetGroupApplicationList(ctx context.Context, userID string) ([]db.GroupRequest, error) {
 	var groupRequestList []db.GroupRequest
-	memberList, err := GetGroupMemberListByUserID(userID)
+	memberList, err := GetGroupMemberListByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

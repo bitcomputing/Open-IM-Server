@@ -7,6 +7,7 @@
 package manage
 
 import (
+	userclient "Open_IM/internal/rpc/user/client"
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
@@ -21,7 +22,31 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/zrpc"
 )
+
+var (
+	userClient userclient.UserClient
+)
+
+func init() {
+	userClient = userclient.NewUserClient(zrpc.RpcClientConf{
+		Etcd: discov.EtcdConf{
+			Hosts: config.Config.ClientConfigs.User.Disconvery.Hosts,
+			Key:   config.Config.ClientConfigs.User.Disconvery.Key,
+		},
+		Timeout:       config.Config.ClientConfigs.User.Timeout,
+		KeepaliveTime: 0,
+		Middlewares: zrpc.ClientMiddlewaresConf{
+			Trace:      config.Config.ClientConfigs.User.Middlewares.Trace,
+			Duration:   config.Config.ClientConfigs.User.Middlewares.Duration,
+			Prometheus: config.Config.ClientConfigs.User.Middlewares.Prometheus,
+			Breaker:    config.Config.ClientConfigs.User.Middlewares.Breaker,
+			Timeout:    config.Config.ClientConfigs.User.Middlewares.Timeout,
+		},
+	})
+}
 
 // @Summary 获取所有用户uid列表
 // @Description 获取所有用户uid列表
@@ -55,15 +80,8 @@ func GetAllUsersUid(c *gin.Context) {
 	}
 
 	log.NewInfo(params.OperationID, "GetAllUsersUid args ", req.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewUserClient(etcdConn)
-	RpcResp, err := client.GetAllUserID(context.Background(), req)
+
+	RpcResp, err := userClient.GetAllUserID(c.Request.Context(), req)
 	if err != nil {
 		log.NewError(req.OperationID, "call GetAllUsersUid users rpc server failed", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call GetAllUsersUid users rpc server failed"})
@@ -110,16 +128,8 @@ func AccountCheck(c *gin.Context) {
 	}
 
 	log.NewInfo(params.OperationID, "AccountCheck args ", req.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewUserClient(etcdConn)
 
-	RpcResp, err := client.AccountCheck(context.Background(), req)
+	RpcResp, err := userClient.AccountCheck(c.Request.Context(), req)
 	if err != nil {
 		log.NewError(req.OperationID, "call AccountCheck users rpc server failed", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call AccountCheck users rpc server failed"})

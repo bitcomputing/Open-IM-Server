@@ -534,12 +534,14 @@ type config struct {
 		Auth         ServerConfig `yaml:"auth"`
 		Push         ServerConfig `yaml:"push"`
 		Conversation ServerConfig `yaml:"conversation"`
+		User         ServerConfig `yaml:"user"`
 	} `yaml:"serverConfigs"`
 
 	ClientConfigs struct {
 		Auth         ClientConfig `yaml:"auth"`
 		Push         ClientConfig `yaml:"push"`
 		Conversation ClientConfig `yaml:"conversation"`
+		User         ClientConfig `yaml:"user"`
 	} `yaml:"clientConfigs"`
 }
 type PConversation struct {

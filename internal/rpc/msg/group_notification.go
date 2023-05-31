@@ -33,7 +33,7 @@ func setOpUserInfo(ctx context.Context, opUserID, groupID string, groupMemberInf
 		utils.CopyStructFields(groupMemberInfo, u)
 		groupMemberInfo.GroupID = groupID
 	} else {
-		u, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(groupID, opUserID)
+		u, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(ctx, groupID, opUserID)
 		if err == nil {
 			if err = utils2.GroupMemberDBCopyOpenIM(ctx, groupMemberInfo, u); err != nil {
 				return utils.Wrap(err, "")
@@ -66,7 +66,7 @@ func setGroupInfo(ctx context.Context, groupID string, groupInfo *open_im_sdk.Gr
 }
 
 func setGroupMemberInfo(ctx context.Context, groupID, userID string, groupMemberInfo *open_im_sdk.GroupMemberFullInfo) error {
-	groupMember, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(groupID, userID)
+	groupMember, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(ctx, groupID, userID)
 	if err == nil {
 		return utils.Wrap(utils2.GroupMemberDBCopyOpenIM(ctx, groupMemberInfo, groupMember), "")
 	}

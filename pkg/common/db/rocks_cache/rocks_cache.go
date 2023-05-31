@@ -120,9 +120,9 @@ func DelBlackIDListFromCache(userID string) error {
 	return db.DB.Rc.TagAsDeleted(blackListCache + userID)
 }
 
-func GetJoinedGroupIDListFromCache(userID string) ([]string, error) {
+func GetJoinedGroupIDListFromCache(ctx context.Context, userID string) ([]string, error) {
 	getJoinedGroupIDList := func() (string, error) {
-		joinedGroupList, err := imdb.GetJoinedGroupIDListByUserID(userID)
+		joinedGroupList, err := imdb.GetJoinedGroupIDListByUserID(ctx, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "")
 		}
@@ -132,7 +132,7 @@ func GetJoinedGroupIDListFromCache(userID string) ([]string, error) {
 		}
 		return string(bytes), nil
 	}
-	joinedGroupIDListStr, err := db.DB.Rc.Fetch(joinedGroupListCache+userID, time.Second*30*60, getJoinedGroupIDList)
+	joinedGroupIDListStr, err := db.DB.Rc.Fetch2(ctx, joinedGroupListCache+userID, time.Second*30*60, getJoinedGroupIDList)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}
@@ -171,13 +171,13 @@ func GetUserInfoFromCache(ctx context.Context, userID string) (*db.User, error) 
 	return userInfo, utils.Wrap(err, "")
 }
 
-func DelUserInfoFromCache(userID string) error {
-	return db.DB.Rc.TagAsDeleted(userInfoCache + userID)
+func DelUserInfoFromCache(ctx context.Context, userID string) error {
+	return db.DB.Rc.TagAsDeleted2(ctx, userInfoCache+userID)
 }
 
-func GetGroupMemberInfoFromCache(groupID, userID string) (*db.GroupMember, error) {
+func GetGroupMemberInfoFromCache(ctx context.Context, groupID, userID string) (*db.GroupMember, error) {
 	getGroupMemberInfo := func() (string, error) {
-		groupMemberInfo, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(groupID, userID)
+		groupMemberInfo, err := imdb.GetGroupMemberInfoByGroupIDAndUserID(ctx, groupID, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "")
 		}
@@ -187,7 +187,7 @@ func GetGroupMemberInfoFromCache(groupID, userID string) (*db.GroupMember, error
 		}
 		return string(bytes), nil
 	}
-	groupMemberInfoStr, err := db.DB.Rc.Fetch(groupMemberInfoCache+groupID+"-"+userID, time.Second*30*60, getGroupMemberInfo)
+	groupMemberInfoStr, err := db.DB.Rc.Fetch2(ctx, groupMemberInfoCache+groupID+"-"+userID, time.Second*30*60, getGroupMemberInfo)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}
@@ -196,8 +196,8 @@ func GetGroupMemberInfoFromCache(groupID, userID string) (*db.GroupMember, error
 	return groupMember, utils.Wrap(err, "")
 }
 
-func DelGroupMemberInfoFromCache(groupID, userID string) error {
-	return db.DB.Rc.TagAsDeleted(groupMemberInfoCache + groupID + "-" + userID)
+func DelGroupMemberInfoFromCache(ctx context.Context, groupID, userID string) error {
+	return db.DB.Rc.TagAsDeleted2(ctx, groupMemberInfoCache+groupID+"-"+userID)
 }
 
 func GetGroupMembersInfoFromCache(ctx context.Context, count, offset int32, groupID string) ([]*db.GroupMember, error) {
@@ -234,7 +234,7 @@ func GetGroupMembersInfoFromCache(ctx context.Context, count, offset int32, grou
 	}
 	//log.NewDebug("", utils.GetSelfFuncName(), "ID list: ", groupMemberIDList)
 	for _, userID := range groupMemberIDList {
-		groupMembers, err := GetGroupMemberInfoFromCache(groupID, userID)
+		groupMembers, err := GetGroupMemberInfoFromCache(ctx, groupID, userID)
 		if err != nil {
 			log.NewError("", utils.GetSelfFuncName(), err.Error(), groupID, userID)
 			continue
@@ -483,9 +483,9 @@ func DelGroupMemberNumFromCache(groupID string) error {
 	return db.DB.Rc.TagAsDeleted(groupMemberNumCache + groupID)
 }
 
-func GetUserConversationIDListFromCache(userID string) ([]string, error) {
+func GetUserConversationIDListFromCache(ctx context.Context, userID string) ([]string, error) {
 	getConversationIDList := func() (string, error) {
-		conversationIDList, err := imdb.GetConversationIDListByUserID(userID)
+		conversationIDList, err := imdb.GetConversationIDListByUserID(ctx, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "getConversationIDList failed")
 		}
@@ -496,7 +496,7 @@ func GetUserConversationIDListFromCache(userID string) ([]string, error) {
 		}
 		return string(bytes), nil
 	}
-	conversationIDListStr, err := db.DB.Rc.Fetch(conversationIDListCache+userID, time.Second*30*60, getConversationIDList)
+	conversationIDListStr, err := db.DB.Rc.Fetch2(ctx, conversationIDListCache+userID, time.Second*30*60, getConversationIDList)
 	var conversationIDList []string
 	err = json.Unmarshal([]byte(conversationIDListStr), &conversationIDList)
 	if err != nil {
@@ -509,9 +509,9 @@ func DelUserConversationIDListFromCache(ctx context.Context, userID string) erro
 	return utils.Wrap(db.DB.Rc.TagAsDeleted2(ctx, conversationIDListCache+userID), "DelUserConversationIDListFromCache err")
 }
 
-func GetConversationFromCache(ownerUserID, conversationID string) (*db.Conversation, error) {
+func GetConversationFromCache(ctx context.Context, ownerUserID, conversationID string) (*db.Conversation, error) {
 	getConversation := func() (string, error) {
-		conversation, err := imdb.GetConversation(ownerUserID, conversationID)
+		conversation, err := imdb.GetConversation(ctx, ownerUserID, conversationID)
 		if err != nil {
 			return "", utils.Wrap(err, "get failed")
 		}
@@ -521,7 +521,7 @@ func GetConversationFromCache(ownerUserID, conversationID string) (*db.Conversat
 		}
 		return string(bytes), nil
 	}
-	conversationStr, err := db.DB.Rc.Fetch(conversationCache+ownerUserID+":"+conversationID, time.Second*30*60, getConversation)
+	conversationStr, err := db.DB.Rc.Fetch2(ctx, conversationCache+ownerUserID+":"+conversationID, time.Second*30*60, getConversation)
 	if err != nil {
 		return nil, utils.Wrap(err, "Fetch failed")
 	}
@@ -533,10 +533,10 @@ func GetConversationFromCache(ownerUserID, conversationID string) (*db.Conversat
 	return &conversation, nil
 }
 
-func GetConversationsFromCache(ownerUserID string, conversationIDList []string) ([]db.Conversation, error) {
+func GetConversationsFromCache(ctx context.Context, ownerUserID string, conversationIDList []string) ([]db.Conversation, error) {
 	var conversationList []db.Conversation
 	for _, conversationID := range conversationIDList {
-		conversation, err := GetConversationFromCache(ownerUserID, conversationID)
+		conversation, err := GetConversationFromCache(ctx, ownerUserID, conversationID)
 		if err != nil {
 			return nil, utils.Wrap(err, "GetConversationFromCache failed")
 		}
@@ -545,15 +545,15 @@ func GetConversationsFromCache(ownerUserID string, conversationIDList []string) 
 	return conversationList, nil
 }
 
-func GetUserAllConversationList(ownerUserID string) ([]db.Conversation, error) {
-	IDList, err := GetUserConversationIDListFromCache(ownerUserID)
+func GetUserAllConversationList(ctx context.Context, ownerUserID string) ([]db.Conversation, error) {
+	IDList, err := GetUserConversationIDListFromCache(ctx, ownerUserID)
 	if err != nil {
 		return nil, err
 	}
 	var conversationList []db.Conversation
 	log.NewDebug("", utils.GetSelfFuncName(), IDList)
 	for _, conversationID := range IDList {
-		conversation, err := GetConversationFromCache(ownerUserID, conversationID)
+		conversation, err := GetConversationFromCache(ctx, ownerUserID, conversationID)
 		if err != nil {
 			return nil, utils.Wrap(err, "GetConversationFromCache failed")
 		}

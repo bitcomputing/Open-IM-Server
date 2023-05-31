@@ -351,7 +351,7 @@ func ManagementBatchSendMsg(c *gin.Context) {
 	pbData := newUserSendMsgReq(req)
 	var recvList []string
 	if params.IsSendAll {
-		recvList, err = im_mysql_model.SelectAllUserID()
+		recvList, err = im_mysql_model.SelectAllUserID(c.Request.Context())
 		if err != nil {
 			log.NewError(params.OperationID, utils.GetSelfFuncName(), err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": err.Error()})

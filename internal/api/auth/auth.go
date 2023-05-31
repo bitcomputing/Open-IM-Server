@@ -10,7 +10,6 @@ import (
 	rpc "Open_IM/pkg/proto/auth"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
-	"context"
 	"net/http"
 
 	"github.com/fatih/structs"
@@ -134,7 +133,7 @@ func UserToken(c *gin.Context) {
 		return
 	}
 	req := &rpc.UserTokenReq{Platform: params.Platform, FromUserID: params.UserID, OperationID: params.OperationID, LoginIp: params.LoginIp}
-	reply, err := authClient.UserToken(context.Background(), req)
+	reply, err := authClient.UserToken(c.Request.Context(), req)
 	if err != nil {
 		errMsg := req.OperationID + " UserToken failed " + err.Error() + " req: " + req.String()
 		logger.Error(errMsg)
@@ -218,7 +217,7 @@ func ForceLogout(c *gin.Context) {
 		return
 	}
 
-	reply, err := authClient.ForceLogout(context.Background(), req)
+	reply, err := authClient.ForceLogout(c.Request.Context(), req)
 	if err != nil {
 		errMsg := req.OperationID + " UserToken failed " + err.Error() + req.String()
 		logger.Error(errMsg)

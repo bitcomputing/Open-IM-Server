@@ -1,6 +1,7 @@
 package msg
 
 import (
+	pushclient "Open_IM/internal/push/client"
 	conversationclient "Open_IM/internal/rpc/conversation/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
@@ -38,6 +39,7 @@ type rpcChat struct {
 	dMessageLocker MessageLocker
 	msg.UnimplementedMsgServer
 	conversationClient conversationclient.ConversationClient
+	pushClient         pushclient.PushClient
 }
 
 type deleteMsg struct {
@@ -70,6 +72,23 @@ func NewRpcChatServer(port int) *rpcChat {
 				Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
 			},
 		}),
+		pushClient: pushclient.NewPushClient(
+			zrpc.RpcClientConf{
+				Etcd: discov.EtcdConf{
+					Hosts: config.Config.ClientConfigs.Push.Disconvery.Hosts,
+					Key:   config.Config.ClientConfigs.Push.Disconvery.Key,
+				},
+				Timeout:       config.Config.ClientConfigs.Push.Timeout,
+				KeepaliveTime: 0,
+				Middlewares: zrpc.ClientMiddlewaresConf{
+					Trace:      config.Config.ClientConfigs.Push.Middlewares.Trace,
+					Duration:   config.Config.ClientConfigs.Push.Middlewares.Duration,
+					Prometheus: config.Config.ClientConfigs.Push.Middlewares.Prometheus,
+					Breaker:    config.Config.ClientConfigs.Push.Middlewares.Breaker,
+					Timeout:    config.Config.ClientConfigs.Push.Middlewares.Timeout,
+				},
+			},
+		),
 	}
 	rc.messageWriter = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic)
 	//rc.offlineProducer = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschatOffline.Addr, config.Config.Kafka.Ws2mschatOffline.Topic)
