@@ -159,12 +159,12 @@ func (s *friendServer) AddFriend(ctx context.Context, req *pbFriend.AddFriendReq
 		}}, nil
 	}
 	var isSend = true
-	userIDList, err := rocksCache.GetFriendIDListFromCache(req.CommID.ToUserID)
+	userIDList, err := rocksCache.GetFriendIDListFromCache(ctx, req.CommID.ToUserID)
 	if err != nil {
 		log.NewError(req.CommID.OperationID, "GetFriendIDListFromCache failed ", err.Error(), req.CommID.ToUserID)
 		return &pbFriend.AddFriendResp{CommonResp: &pbFriend.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}}, nil
 	}
-	userIDList2, err := rocksCache.GetFriendIDListFromCache(req.CommID.FromUserID)
+	userIDList2, err := rocksCache.GetFriendIDListFromCache(ctx, req.CommID.FromUserID)
 	if err != nil {
 		log.NewError(req.CommID.OperationID, "GetUserByUserID failed ", err.Error(), req.CommID.FromUserID)
 		return &pbFriend.AddFriendResp{CommonResp: &pbFriend.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}}, nil
@@ -473,7 +473,7 @@ func (s *friendServer) GetBlacklist(ctx context.Context, req *pbFriend.GetBlackl
 		return &pbFriend.GetBlacklistResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
 
-	blackIDList, err := rocksCache.GetBlackListFromCache(req.CommID.FromUserID)
+	blackIDList, err := rocksCache.GetBlackListFromCache(ctx, req.CommID.FromUserID)
 	if err != nil {
 		log.NewError(req.CommID.OperationID, "GetBlackListByUID failed ", err.Error(), req.CommID.FromUserID)
 		return &pbFriend.GetBlacklistResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}, nil
@@ -561,7 +561,7 @@ func (s *friendServer) IsInBlackList(ctx context.Context, req *pbFriend.IsInBlac
 		log.NewError(req.CommID.OperationID, "CheckAccess false ", req.CommID.OpUserID, req.CommID.FromUserID)
 		return &pbFriend.IsInBlackListResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
-	blackIDList, err := rocksCache.GetBlackListFromCache(req.CommID.FromUserID)
+	blackIDList, err := rocksCache.GetBlackListFromCache(ctx, req.CommID.FromUserID)
 	if err != nil {
 		log.NewError(req.CommID.OperationID, utils.GetSelfFuncName(), err.Error(), req.CommID.FromUserID)
 		return &pbFriend.IsInBlackListResp{ErrMsg: err.Error(), ErrCode: constant.ErrDB.ErrCode}, nil
@@ -580,7 +580,7 @@ func (s *friendServer) IsFriend(ctx context.Context, req *pbFriend.IsFriendReq) 
 		log.NewError(req.CommID.OperationID, "CheckAccess false ", req.CommID.OpUserID, req.CommID.FromUserID)
 		return &pbFriend.IsFriendResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
-	friendIDList, err := rocksCache.GetFriendIDListFromCache(req.CommID.FromUserID)
+	friendIDList, err := rocksCache.GetFriendIDListFromCache(ctx, req.CommID.FromUserID)
 	if err != nil {
 		log.NewError(req.CommID.OperationID, utils.GetSelfFuncName(), err.Error(), req.CommID.FromUserID)
 		return &pbFriend.IsFriendResp{ErrMsg: err.Error(), ErrCode: constant.ErrDB.ErrCode}, nil
