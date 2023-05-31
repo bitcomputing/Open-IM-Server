@@ -71,8 +71,8 @@ func NewRpcChatServer(port int) *rpcChat {
 		pushClient:         pushclient.NewPushClient(config.ConvertClientConfig(config.Config.ClientConfigs.Push)),
 		cacheClient:        cacheclient.NewCacheClient(config.ConvertClientConfig(config.Config.ClientConfigs.Cache)),
 		pullMessageRedisSuccess: metric.NewCounterVec(&metric.CounterVecOpts{
-			Name: "msg_pull_from_redis_failed",
-			Help: "The number of failed pull msg from redis",
+			Name: "msg_pull_from_redis_success",
+			Help: "The number of successful pull msg from redis",
 		}),
 		pullMessageRedisFailure: metric.NewCounterVec(&metric.CounterVecOpts{
 			Name: "msg_pull_from_redis_failed",
