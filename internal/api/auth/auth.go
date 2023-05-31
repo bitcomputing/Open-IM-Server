@@ -21,7 +21,7 @@ var (
 	authClient authclient.AuthClient
 )
 
-func Init() {
+func init() {
 	authClient = authclient.NewAuthClient(config.ConvertClientConfig(config.Config.ClientConfigs.Auth))
 }
 
