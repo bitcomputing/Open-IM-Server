@@ -22,7 +22,7 @@ var (
 )
 
 func Init() {
-	authClient = authclient.NewAuthClient(config.ConvertClientConfig(config.Config.ClientConfigs.User))
+	authClient = authclient.NewAuthClient(config.ConvertClientConfig(config.Config.ClientConfigs.Auth))
 }
 
 // @Summary 用户注册
