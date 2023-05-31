@@ -4,13 +4,13 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	imdb "Open_IM/pkg/common/db/mysql_model/im_mysql_model"
-	"Open_IM/pkg/common/log"
 	utils2 "Open_IM/pkg/common/utils"
 	pbFriend "Open_IM/pkg/proto/friend"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -28,12 +28,14 @@ func getFromToUserNickname(ctx context.Context, fromUserID, toUserID string) (st
 }
 
 func friendNotification(ctx context.Context, commID *pbFriend.CommID, contentType int32, m proto.Message) {
-	log.Info(commID.OperationID, utils.GetSelfFuncName(), "args: ", commID, contentType)
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", commID.OperationID))
+	logger := logx.WithContext(ctx)
+
 	var err error
 	var tips open_im_sdk.TipsComm
 	tips.Detail, err = proto.Marshal(m)
 	if err != nil {
-		log.Error(commID.OperationID, "Marshal failed ", err.Error())
+		logger.Error(err)
 		return
 	}
 
@@ -47,7 +49,7 @@ func friendNotification(ctx context.Context, commID *pbFriend.CommID, contentTyp
 
 	fromUserNickname, toUserNickname, err := getFromToUserNickname(ctx, commID.FromUserID, commID.ToUserID)
 	if err != nil {
-		log.Error(commID.OperationID, "getFromToUserNickname failed ", err.Error(), commID.FromUserID, commID.ToUserID)
+		logger.Error("getFromToUserNickname failed ", err.Error(), commID.FromUserID, commID.ToUserID)
 		return
 	}
 	cn := config.Config.Notification
@@ -73,7 +75,7 @@ func friendNotification(ctx context.Context, commID *pbFriend.CommID, contentTyp
 	case constant.FriendInfoUpdatedNotification:
 		tips.DefaultTips = cn.FriendInfoUpdated.DefaultTips.Tips + toUserNickname
 	default:
-		log.Error(commID.OperationID, "contentType failed ", contentType)
+		logger.Error("contentType failed ", contentType)
 		return
 	}
 
@@ -86,10 +88,10 @@ func friendNotification(ctx context.Context, commID *pbFriend.CommID, contentTyp
 	n.OperationID = commID.OperationID
 	n.Content, err = proto.Marshal(&tips)
 	if err != nil {
-		log.Error(commID.OperationID, "Marshal failed ", err.Error(), tips.String())
+		logger.Error("Marshal failed ", err.Error(), tips.String())
 		return
 	}
-	Notification(&n)
+	Notification(ctx, &n)
 }
 
 func FriendApplicationNotification(ctx context.Context, req *pbFriend.AddFriendReq) {
@@ -116,16 +118,19 @@ func FriendApplicationRejectedNotification(ctx context.Context, req *pbFriend.Ad
 }
 
 func FriendAddedNotification(ctx context.Context, operationID, opUserID, fromUserID, toUserID string) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
 	friendAddedTips := open_im_sdk.FriendAddedTips{Friend: &open_im_sdk.FriendInfo{}, OpUser: &open_im_sdk.PublicUserInfo{}}
 	user, err := imdb.GetUserByUserID(ctx, opUserID)
 	if err != nil {
-		log.NewError(operationID, "GetUserByUserID failed ", err.Error(), opUserID)
+		logger.Error("GetUserByUserID failed ", err.Error(), opUserID)
 		return
 	}
 	utils2.UserDBCopyOpenIMPublicUser(friendAddedTips.OpUser, user)
 	friend, err := imdb.GetFriendRelationshipFromFriend(ctx, fromUserID, toUserID)
 	if err != nil {
-		log.NewError(operationID, "GetFriendRelationshipFromFriend failed ", err.Error(), fromUserID, toUserID)
+		logger.Error("GetFriendRelationshipFromFriend failed ", err.Error(), fromUserID, toUserID)
 		return
 	}
 	utils2.FriendDBCopyOpenIM(ctx, friendAddedTips.Friend, friend)

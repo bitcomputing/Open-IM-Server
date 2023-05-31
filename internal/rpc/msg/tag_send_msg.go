@@ -1,20 +1,20 @@
 package msg
 
 import (
-	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbChat "Open_IM/pkg/proto/msg"
 	pbCommon "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
-	"strings"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func TagSendMessage(operationID string, user *db.User, recvID, content string, senderPlatformID int32) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), "args: ", user.UserID, recvID, content)
+func TagSendMessage(ctx context.Context, operationID string, user *db.User, recvID, content string, senderPlatformID int32) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
 	var req pbChat.SendMsgReq
 	var msgData pbCommon.MsgData
 	msgData.SendID = user.UserID
@@ -33,20 +33,20 @@ func TagSendMessage(operationID string, user *db.User, recvID, content string, s
 	msgData.SenderPlatformID = senderPlatformID
 	req.MsgData = &msgData
 	req.OperationID = operationID
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, operationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		return
-	}
+	// etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, operationID)
+	// if etcdConn == nil {
+	// 	errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
+	// 	logger.Error(errMsg)
+	// 	return
+	// }
 
-	client := pbChat.NewMsgClient(etcdConn)
-	respPb, err := client.SendMsg(context.Background(), &req)
+	// client := pbChat.NewMsgClient(etcdConn)
+	respPb, err := new(rpcChat).SendMsg(ctx, &req)
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "send msg failed", err.Error())
+		logger.Error("send msg failed", err.Error())
 		return
 	}
 	if respPb.ErrCode != 0 {
-		log.NewError(operationID, utils.GetSelfFuncName(), "send tag msg failed ", respPb)
+		logger.Error("send tag msg failed ", respPb)
 	}
 }

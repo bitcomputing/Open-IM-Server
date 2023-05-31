@@ -72,44 +72,44 @@ func (d *DataBases) IncrUserSeq(uid string) (uint64, error) {
 }
 
 // Get the largest Seq
-func (d *DataBases) GetUserMaxSeq(uid string) (uint64, error) {
+func (d *DataBases) GetUserMaxSeq(ctx context.Context, uid string) (uint64, error) {
 	key := userIncrSeq + uid
-	seq, err := d.RDB.Get(context.Background(), key).Result()
+	seq, err := d.RDB.Get(ctx, key).Result()
 	return uint64(utils.StringToInt(seq)), err
 }
 
 // set the largest Seq
-func (d *DataBases) SetUserMaxSeq(uid string, maxSeq uint64) error {
+func (d *DataBases) SetUserMaxSeq(ctx context.Context, uid string, maxSeq uint64) error {
 	key := userIncrSeq + uid
-	return d.RDB.Set(context.Background(), key, maxSeq, 0).Err()
+	return d.RDB.Set(ctx, key, maxSeq, 0).Err()
 }
 
 // Set the user's minimum seq
-func (d *DataBases) SetUserMinSeq(uid string, minSeq uint32) (err error) {
+func (d *DataBases) SetUserMinSeq(ctx context.Context, uid string, minSeq uint32) (err error) {
 	key := userMinSeq + uid
-	return d.RDB.Set(context.Background(), key, minSeq, 0).Err()
+	return d.RDB.Set(ctx, key, minSeq, 0).Err()
 }
 
 // Get the smallest Seq
-func (d *DataBases) GetUserMinSeq(uid string) (uint64, error) {
+func (d *DataBases) GetUserMinSeq(ctx context.Context, uid string) (uint64, error) {
 	key := userMinSeq + uid
-	seq, err := d.RDB.Get(context.Background(), key).Result()
+	seq, err := d.RDB.Get(ctx, key).Result()
 	return uint64(utils.StringToInt(seq)), err
 }
 
-func (d *DataBases) SetGroupUserMinSeq(groupID, userID string, minSeq uint64) (err error) {
+func (d *DataBases) SetGroupUserMinSeq(ctx context.Context, groupID, userID string, minSeq uint64) (err error) {
 	key := groupUserMinSeq + "g:" + groupID + "u:" + userID
-	return d.RDB.Set(context.Background(), key, minSeq, 0).Err()
+	return d.RDB.Set(ctx, key, minSeq, 0).Err()
 }
-func (d *DataBases) GetGroupUserMinSeq(groupID, userID string) (uint64, error) {
+func (d *DataBases) GetGroupUserMinSeq(ctx context.Context, groupID, userID string) (uint64, error) {
 	key := groupUserMinSeq + "g:" + groupID + "u:" + userID
-	seq, err := d.RDB.Get(context.Background(), key).Result()
+	seq, err := d.RDB.Get(ctx, key).Result()
 	return uint64(utils.StringToInt(seq)), err
 }
 
-func (d *DataBases) GetGroupMaxSeq(groupID string) (uint64, error) {
+func (d *DataBases) GetGroupMaxSeq(ctx context.Context, groupID string) (uint64, error) {
 	key := groupMaxSeq + groupID
-	seq, err := d.RDB.Get(context.Background(), key).Result()
+	seq, err := d.RDB.Get(ctx, key).Result()
 	return uint64(utils.StringToInt(seq)), err
 }
 
@@ -119,9 +119,9 @@ func (d *DataBases) IncrGroupMaxSeq(groupID string) (uint64, error) {
 	return uint64(seq), err
 }
 
-func (d *DataBases) SetGroupMaxSeq(groupID string, maxSeq uint64) error {
+func (d *DataBases) SetGroupMaxSeq(ctx context.Context, groupID string, maxSeq uint64) error {
 	key := groupMaxSeq + groupID
-	return d.RDB.Set(context.Background(), key, maxSeq, 0).Err()
+	return d.RDB.Set(ctx, key, maxSeq, 0).Err()
 }
 
 func (d *DataBases) SetGroupMinSeq(groupID string, minSeq uint32) error {
@@ -163,9 +163,9 @@ func (d *DataBases) SetSingleConversationRecvMsgOpt(ctx context.Context, userID,
 	return d.RDB.HSet(ctx, key, conversationID, opt).Err()
 }
 
-func (d *DataBases) GetSingleConversationRecvMsgOpt(userID, conversationID string) (int, error) {
+func (d *DataBases) GetSingleConversationRecvMsgOpt(ctx context.Context, userID, conversationID string) (int, error) {
 	key := conversationReceiveMessageOpt + userID
-	result, err := d.RDB.HGet(context.Background(), key, conversationID).Result()
+	result, err := d.RDB.HGet(ctx, key, conversationID).Result()
 	return utils.StringToInt(result), err
 }
 
@@ -189,9 +189,9 @@ func (d *DataBases) SetUserGlobalMsgRecvOpt(ctx context.Context, userID string, 
 	key := conversationReceiveMessageOpt + userID
 	return d.RDB.HSet(ctx, key, GlobalMsgRecvOpt, opt).Err()
 }
-func (d *DataBases) GetUserGlobalMsgRecvOpt(userID string) (int, error) {
+func (d *DataBases) GetUserGlobalMsgRecvOpt(ctx context.Context, userID string) (int, error) {
 	key := conversationReceiveMessageOpt + userID
-	result, err := d.RDB.HGet(context.Background(), key, GlobalMsgRecvOpt).Result()
+	result, err := d.RDB.HGet(ctx, key, GlobalMsgRecvOpt).Result()
 	if err != nil {
 		if err == go_redis.Nil {
 			return 0, nil
@@ -201,11 +201,11 @@ func (d *DataBases) GetUserGlobalMsgRecvOpt(userID string) (int, error) {
 	}
 	return utils.StringToInt(result), err
 }
-func (d *DataBases) GetMessageListBySeq(userID string, seqList []uint32, operationID string) (seqMsg []*pbCommon.MsgData, failedSeqList []uint32, errResult error) {
+func (d *DataBases) GetMessageListBySeq(ctx context.Context, userID string, seqList []uint32, operationID string) (seqMsg []*pbCommon.MsgData, failedSeqList []uint32, errResult error) {
 	for _, v := range seqList {
 		//MESSAGE_CACHE:169.254.225.224_reliability1653387820_0_1
 		key := messageCache + userID + "_" + strconv.Itoa(int(v))
-		result, err := d.RDB.Get(context.Background(), key).Result()
+		result, err := d.RDB.Get(ctx, key).Result()
 		if err != nil {
 			errResult = err
 			failedSeqList = append(failedSeqList, v)
@@ -227,8 +227,7 @@ func (d *DataBases) GetMessageListBySeq(userID string, seqList []uint32, operati
 	return seqMsg, failedSeqList, errResult
 }
 
-func (d *DataBases) SetMessageToCache(msgList []*pbChat.MsgDataToMQ, uid string, operationID string) (error, int) {
-	ctx := context.Background()
+func (d *DataBases) SetMessageToCache(ctx context.Context, msgList []*pbChat.MsgDataToMQ, uid string, operationID string) (error, int) {
 	pipe := d.RDB.Pipeline()
 	var failedList []pbChat.MsgDataToMQ
 	for _, msg := range msgList {
@@ -265,8 +264,7 @@ func (d *DataBases) DeleteMessageFromCache(msgList []*pbChat.MsgDataToMQ, uid st
 	return nil
 }
 
-func (d *DataBases) CleanUpOneUserAllMsgFromRedis(userID string, operationID string) error {
-	ctx := context.Background()
+func (d *DataBases) CleanUpOneUserAllMsgFromRedis(ctx context.Context, userID string, operationID string) error {
 	key := messageCache + userID + "_" + "*"
 	vals, err := d.RDB.Keys(ctx, key).Result()
 	log2.Debug(operationID, "vals: ", vals)
@@ -383,10 +381,10 @@ func (d *DataBases) DelUserSignalList(userID string) error {
 	return err
 }
 
-func (d *DataBases) DelMsgFromCache(uid string, seqList []uint32, operationID string) {
+func (d *DataBases) DelMsgFromCache(ctx context.Context, uid string, seqList []uint32, operationID string) {
 	for _, seq := range seqList {
 		key := messageCache + uid + "_" + strconv.Itoa(int(seq))
-		result, err := d.RDB.Get(context.Background(), key).Result()
+		result, err := d.RDB.Get(ctx, key).Result()
 		if err != nil {
 			if err == go_redis.Nil {
 				log2.NewDebug(operationID, utils.GetSelfFuncName(), err.Error(), "redis nil")
@@ -406,7 +404,7 @@ func (d *DataBases) DelMsgFromCache(uid string, seqList []uint32, operationID st
 			log2.Error(operationID, utils.GetSelfFuncName(), "Pb2String failed", msg, err.Error())
 			continue
 		}
-		if err := d.RDB.Set(context.Background(), key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err(); err != nil {
+		if err := d.RDB.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err(); err != nil {
 			log2.Error(operationID, utils.GetSelfFuncName(), "Set failed", err.Error())
 		}
 	}
@@ -430,12 +428,12 @@ func (d *DataBases) GetGetuiTaskID() (string, error) {
 	return result, err
 }
 
-func (d *DataBases) SetSendMsgStatus(status int32, operationID string) error {
-	return d.RDB.Set(context.Background(), sendMsgFailedFlag+operationID, status, time.Hour*24).Err()
+func (d *DataBases) SetSendMsgStatus(ctx context.Context, status int32, operationID string) error {
+	return d.RDB.Set(ctx, sendMsgFailedFlag+operationID, status, time.Hour*24).Err()
 }
 
-func (d *DataBases) GetSendMsgStatus(operationID string) (int, error) {
-	result, err := d.RDB.Get(context.Background(), sendMsgFailedFlag+operationID).Result()
+func (d *DataBases) GetSendMsgStatus(ctx context.Context, operationID string) (int, error) {
+	result, err := d.RDB.Get(ctx, sendMsgFailedFlag+operationID).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -470,9 +468,9 @@ func (d *DataBases) GetUserBadgeUnreadCountSum(uid string) (int, error) {
 	seq, err := d.RDB.Get(context.Background(), key).Result()
 	return utils.StringToInt(seq), err
 }
-func (d *DataBases) JudgeMessageReactionEXISTS(clientMsgID string, sessionType int32) (bool, error) {
+func (d *DataBases) JudgeMessageReactionEXISTS(ctx context.Context, clientMsgID string, sessionType int32) (bool, error) {
 	key := getMessageReactionExPrefix(clientMsgID, sessionType)
-	n, err := d.RDB.Exists(context.Background(), key).Result()
+	n, err := d.RDB.Exists(ctx, key).Result()
 	if n > 0 {
 		return true, err
 	} else {
@@ -480,38 +478,38 @@ func (d *DataBases) JudgeMessageReactionEXISTS(clientMsgID string, sessionType i
 	}
 }
 
-func (d *DataBases) GetOneMessageAllReactionList(clientMsgID string, sessionType int32) (map[string]string, error) {
+func (d *DataBases) GetOneMessageAllReactionList(ctx context.Context, clientMsgID string, sessionType int32) (map[string]string, error) {
 	key := getMessageReactionExPrefix(clientMsgID, sessionType)
-	return d.RDB.HGetAll(context.Background(), key).Result()
+	return d.RDB.HGetAll(ctx, key).Result()
 
 }
-func (d *DataBases) DeleteOneMessageKey(clientMsgID string, sessionType int32, subKey string) error {
+func (d *DataBases) DeleteOneMessageKey(ctx context.Context, clientMsgID string, sessionType int32, subKey string) error {
 	key := getMessageReactionExPrefix(clientMsgID, sessionType)
-	return d.RDB.HDel(context.Background(), key, subKey).Err()
+	return d.RDB.HDel(ctx, key, subKey).Err()
 
 }
-func (d *DataBases) SetMessageReactionExpire(clientMsgID string, sessionType int32, expiration time.Duration) (bool, error) {
+func (d *DataBases) SetMessageReactionExpire(ctx context.Context, clientMsgID string, sessionType int32, expiration time.Duration) (bool, error) {
 	key := getMessageReactionExPrefix(clientMsgID, sessionType)
-	return d.RDB.Expire(context.Background(), key, expiration).Result()
+	return d.RDB.Expire(ctx, key, expiration).Result()
 }
-func (d *DataBases) GetMessageTypeKeyValue(clientMsgID string, sessionType int32, typeKey string) (string, error) {
+func (d *DataBases) GetMessageTypeKeyValue(ctx context.Context, clientMsgID string, sessionType int32, typeKey string) (string, error) {
 	key := getMessageReactionExPrefix(clientMsgID, sessionType)
-	result, err := d.RDB.HGet(context.Background(), key, typeKey).Result()
+	result, err := d.RDB.HGet(ctx, key, typeKey).Result()
 	return result, err
 
 }
-func (d *DataBases) SetMessageTypeKeyValue(clientMsgID string, sessionType int32, typeKey, value string) error {
+func (d *DataBases) SetMessageTypeKeyValue(ctx context.Context, clientMsgID string, sessionType int32, typeKey, value string) error {
 	key := getMessageReactionExPrefix(clientMsgID, sessionType)
-	return d.RDB.HSet(context.Background(), key, typeKey, value).Err()
+	return d.RDB.HSet(ctx, key, typeKey, value).Err()
 
 }
-func (d *DataBases) LockMessageTypeKey(clientMsgID string, TypeKey string) error {
+func (d *DataBases) LockMessageTypeKey(ctx context.Context, clientMsgID string, TypeKey string) error {
 	key := exTypeKeyLocker + clientMsgID + "_" + TypeKey
-	return d.RDB.SetNX(context.Background(), key, 1, time.Minute).Err()
+	return d.RDB.SetNX(ctx, key, 1, time.Minute).Err()
 }
-func (d *DataBases) UnLockMessageTypeKey(clientMsgID string, TypeKey string) error {
+func (d *DataBases) UnLockMessageTypeKey(ctx context.Context, clientMsgID string, TypeKey string) error {
 	key := exTypeKeyLocker + clientMsgID + "_" + TypeKey
-	return d.RDB.Del(context.Background(), key).Err()
+	return d.RDB.Del(ctx, key).Err()
 
 }
 

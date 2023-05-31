@@ -3,8 +3,10 @@ package im_mysql_model
 import (
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
-	"gorm.io/gorm"
+	"context"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func CreateDepartment(department *db.Department) error {
@@ -144,10 +146,10 @@ func GetDepartmentMemberList(departmentID string) ([]db.DepartmentMember, error)
 	return departmentMemberList, err
 }
 
-func GetAllOrganizationUserID() (error, []string) {
+func GetAllOrganizationUserID(ctx context.Context) (error, []string) {
 	var OrganizationUser db.OrganizationUser
 	var result []string
-	return db.DB.MysqlDB.DefaultGormDB().Model(&OrganizationUser).Pluck("user_id", &result).Error, result
+	return db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&OrganizationUser).Pluck("user_id", &result).Error, result
 }
 
 func GetDepartmentMemberNum(departmentID string) (error, uint32) {

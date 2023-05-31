@@ -136,7 +136,7 @@ func syncPeerUserConversation(ctx context.Context, conversation *pbConversation.
 		logger.Error(err)
 		return err
 	}
-	chat.ConversationSetPrivateNotification(operationID, conversation.OwnerUserID, conversation.UserID, conversation.IsPrivateChat)
+	chat.ConversationSetPrivateNotification(ctx, operationID, conversation.OwnerUserID, conversation.UserID, conversation.IsPrivateChat)
 	return nil
 }
 
@@ -219,7 +219,7 @@ func (s *userServer) BatchSetConversations(ctx context.Context, req *pbUser.Batc
 			}
 		}
 	}
-	chat.ConversationChangeNotification(req.OperationID, req.OwnerUserID)
+	chat.ConversationChangeNotification(ctx, req.OperationID, req.OwnerUserID)
 	resp.CommonResp = &pbUser.CommonResp{}
 	return resp, nil
 }
@@ -354,7 +354,7 @@ func (s *userServer) SetConversation(ctx context.Context, req *pbUser.SetConvers
 			return resp, nil
 		}
 	} else {
-		chat.ConversationChangeNotification(req.OperationID, req.Conversation.OwnerUserID)
+		chat.ConversationChangeNotification(ctx, req.OperationID, req.Conversation.OwnerUserID)
 	}
 
 	resp.CommonResp = &pbUser.CommonResp{}
@@ -416,7 +416,7 @@ func (s *userServer) SetRecvMsgOpt(ctx context.Context, req *pbUser.SetRecvMsgOp
 	if err != nil {
 		logger.Error(conversation.ConversationID, err.Error())
 	}
-	chat.ConversationChangeNotification(req.OperationID, req.OwnerUserID)
+	chat.ConversationChangeNotification(ctx, req.OperationID, req.OwnerUserID)
 
 	resp.CommonResp = &pbUser.CommonResp{}
 	return resp, nil

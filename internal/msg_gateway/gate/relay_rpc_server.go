@@ -1,6 +1,7 @@
 package gate
 
 import (
+	msgclient "Open_IM/internal/rpc/msg/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
@@ -33,6 +34,7 @@ type RPCServer struct {
 	pushTerminal    []int
 	target          string
 	pbRelay.UnimplementedRelayServer
+	msgClient msgclient.MsgClient
 }
 
 func initPrometheus() {
@@ -53,7 +55,9 @@ func (r *RPCServer) onInit(rpcPort int) {
 	r.etcdAddr = config.Config.Etcd.EtcdAddr
 	r.platformList = genPlatformArray()
 	r.pushTerminal = []int{constant.IOSPlatformID, constant.AndroidPlatformID}
+	r.msgClient = msgclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message))
 }
+
 func (r *RPCServer) run() {
 	listenIP := ""
 	if config.Config.ListenIP == "" {

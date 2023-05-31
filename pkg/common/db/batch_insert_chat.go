@@ -115,7 +115,7 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 	return nil
 }
 
-func (d *DataBases) BatchInsertChat2Cache(insertID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (uint64, error) {
+func (d *DataBases) BatchInsertChat2Cache(ctx context.Context, insertID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (uint64, error) {
 	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	newTime := getCurrentTimestampByMill()
 	lenList := len(msgList)
@@ -129,10 +129,10 @@ func (d *DataBases) BatchInsertChat2Cache(insertID string, msgList []*pbMsg.MsgD
 	var currentMaxSeq uint64
 	var err error
 	if msgList[0].MsgData.SessionType == constant.SuperGroupChatType {
-		currentMaxSeq, err = d.GetGroupMaxSeq(insertID)
+		currentMaxSeq, err = d.GetGroupMaxSeq(ctx, insertID)
 		logger.Debug("constant.SuperGroupChatType  lastMaxSeq before add ", currentMaxSeq, "userID ", insertID, err)
 	} else {
-		currentMaxSeq, err = d.GetUserMaxSeq(insertID)
+		currentMaxSeq, err = d.GetUserMaxSeq(ctx, insertID)
 		logger.Debug("constant.SingleChatType  lastMaxSeq before add ", currentMaxSeq, "userID ", insertID, err)
 	}
 	if err != nil && err != go_redis.Nil {
@@ -151,7 +151,7 @@ func (d *DataBases) BatchInsertChat2Cache(insertID string, msgList []*pbMsg.MsgD
 	}
 
 	logger.Debug("SetMessageToCache ", insertID, len(msgList))
-	err, failedNum := d.SetMessageToCache(msgList, insertID, operationID)
+	err, failedNum := d.SetMessageToCache(ctx, msgList, insertID, operationID)
 	if err != nil {
 		promePkg.PromeAdd(promePkg.MsgInsertRedisFailedCounter, failedNum)
 		logger.Error("setMessageToCache failed, continue ", err.Error(), len(msgList), insertID)
@@ -160,9 +160,9 @@ func (d *DataBases) BatchInsertChat2Cache(insertID string, msgList []*pbMsg.MsgD
 	}
 	logger.Debug("batch to redis  cost time ", getCurrentTimestampByMill()-newTime, insertID, len(msgList))
 	if msgList[0].MsgData.SessionType == constant.SuperGroupChatType {
-		err = d.SetGroupMaxSeq(insertID, currentMaxSeq)
+		err = d.SetGroupMaxSeq(ctx, insertID, currentMaxSeq)
 	} else {
-		err = d.SetUserMaxSeq(insertID, currentMaxSeq)
+		err = d.SetUserMaxSeq(ctx, insertID, currentMaxSeq)
 	}
 	if err != nil {
 		promePkg.PromeInc(promePkg.SeqSetFailedCounter)

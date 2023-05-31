@@ -1,17 +1,13 @@
 package msg
 
 import (
-	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
-	"Open_IM/pkg/proto/msg"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
-	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type paramsUserPullMsg struct {
@@ -51,15 +47,7 @@ func PullMsgBySeqList(c *gin.Context) {
 	pbData.OperationID = params.OperationID
 	pbData.SeqList = params.SeqList
 
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, pbData.OperationID)
-	if grpcConn == nil {
-		errMsg := pbData.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(pbData.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	msgClient := msg.NewMsgClient(grpcConn)
-	reply, err := msgClient.PullMessageBySeqList(context.Background(), &pbData)
+	reply, err := msgClient.PullMessageBySeqList(c.Request.Context(), &pbData)
 	if err != nil {
 		log.Error(pbData.OperationID, "PullMessageBySeqList error", err.Error())
 		return

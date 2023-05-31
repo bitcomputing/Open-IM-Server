@@ -72,7 +72,7 @@ func Test_NewSetMessageToCache(t *testing.T) {
 	data.AtUserIDList = []string{"1212", "23232"}
 	msg.MsgData = &data
 	messageList := []*pbChat.MsgDataToMQ{&msg}
-	err, _ := DB.SetMessageToCache(messageList, uid, "cacheTest")
+	err, _ := DB.SetMessageToCache(context.Background(), messageList, uid, "cacheTest")
 	assert.Nil(t, err)
 
 }
@@ -84,7 +84,7 @@ func Test_NewGetMessageListBySeq(t *testing.T) {
 	data.ClientMsgID = "23jwhjsdf"
 	msg.MsgData = &data
 
-	seqMsg, failedSeqList, err := DB.GetMessageListBySeq(uid, []uint32{1212}, "cacheTest")
+	seqMsg, failedSeqList, err := DB.GetMessageListBySeq(context.Background(), uid, []uint32{1212}, "cacheTest")
 	assert.Nil(t, err)
 	fmt.Println(seqMsg, failedSeqList)
 
@@ -98,7 +98,7 @@ func Test_SetUserGlobalMsgRecvOpt(t *testing.T) {
 }
 func Test_GetUserGlobalMsgRecvOpt(t *testing.T) {
 	uid := "test_uid"
-	opt, err := DB.GetUserGlobalMsgRecvOpt(uid)
+	opt, err := DB.GetUserGlobalMsgRecvOpt(context.Background(), uid)
 	assert.Nil(t, err)
 	fmt.Println("get opt", opt)
 }

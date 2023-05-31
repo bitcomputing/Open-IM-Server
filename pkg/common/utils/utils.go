@@ -85,9 +85,9 @@ func GroupOpenIMCopyDB(dst *db.Group, src *open_im_sdk.GroupInfo) {
 	utils.CopyStructFields(dst, src)
 }
 
-func GroupDBCopyOpenIM(dst *open_im_sdk.GroupInfo, src *db.Group) error {
+func GroupDBCopyOpenIM(ctx context.Context, dst *open_im_sdk.GroupInfo, src *db.Group) error {
 	utils.CopyStructFields(dst, src)
-	user, err := imdb.GetGroupOwnerInfoByGroupID(src.GroupID)
+	user, err := imdb.GetGroupOwnerInfoByGroupID(ctx, src.GroupID)
 	if err != nil {
 		return utils.Wrap(err, "")
 	}

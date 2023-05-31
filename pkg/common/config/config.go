@@ -541,6 +541,7 @@ type config struct {
 		User         ServerConfig `yaml:"user"`
 		Cache        ServerConfig `yaml:"cache"`
 		Friend       ServerConfig `yaml:"friend"`
+		Message      ServerConfig `yaml:"message"`
 	} `yaml:"serverConfigs"`
 
 	ClientConfigs struct {
@@ -550,6 +551,7 @@ type config struct {
 		User         ClientConfig `yaml:"user"`
 		Cache        ClientConfig `yaml:"cache"`
 		Friend       ClientConfig `yaml:"friend"`
+		Message      ClientConfig `yaml:"message"`
 	} `yaml:"clientConfigs"`
 }
 type PConversation struct {

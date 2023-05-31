@@ -60,6 +60,7 @@ func (och *OnlineHistoryRedisConsumerHandler) Init(cmdCh chan Cmd2Value) {
 
 }
 func (och *OnlineHistoryRedisConsumerHandler) Run(channelID int) {
+	ctx := context.Background()
 	for {
 		cmd := <-och.chArrays[channelID]
 		switch cmd.Cmd {
@@ -101,7 +102,7 @@ func (och *OnlineHistoryRedisConsumerHandler) Run(channelID int) {
 			//}
 			logx.Debug(triggerID, "msg storage length", len(storageMsgList), "push length", len(notStoragePushMsgList))
 			if len(storageMsgList) > 0 {
-				lastSeq, err := saveUserChatList(msgChannelValue.aggregationID, storageMsgList, triggerID)
+				lastSeq, err := saveUserChatList(ctx, msgChannelValue.aggregationID, storageMsgList, triggerID)
 				if err != nil {
 					logx.Error(triggerID, "single data insert to redis err", err.Error(), storageMsgList)
 				} else {

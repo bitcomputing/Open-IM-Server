@@ -566,9 +566,9 @@ func DelConversationFromCache(ctx context.Context, ownerUserID, conversationID s
 	return utils.Wrap(db.DB.Rc.TagAsDeleted2(ctx, conversationCache+ownerUserID+":"+conversationID), "DelConversationFromCache err")
 }
 
-func GetExtendMsg(sourceID string, sessionType int32, clientMsgID string, firstModifyTime int64) (*db.ExtendMsg, error) {
+func GetExtendMsg(ctx context.Context, sourceID string, sessionType int32, clientMsgID string, firstModifyTime int64) (*db.ExtendMsg, error) {
 	getExtendMsg := func() (string, error) {
-		extendMsg, err := db.DB.GetExtendMsg(sourceID, sessionType, clientMsgID, firstModifyTime)
+		extendMsg, err := db.DB.GetExtendMsg(ctx, sourceID, sessionType, clientMsgID, firstModifyTime)
 		if err != nil {
 			return "", utils.Wrap(err, "GetExtendMsgList failed")
 		}
@@ -578,7 +578,7 @@ func GetExtendMsg(sourceID string, sessionType int32, clientMsgID string, firstM
 		}
 		return string(bytes), nil
 	}
-	extendMsgStr, err := db.DB.Rc.Fetch(extendMsgCache+clientMsgID, time.Second*30*60, getExtendMsg)
+	extendMsgStr, err := db.DB.Rc.Fetch2(ctx, extendMsgCache+clientMsgID, time.Second*30*60, getExtendMsg)
 	if err != nil {
 		return nil, utils.Wrap(err, "Fetch failed")
 	}

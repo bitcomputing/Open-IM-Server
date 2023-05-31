@@ -9,6 +9,7 @@ import (
 	pbMsg "Open_IM/pkg/proto/msg"
 	server_api_params "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
+	"context"
 	"encoding/json"
 
 	"github.com/Shopify/sarama"
@@ -47,6 +48,7 @@ func (mmc *ModifyMsgConsumerHandler) ConsumeClaim(sess sarama.ConsumerGroupSessi
 }
 
 func (mmc *ModifyMsgConsumerHandler) ModifyMsg(cMsg *sarama.ConsumerMessage, msgKey string, _ sarama.ConsumerGroupSession) {
+	ctx := context.Background()
 	logx.Info("msg come here ModifyMsg!!!", "msg", string(cMsg.Value), msgKey)
 	msgFromMQ := pbMsg.MsgDataToModifyByMQ{}
 	err := proto.Unmarshal(cMsg.Value, &msgFromMQ)
@@ -81,7 +83,7 @@ func (mmc *ModifyMsgConsumerHandler) ModifyMsg(cMsg *sarama.ConsumerMessage, msg
 					if err != nil {
 						logx.Error(msgDataToMQ.OperationID, "GetMsgBySeqIndex failed", notification, err.Error())
 					}
-					msgs, indexes, err := db.DB.GetSuperGroupMsgBySeqListMongo(notification.SourceID, []uint32{notification.Seq}, msgDataToMQ.OperationID)
+					msgs, indexes, err := db.DB.GetSuperGroupMsgBySeqListMongo(ctx, notification.SourceID, []uint32{notification.Seq}, msgDataToMQ.OperationID)
 					if err != nil {
 						logx.Error(msgDataToMQ.OperationID, "GetSuperGroupMsgBySeqListMongo failed", notification, err.Error())
 						continue
@@ -101,7 +103,7 @@ func (mmc *ModifyMsgConsumerHandler) ModifyMsg(cMsg *sarama.ConsumerMessage, msg
 
 				} else {
 					msg.IsReact = true
-					if err = db.DB.ReplaceMsgBySeq(notification.SourceID, msg, msgDataToMQ.OperationID); err != nil {
+					if err = db.DB.ReplaceMsgBySeq(ctx, notification.SourceID, msg, msgDataToMQ.OperationID); err != nil {
 						logx.Error(msgDataToMQ.OperationID, "ReplaceMsgBySeq failed", notification.SourceID, msg)
 					}
 				}
@@ -138,7 +140,7 @@ func (mmc *ModifyMsgConsumerHandler) ModifyMsg(cMsg *sarama.ConsumerMessage, msg
 					}
 				}
 				// is already modify
-				if err := db.DB.InsertOrUpdateReactionExtendMsgSet(notification.SourceID, notification.SessionType, notification.ClientMsgID, notification.MsgFirstModifyTime, reactionExtensionList, msgDataToMQ.OperationID); err != nil {
+				if err := db.DB.InsertOrUpdateReactionExtendMsgSet(ctx, notification.SourceID, notification.SessionType, notification.ClientMsgID, notification.MsgFirstModifyTime, reactionExtensionList, msgDataToMQ.OperationID); err != nil {
 					logx.Error(msgDataToMQ.OperationID, "InsertOrUpdateReactionExtendMsgSet failed")
 				}
 			}
@@ -147,7 +149,7 @@ func (mmc *ModifyMsgConsumerHandler) ModifyMsg(cMsg *sarama.ConsumerMessage, msg
 			if err := json.Unmarshal(msgDataToMQ.MsgData.Content, notification); err != nil {
 				continue
 			}
-			if err := db.DB.DeleteReactionExtendMsgSet(notification.SourceID, notification.SessionType, notification.ClientMsgID, notification.MsgFirstModifyTime, notification.SuccessReactionExtensionList, msgDataToMQ.OperationID); err != nil {
+			if err := db.DB.DeleteReactionExtendMsgSet(ctx, notification.SourceID, notification.SessionType, notification.ClientMsgID, notification.MsgFirstModifyTime, notification.SuccessReactionExtensionList, msgDataToMQ.OperationID); err != nil {
 				logx.Error(msgDataToMQ.OperationID, "InsertOrUpdateReactionExtendMsgSet failed")
 			}
 		}

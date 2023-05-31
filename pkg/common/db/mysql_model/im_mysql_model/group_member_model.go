@@ -115,9 +115,9 @@ func UpdateGroupMemberInfoByMap(groupMemberInfo db.GroupMember, m map[string]int
 	return db.DB.MysqlDB.DefaultGormDB().Table("group_members").Where("group_id=? and user_id=?", groupMemberInfo.GroupID, groupMemberInfo.UserID).Updates(m).Error
 }
 
-func GetOwnerManagerByGroupID(groupID string) ([]db.GroupMember, error) {
+func GetOwnerManagerByGroupID(ctx context.Context, groupID string) ([]db.GroupMember, error) {
 	var groupMemberList []db.GroupMember
-	err := db.DB.MysqlDB.DefaultGormDB().Table("group_members").Where("group_id=? and role_level>?", groupID, constant.GroupOrdinaryUsers).Find(&groupMemberList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("group_members").Where("group_id=? and role_level>?", groupID, constant.GroupOrdinaryUsers).Find(&groupMemberList).Error
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +133,8 @@ func GetGroupMemberNumByGroupID(groupID string) (int64, error) {
 	return number, nil
 }
 
-func GetGroupOwnerInfoByGroupID(groupID string) (*db.GroupMember, error) {
-	omList, err := GetOwnerManagerByGroupID(groupID)
+func GetGroupOwnerInfoByGroupID(ctx context.Context, groupID string) (*db.GroupMember, error) {
+	omList, err := GetOwnerManagerByGroupID(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -196,8 +196,8 @@ func GetJoinedGroupIDListByUserID(ctx context.Context, userID string) ([]string,
 	return groupIDList, nil
 }
 
-func IsGroupOwnerAdmin(groupID, UserID string) bool {
-	groupMemberList, err := GetOwnerManagerByGroupID(groupID)
+func IsGroupOwnerAdmin(ctx context.Context, groupID, UserID string) bool {
+	groupMemberList, err := GetOwnerManagerByGroupID(ctx, groupID)
 	if err != nil {
 		return false
 	}

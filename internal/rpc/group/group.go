@@ -287,7 +287,7 @@ func (s *groupServer) CreateGroup(ctx context.Context, req *pbGroup.CreateGroupR
 			}
 			go func() {
 				for _, v := range okUserIDList {
-					chat.SuperGroupNotification(req.OperationID, v, v)
+					chat.SuperGroupNotification(ctx, req.OperationID, v, v)
 				}
 			}()
 		}
@@ -319,7 +319,7 @@ func (s *groupServer) GetJoinedGroupList(ctx context.Context, req *pbGroup.GetJo
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), v)
 			continue
 		}
-		owner, err2 := imdb.GetGroupOwnerInfoByGroupID(v)
+		owner, err2 := imdb.GetGroupOwnerInfoByGroupID(ctx, v)
 		if err2 != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err2.Error(), v)
 			continue
@@ -370,7 +370,7 @@ func (s *groupServer) InviteUserToGroup(ctx context.Context, req *pbGroup.Invite
 	}
 	var resp pbGroup.InviteUserToGroupResp
 	if groupInfo.NeedVerification == constant.AllNeedVerification &&
-		!imdb.IsGroupOwnerAdmin(req.GroupID, req.OpUserID) && !token_verify.IsManagerUserID(req.OpUserID) {
+		!imdb.IsGroupOwnerAdmin(ctx, req.GroupID, req.OpUserID) && !token_verify.IsManagerUserID(req.OpUserID) {
 		var resp pbGroup.InviteUserToGroupResp
 		joinReq := pbGroup.JoinGroupReq{}
 		for _, v := range req.InvitedUserIDList {
@@ -551,7 +551,7 @@ func (s *groupServer) InviteUserToGroup(ctx context.Context, req *pbGroup.Invite
 			}
 		}
 		for _, v := range req.InvitedUserIDList {
-			chat.SuperGroupNotification(req.OperationID, v, v)
+			chat.SuperGroupNotification(ctx, req.OperationID, v, v)
 		}
 	}
 
@@ -582,7 +582,7 @@ func (s *groupServer) InviteUserToGroups(ctx context.Context, req *pbGroup.Invit
 	if err := rocksCache.DelJoinedSuperGroupIDListFromCache(req.InvitedUserID); err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error())
 	}
-	chat.SuperGroupNotification(req.OperationID, req.InvitedUserID, req.InvitedUserID)
+	chat.SuperGroupNotification(ctx, req.OperationID, req.InvitedUserID, req.InvitedUserID)
 
 	log.NewInfo(req.OperationID, "InviteUserToGroups rpc return ")
 	return nil, nil
@@ -797,7 +797,7 @@ func (s *groupServer) KickGroupMember(ctx context.Context, req *pbGroup.KickGrou
 		}
 		go func() {
 			for _, v := range req.KickedUserIDList {
-				chat.SuperGroupNotification(req.OperationID, v, v)
+				chat.SuperGroupNotification(ctx, req.OperationID, v, v)
 			}
 		}()
 
@@ -863,7 +863,7 @@ func (s *groupServer) GetGroupApplicationList(ctx context.Context, req *pbGroup.
 
 		cp.GroupRequestDBCopyOpenIM(&node, &v)
 		cp.UserDBCopyOpenIMPublicUser(node.UserInfo, user)
-		cp.GroupDBCopyOpenIM(node.GroupInfo, group)
+		cp.GroupDBCopyOpenIM(ctx, node.GroupInfo, group)
 		log.NewDebug(req.OperationID, "node ", node, "v ", v)
 		resp.GroupRequestList = append(resp.GroupRequestList, &node)
 	}
@@ -881,7 +881,7 @@ func (s *groupServer) GetGroupsInfo(ctx context.Context, req *pbGroup.GetGroupsI
 			continue
 		}
 		var groupInfo open_im_sdk.GroupInfo
-		cp.GroupDBCopyOpenIM(&groupInfo, groupInfoFromRedis)
+		cp.GroupDBCopyOpenIM(ctx, &groupInfo, groupInfoFromRedis)
 		//groupInfo.NeedVerification
 
 		groupInfo.NeedVerification = groupInfoFromRedis.NeedVerification
@@ -900,7 +900,7 @@ func (s *groupServer) GroupApplicationResponse(ctx context.Context, req *pbGroup
 	groupRequest.UserID = req.FromUserID
 	groupRequest.HandleUserID = req.OpUserID
 	groupRequest.HandledTime = time.Now()
-	if !token_verify.IsManagerUserID(req.OpUserID) && !imdb.IsGroupOwnerAdmin(req.GroupID, req.OpUserID) {
+	if !token_verify.IsManagerUserID(req.OpUserID) && !imdb.IsGroupOwnerAdmin(ctx, req.GroupID, req.OpUserID) {
 		log.NewError(req.OperationID, "IsManagerUserID IsGroupOwnerAdmin false ", req.GroupID, req.OpUserID)
 		return &pbGroup.GroupApplicationResponseResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}}, nil
 	}
@@ -1205,7 +1205,7 @@ func (s *groupServer) QuitGroup(ctx context.Context, req *pbGroup.QuitGroupReq) 
 		if err := rocksCache.DelGroupMemberListHashFromCache(req.GroupID); err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), req.GroupID, err.Error())
 		}
-		chat.SuperGroupNotification(req.OperationID, req.OpUserID, req.OpUserID)
+		chat.SuperGroupNotification(ctx, req.OperationID, req.OpUserID, req.OpUserID)
 	}
 	log.NewInfo(req.OperationID, "rpc QuitGroup return ", pbGroup.QuitGroupResp{CommonResp: &pbGroup.CommonResp{}})
 	return &pbGroup.QuitGroupResp{CommonResp: &pbGroup.CommonResp{}}, nil
@@ -1424,7 +1424,7 @@ func (s *groupServer) GetGroups(ctx context.Context, req *pbGroup.GetGroupsReq) 
 		resp.GroupNum = 1
 		groupInfo := &open_im_sdk.GroupInfo{}
 		utils.CopyStructFields(groupInfo, groupInfoDB)
-		groupMember, err := imdb.GetGroupOwnerInfoByGroupID(req.GroupID)
+		groupMember, err := imdb.GetGroupOwnerInfoByGroupID(ctx, req.GroupID)
 		if err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), req.GroupID)
 			resp.CommonResp.ErrCode = constant.ErrDB.ErrCode
@@ -1449,7 +1449,7 @@ func (s *groupServer) GetGroups(ctx context.Context, req *pbGroup.GetGroupsReq) 
 		for _, v := range groups {
 			group := &pbGroup.CMSGroup{GroupInfo: &open_im_sdk.GroupInfo{}}
 			utils.CopyStructFields(group.GroupInfo, v)
-			groupMember, err := imdb.GetGroupOwnerInfoByGroupID(v.GroupID)
+			groupMember, err := imdb.GetGroupOwnerInfoByGroupID(ctx, v.GroupID)
 			if err != nil {
 				log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetGroupOwnerInfoByGroupID failed", err.Error(), v)
 				continue
@@ -1525,7 +1525,7 @@ func (s *groupServer) GetUserReqApplicationList(ctx context.Context, req *pbGrou
 		}
 		cp.GroupRequestDBCopyOpenIM(&node, &groupReq)
 		cp.UserDBCopyOpenIMPublicUser(node.UserInfo, user)
-		cp.GroupDBCopyOpenIM(node.GroupInfo, group)
+		cp.GroupDBCopyOpenIM(ctx, node.GroupInfo, group)
 		resp.GroupRequestList = append(resp.GroupRequestList, &node)
 	}
 	resp.CommonResp = &pbGroup.CommonResp{
@@ -1537,7 +1537,7 @@ func (s *groupServer) GetUserReqApplicationList(ctx context.Context, req *pbGrou
 
 func (s *groupServer) DismissGroup(ctx context.Context, req *pbGroup.DismissGroupReq) (*pbGroup.DismissGroupResp, error) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "rpc args ", req.String())
-	if !token_verify.IsManagerUserID(req.OpUserID) && !imdb.IsGroupOwnerAdmin(req.GroupID, req.OpUserID) {
+	if !token_verify.IsManagerUserID(req.OpUserID) && !imdb.IsGroupOwnerAdmin(ctx, req.GroupID, req.OpUserID) {
 		log.NewError(req.OperationID, "verify failed ", req.OpUserID, req.GroupID)
 		return &pbGroup.DismissGroupResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}}, nil
 	}

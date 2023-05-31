@@ -1,22 +1,28 @@
 package msg
 
 import (
+	msgclient "Open_IM/internal/rpc/msg/client"
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	rpc "Open_IM/pkg/proto/msg"
 	pbCommon "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
-	"context"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/proto"
 )
+
+var (
+	msgClient msgclient.MsgClient
+)
+
+func init() {
+	msgClient = msgclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message))
+}
 
 // @Summary 根据seq列表删除消息
 // @Description 根据seq列表删除消息
@@ -55,15 +61,7 @@ func DelMsg(c *gin.Context) {
 		return
 	}
 
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if grpcConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	msgClient := rpc.NewMsgClient(grpcConn)
-	respPb, err := msgClient.DelMsgList(context.Background(), &reqPb)
+	respPb, err := msgClient.DelMsgList(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), reqPb)
 		c.JSON(http.StatusOK, gin.H{"errCode": constant.ErrServer.ErrCode, "errMsg": constant.ErrServer.ErrMsg + err.Error()})
@@ -74,6 +72,7 @@ func DelMsg(c *gin.Context) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), resp)
 	c.JSON(http.StatusOK, resp)
 }
+
 func DelSuperGroupMsg(c *gin.Context) {
 	var (
 		req  api.DelSuperGroupMsgReq
@@ -132,18 +131,10 @@ func DelSuperGroupMsg(c *gin.Context) {
 		c.JSON(http.StatusOK, resp)
 	}
 	log.Info(req.OperationID, "", "api DelSuperGroupMsg call start..., [data: %s]", pbData.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewMsgClient(etcdConn)
 
 	log.Info(req.OperationID, "", "api DelSuperGroupMsg call, api call rpc...")
 	if req.IsAllDelete {
-		RpcResp, err := client.DelSuperGroupMsg(context.Background(), rpcReq)
+		RpcResp, err := msgClient.DelSuperGroupMsg(c.Request.Context(), rpcReq)
 		if err != nil {
 			log.NewError(req.OperationID, "call delete DelSuperGroupMsg rpc server failed", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call DelSuperGroupMsg  rpc server failed"})
@@ -155,7 +146,7 @@ func DelSuperGroupMsg(c *gin.Context) {
 		log.NewInfo(req.OperationID, utils.GetSelfFuncName(), resp)
 		c.JSON(http.StatusOK, resp)
 	} else {
-		RpcResp, err := client.SendMsg(context.Background(), &pbData)
+		RpcResp, err := msgClient.SendMsg(c.Request.Context(), &pbData)
 		if err != nil {
 			log.NewError(req.OperationID, "call delete UserSendMsg rpc server failed", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call UserSendMsg  rpc server failed"})
@@ -205,15 +196,7 @@ func ClearMsg(c *gin.Context) {
 
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), " api args ", req.String())
 
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewMsgClient(etcdConn)
-	RpcResp, err := client.ClearMsg(context.Background(), req)
+	RpcResp, err := msgClient.ClearMsg(c.Request.Context(), req)
 	if err != nil {
 		log.NewError(req.OperationID, " CleanUpMsg failed ", err.Error(), req.String(), RpcResp.ErrMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": RpcResp.ErrMsg})
@@ -253,15 +236,8 @@ func SetMsgMinSeq(c *gin.Context) {
 		return
 	}
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), " api args ", req.String())
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := rpc.NewMsgClient(etcdConn)
-	RpcResp, err := client.SetMsgMinSeq(context.Background(), req)
+
+	RpcResp, err := msgClient.SetMsgMinSeq(c.Request.Context(), req)
 	if err != nil {
 		log.NewError(req.OperationID, " SetMsgMinSeq failed ", err.Error(), req.String(), RpcResp.ErrMsg)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": RpcResp.ErrMsg})

@@ -2,13 +2,11 @@ package msg
 
 import (
 	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
-
+	"context"
 	//sdk "Open_IM/pkg/proto/sdk_ws"
-	"Open_IM/pkg/utils"
 )
 
-func SuperGroupNotification(operationID, sendID, recvID string) {
+func SuperGroupNotification(ctx context.Context, operationID, sendID, recvID string) {
 	n := &NotificationMsg{
 		SendID:      sendID,
 		RecvID:      recvID,
@@ -18,6 +16,5 @@ func SuperGroupNotification(operationID, sendID, recvID string) {
 		OperationID: operationID,
 	}
 
-	log.NewInfo(operationID, utils.GetSelfFuncName(), string(n.Content))
-	Notification(n)
+	Notification(ctx, n)
 }

@@ -59,7 +59,7 @@ func (s *groupServer) GetSuperGroupsInfo(ctx context.Context, req *pbGroup.GetSu
 			continue
 		}
 		var groupInfo commonPb.GroupInfo
-		cp.GroupDBCopyOpenIM(&groupInfo, groupInfoFromRedis)
+		cp.GroupDBCopyOpenIM(ctx, &groupInfo, groupInfoFromRedis)
 		groupsInfoList = append(groupsInfoList, &groupInfo)
 	}
 	resp.GroupInfoList = groupsInfoList

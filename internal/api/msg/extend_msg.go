@@ -2,17 +2,14 @@ package msg
 
 import (
 	api "Open_IM/pkg/base_info"
-	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	rpc "Open_IM/pkg/proto/msg"
 	"Open_IM/pkg/utils"
-	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func SetMessageReactionExtensions(c *gin.Context) {
@@ -41,15 +38,7 @@ func SetMessageReactionExtensions(c *gin.Context) {
 		return
 	}
 
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if grpcConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	msgClient := rpc.NewMsgClient(grpcConn)
-	respPb, err := msgClient.SetMessageReactionExtensions(context.Background(), &reqPb)
+	respPb, err := msgClient.SetMessageReactionExtensions(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), reqPb)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": constant.ErrServer.ErrCode, "errMsg": constant.ErrServer.ErrMsg + err.Error()})
@@ -90,15 +79,7 @@ func GetMessageListReactionExtensions(c *gin.Context) {
 		return
 	}
 
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if grpcConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	msgClient := rpc.NewMsgClient(grpcConn)
-	respPb, err := msgClient.GetMessageListReactionExtensions(context.Background(), &reqPb)
+	respPb, err := msgClient.GetMessageListReactionExtensions(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), reqPb)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": constant.ErrServer.ErrCode, "errMsg": constant.ErrServer.ErrMsg + err.Error()})
@@ -137,15 +118,7 @@ func AddMessageReactionExtensions(c *gin.Context) {
 		return
 	}
 
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if grpcConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	msgClient := rpc.NewMsgClient(grpcConn)
-	respPb, err := msgClient.AddMessageReactionExtensions(context.Background(), &reqPb)
+	respPb, err := msgClient.AddMessageReactionExtensions(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), reqPb)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": constant.ErrServer.ErrCode, "errMsg": constant.ErrServer.ErrMsg + err.Error()})
@@ -185,15 +158,7 @@ func DeleteMessageReactionExtensions(c *gin.Context) {
 		return
 	}
 
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, req.OperationID)
-	if grpcConn == nil {
-		errMsg := req.OperationID + " getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	msgClient := rpc.NewMsgClient(grpcConn)
-	respPb, err := msgClient.DeleteMessageReactionExtensions(context.Background(), &reqPb)
+	respPb, err := msgClient.DeleteMessageReactionExtensions(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), reqPb)
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": constant.ErrServer.ErrCode, "errMsg": constant.ErrServer.ErrMsg + err.Error()})

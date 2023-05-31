@@ -126,14 +126,14 @@ func (rpc *rpcConversation) ModifyConversationField(ctx context.Context, req *pb
 				if err = rocksCache.DelConversationFromCache(ctx, v, req.Conversation.ConversationID); err != nil {
 					logger.Error(v, req.Conversation.ConversationID, err.Error())
 				}
-				chat.ConversationChangeNotification(req.OperationID, v)
+				chat.ConversationChangeNotification(ctx, req.OperationID, v)
 			}
 		} else {
 			for _, v := range req.UserIDList {
 				if err = rocksCache.DelConversationFromCache(ctx, v, req.Conversation.ConversationID); err != nil {
 					logger.Error(v, req.Conversation.ConversationID, err.Error())
 				}
-				chat.ConversationUnreadChangeNotification(req.OperationID, v, req.Conversation.ConversationID, conversation.UpdateUnreadCountTime)
+				chat.ConversationUnreadChangeNotification(ctx, req.OperationID, v, req.Conversation.ConversationID, conversation.UpdateUnreadCountTime)
 			}
 		}
 
@@ -176,7 +176,7 @@ func syncPeerUserConversation(ctx context.Context, conversation *pbConversation.
 	if err != nil {
 		logger.Error("DelConversationFromCache failed", err.Error(), conversation.OwnerUserID, conversation.ConversationID)
 	}
-	chat.ConversationSetPrivateNotification(operationID, conversation.OwnerUserID, conversation.UserID, conversation.IsPrivateChat)
+	chat.ConversationSetPrivateNotification(ctx, operationID, conversation.OwnerUserID, conversation.UserID, conversation.IsPrivateChat)
 	return nil
 }
 

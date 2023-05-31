@@ -25,9 +25,9 @@ func saveUserChat(uid string, msg *pbMsg.MsgDataToMQ) error {
 	//	return db.DB.SaveUserChatMongo2(uid, pbSaveData.MsgData.SendTime, &pbSaveData)
 }
 
-func saveUserChatList(userID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (uint64, error) {
-	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
+func saveUserChatList(ctx context.Context, userID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (uint64, error) {
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	logger.Info(userID, len(msgList))
 	//return db.DB.BatchInsertChat(userID, msgList, operationID)
-	return db.DB.BatchInsertChat2Cache(userID, msgList, operationID)
+	return db.DB.BatchInsertChat2Cache(ctx, userID, msgList, operationID)
 }

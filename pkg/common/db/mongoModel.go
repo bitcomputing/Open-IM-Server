@@ -147,16 +147,16 @@ func (d *DataBases) DelMsgBySeqListInOneDoc(suffixUserID string, seqList []uint3
 }
 
 // deleteMsgByLogic
-func (d *DataBases) DelMsgLogic(uid string, seqList []uint32, operationID string) error {
+func (d *DataBases) DelMsgLogic(ctx context.Context, uid string, seqList []uint32, operationID string) error {
 	sortkeys.Uint32s(seqList)
-	seqMsgs, err := d.GetMsgBySeqListMongo2(uid, seqList, operationID)
+	seqMsgs, err := d.GetMsgBySeqListMongo2(ctx, uid, seqList, operationID)
 	if err != nil {
 		return utils.Wrap(err, "")
 	}
 	for _, seqMsg := range seqMsgs {
 		log.NewDebug(operationID, utils.GetSelfFuncName(), *seqMsg)
 		seqMsg.Status = constant.MsgDeleted
-		if err = d.ReplaceMsgBySeq(uid, seqMsg, operationID); err != nil {
+		if err = d.ReplaceMsgBySeq(ctx, uid, seqMsg, operationID); err != nil {
 			log.NewError(operationID, utils.GetSelfFuncName(), "ReplaceMsgListBySeq error", err.Error())
 		}
 	}
@@ -184,9 +184,7 @@ func (d *DataBases) DelMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgData,
 	return nil
 }
 
-func (d *DataBases) ReplaceMsgBySeq(uid string, msg *open_im_sdk.MsgData, operationID string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
-	defer cancel()
+func (d *DataBases) ReplaceMsgBySeq(ctx context.Context, uid string, msg *open_im_sdk.MsgData, operationID string) error {
 	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	logger.Info(uid, msg)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
@@ -444,10 +442,9 @@ func (d *DataBases) GetOldestMsg(ID string) (msg *open_im_sdk.MsgData, err error
 	return nil, nil
 }
 
-func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+func (d *DataBases) GetMsgBySeqListMongo2(ctx context.Context, uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	var hasSeqList []uint32
 	singleCount := 0
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 
 	m := func(uid string, seqList []uint32) map[string][]uint32 {
@@ -494,12 +491,11 @@ func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operatio
 	}
 	return seqMsg, nil
 }
-func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, indexes map[uint32]int, err error) {
+func (d *DataBases) GetSuperGroupMsgBySeqListMongo(ctx context.Context, groupID string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, indexes map[uint32]int, err error) {
 	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	var hasSeqList []uint32
 	indexes = make(map[uint32]int)
 	singleCount := 0
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 
 	m := func(uid string, seqList []uint32) map[string][]uint32 {
@@ -1427,10 +1423,9 @@ func superGroupIndexGen(groupID string, seqSuffix uint32) string {
 	return "super_group_" + groupID + ":" + strconv.FormatInt(int64(seqSuffix), 10)
 }
 
-func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) error {
-	ctx := context.Background()
+func (d *DataBases) CleanUpUserMsgFromMongo(ctx context.Context, userID string, operationID string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	maxSeq, err := d.GetUserMaxSeq(userID)
+	maxSeq, err := d.GetUserMaxSeq(ctx, userID)
 	if err == redis.Nil {
 		return nil
 	}
