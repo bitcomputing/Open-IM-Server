@@ -123,7 +123,7 @@ func FriendAddedNotification(ctx context.Context, operationID, opUserID, fromUse
 		return
 	}
 	utils2.UserDBCopyOpenIMPublicUser(friendAddedTips.OpUser, user)
-	friend, err := imdb.GetFriendRelationshipFromFriend(fromUserID, toUserID)
+	friend, err := imdb.GetFriendRelationshipFromFriend(ctx, fromUserID, toUserID)
 	if err != nil {
 		log.NewError(operationID, "GetFriendRelationshipFromFriend failed ", err.Error(), fromUserID, toUserID)
 		return

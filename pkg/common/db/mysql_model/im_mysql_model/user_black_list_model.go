@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-func InsertInToUserBlackList(black db.Black) error {
+func InsertInToUserBlackList(ctx context.Context, black db.Black) error {
 	black.CreateTime = time.Now()
-	return db.DB.MysqlDB.DefaultGormDB().Table("blacks").Create(black).Error
+	return db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("blacks").Create(black).Error
 }
 
 // type Black struct {
@@ -26,8 +26,8 @@ func CheckBlack(ownerUserID, blockUserID string) error {
 	return db.DB.MysqlDB.DefaultGormDB().Table("blacks").Where("owner_user_id=? and block_user_id=?", ownerUserID, blockUserID).Find(&black).Error
 }
 
-func RemoveBlackList(ownerUserID, blockUserID string) error {
-	err := db.DB.MysqlDB.DefaultGormDB().Table("blacks").Where("owner_user_id=? and block_user_id=?", ownerUserID, blockUserID).Delete(db.Black{}).Error
+func RemoveBlackList(ctx context.Context, ownerUserID, blockUserID string) error {
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("blacks").Where("owner_user_id=? and block_user_id=?", ownerUserID, blockUserID).Delete(db.Black{}).Error
 	return utils.Wrap(err, "RemoveBlackList failed")
 }
 

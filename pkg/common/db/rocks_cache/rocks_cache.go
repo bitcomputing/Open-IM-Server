@@ -294,9 +294,9 @@ func DelGroupInfoFromCache(groupID string) error {
 	return db.DB.Rc.TagAsDeleted(groupInfoCache + groupID)
 }
 
-func GetAllFriendsInfoFromCache(userID string) ([]*db.Friend, error) {
+func GetAllFriendsInfoFromCache(ctx context.Context, userID string) ([]*db.Friend, error) {
 	getAllFriendInfo := func() (string, error) {
-		friendInfoList, err := imdb.GetFriendListByUserID(userID)
+		friendInfoList, err := imdb.GetFriendListByUserID(ctx, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "")
 		}
@@ -306,7 +306,7 @@ func GetAllFriendsInfoFromCache(userID string) ([]*db.Friend, error) {
 		}
 		return string(bytes), nil
 	}
-	allFriendInfoStr, err := db.DB.Rc.Fetch(allFriendInfoCache+userID, time.Second*30*60, getAllFriendInfo)
+	allFriendInfoStr, err := db.DB.Rc.Fetch2(ctx, allFriendInfoCache+userID, time.Second*30*60, getAllFriendInfo)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}
@@ -315,8 +315,8 @@ func GetAllFriendsInfoFromCache(userID string) ([]*db.Friend, error) {
 	return friendInfoList, utils.Wrap(err, "")
 }
 
-func DelAllFriendsInfoFromCache(userID string) error {
-	return db.DB.Rc.TagAsDeleted(allFriendInfoCache + userID)
+func DelAllFriendsInfoFromCache(ctx context.Context, userID string) error {
+	return db.DB.Rc.TagAsDeleted2(ctx, allFriendInfoCache+userID)
 }
 
 func GetAllDepartmentsFromCache() ([]db.Department, error) {

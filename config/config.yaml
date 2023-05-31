@@ -243,6 +243,24 @@ serverConfigs:
       stat: true
       prometheus: true
       breaker: true
+  friend:
+    name: open-im-friend
+    discovery:
+      hosts:
+        - 127.0.0.1:2379
+      key: open-im-friend.rpc
+    port: 10240
+    timeout: 3000
+    prometheus:
+      host: 0.0.0.0
+      port: 9091
+      path: /metrics
+    middlewares:
+      trace: true
+      recover: true
+      stat: true
+      prometheus: true
+      breaker: true
 
 clientConfigs:
   auth:
@@ -298,6 +316,18 @@ clientConfigs:
       hosts:
         - 127.0.0.1:2379
       key: open-im-cache.rpc
+    timeout: 3000
+    middlewares:
+      trace: true
+      duration: true
+      prometheus: true
+      breaker: true
+      timeout: true
+  friend:
+    discovery:
+      hosts:
+        - 127.0.0.1:2379
+      key: open-im-friend.rpc
     timeout: 3000
     middlewares:
       trace: true

@@ -8,6 +8,7 @@ import (
 	imdb "Open_IM/pkg/common/db/mysql_model/im_mysql_model"
 	rocksCache "Open_IM/pkg/common/db/rocks_cache"
 
+	friendclient "Open_IM/internal/rpc/friend/client"
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbConversation "Open_IM/pkg/proto/conversation"
@@ -31,6 +32,7 @@ type userServer struct {
 	etcdSchema      string
 	etcdAddr        []string
 	pbUser.UnimplementedUserServer
+	friendClient friendclient.FriendClient
 }
 
 func NewUserServer(port int) *userServer {
@@ -40,6 +42,7 @@ func NewUserServer(port int) *userServer {
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImUserName,
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
 		etcdAddr:        config.Config.Etcd.EtcdAddr,
+		friendClient:    friendclient.NewFriendClient(config.ConvertClientConfig(config.Config.ClientConfigs.Friend)),
 	}
 }
 
@@ -501,19 +504,12 @@ func (s *userServer) UpdateUserInfo(ctx context.Context, req *pbUser.UpdateUserI
 		logger.Error("UpdateUserInfo failed ", err.Error(), user)
 		return &pbUser.UpdateUserInfoResp{CommonResp: &pbUser.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImFriendName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		logger.Error(req.OperationID, errMsg)
-		return &pbUser.UpdateUserInfoResp{CommonResp: &pbUser.CommonResp{ErrCode: constant.ErrInternal.ErrCode, ErrMsg: errMsg}}, nil
-	}
 
-	client := pbFriend.NewFriendClient(etcdConn)
 	newReq := &pbFriend.GetFriendListReq{
 		CommID: &pbFriend.CommID{OperationID: req.OperationID, FromUserID: req.UserInfo.UserID, OpUserID: req.OpUserID},
 	}
 
-	rpcResp, err := client.GetFriendList(context.Background(), newReq)
+	rpcResp, err := s.friendClient.GetFriendList(context.Background(), newReq)
 	if err != nil {
 		logger.Error("GetFriendList failed ", err.Error(), newReq)
 		return &pbUser.UpdateUserInfoResp{CommonResp: &pbUser.CommonResp{ErrCode: 500, ErrMsg: err.Error()}}, nil
