@@ -1,15 +1,13 @@
 package utils
 
 import (
-	"Open_IM/pkg/common/config"
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	rocksCache "Open_IM/pkg/common/db/rocks_cache"
 	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbCache "Open_IM/pkg/proto/cache"
 	"Open_IM/pkg/utils"
 	"context"
 	"errors"
-	"strings"
 	"sync"
 )
 
@@ -21,7 +19,7 @@ type GroupMemberUserIDListHash struct {
 var CacheGroupMemberUserIDList = make(map[string]*GroupMemberUserIDListHash, 0)
 var CacheGroupMtx sync.RWMutex
 
-func GetGroupMemberUserIDList(ctx context.Context, groupID string, operationID string) ([]string, error) {
+func GetGroupMemberUserIDList(ctx context.Context, cacheClient cacheclient.CacheClient, groupID string, operationID string) ([]string, error) {
 	groupHashRemote, err := GetGroupMemberUserIDListHashFromRemote(ctx, groupID)
 	if err != nil {
 		CacheGroupMtx.Lock()
@@ -46,7 +44,7 @@ func GetGroupMemberUserIDList(ctx context.Context, groupID string, operationID s
 		return groupInLocalCache.UserIDList, nil
 	}
 	log.Debug(operationID, "not in local cache or hash changed", groupID, " remote hash ", groupHashRemote, " in cache ", ok)
-	memberUserIDListRemote, err := GetGroupMemberUserIDListFromRemote(groupID, operationID)
+	memberUserIDListRemote, err := GetGroupMemberUserIDListFromRemote(ctx, cacheClient, groupID, operationID)
 	if err != nil {
 		log.Error(operationID, "GetGroupMemberUserIDListFromRemote failed ", err.Error(), groupID)
 		return nil, utils.Wrap(err, groupID)
@@ -59,16 +57,10 @@ func GetGroupMemberUserIDListHashFromRemote(ctx context.Context, groupID string)
 	return rocksCache.GetGroupMemberListHashFromCache(ctx, groupID)
 }
 
-func GetGroupMemberUserIDListFromRemote(groupID string, operationID string) ([]string, error) {
+func GetGroupMemberUserIDListFromRemote(ctx context.Context, cacheClient cacheclient.CacheClient, groupID string, operationID string) ([]string, error) {
 	getGroupMemberIDListFromCacheReq := &pbCache.GetGroupMemberIDListFromCacheReq{OperationID: operationID, GroupID: groupID}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, operationID)
-	if etcdConn == nil {
-		errMsg := operationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(operationID, errMsg)
-		return nil, errors.New("errMsg")
-	}
-	client := pbCache.NewCacheClient(etcdConn)
-	cacheResp, err := client.GetGroupMemberIDListFromCache(context.Background(), getGroupMemberIDListFromCacheReq)
+
+	cacheResp, err := cacheClient.GetGroupMemberIDListFromCache(context.Background(), getGroupMemberIDListFromCacheReq)
 	if err != nil {
 		log.NewError(operationID, "GetGroupMemberIDListFromCache rpc call failed ", err.Error())
 		return nil, utils.Wrap(err, "GetGroupMemberIDListFromCache rpc call failed")

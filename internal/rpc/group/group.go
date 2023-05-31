@@ -1,6 +1,7 @@
 package group
 
 import (
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	conversationclient "Open_IM/internal/rpc/conversation/client"
 	chat "Open_IM/internal/rpc/msg"
 	userclient "Open_IM/internal/rpc/user/client"
@@ -30,8 +31,6 @@ import (
 	"time"
 
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/zeromicro/go-zero/core/discov"
-	"github.com/zeromicro/go-zero/zrpc"
 
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -46,44 +45,18 @@ type groupServer struct {
 	pbGroup.UnimplementedGroupServer
 	conversationClient conversationclient.ConversationClient
 	userClient         userclient.UserClient
+	cacheClient        cacheclient.CacheClient
 }
 
 func NewGroupServer(port int) *groupServer {
 	return &groupServer{
-		rpcPort:         port,
-		rpcRegisterName: config.Config.RpcRegisterName.OpenImGroupName,
-		etcdSchema:      config.Config.Etcd.EtcdSchema,
-		etcdAddr:        config.Config.Etcd.EtcdAddr,
-		conversationClient: conversationclient.NewConversationClient(zrpc.RpcClientConf{
-			Etcd: discov.EtcdConf{
-				Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
-				Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
-			},
-			Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
-			KeepaliveTime: 0,
-			Middlewares: zrpc.ClientMiddlewaresConf{
-				Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
-				Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
-				Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
-				Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
-				Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
-			},
-		}),
-		userClient: userclient.NewUserClient(zrpc.RpcClientConf{
-			Etcd: discov.EtcdConf{
-				Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
-				Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
-			},
-			Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
-			KeepaliveTime: 0,
-			Middlewares: zrpc.ClientMiddlewaresConf{
-				Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
-				Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
-				Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
-				Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
-				Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
-			},
-		}),
+		rpcPort:            port,
+		rpcRegisterName:    config.Config.RpcRegisterName.OpenImGroupName,
+		etcdSchema:         config.Config.Etcd.EtcdSchema,
+		etcdAddr:           config.Config.Etcd.EtcdAddr,
+		conversationClient: conversationclient.NewConversationClient(config.ConvertClientConfig(config.Config.ClientConfigs.Conversation)),
+		userClient:         userclient.NewUserClient(config.ConvertClientConfig(config.Config.ClientConfigs.User)),
+		cacheClient:        cacheclient.NewCacheClient(config.ConvertClientConfig(config.Config.ClientConfigs.Cache)),
 	}
 }
 
@@ -788,7 +761,7 @@ func (s *groupServer) KickGroupMember(ctx context.Context, req *pbGroup.KickGrou
 		if err := rocksCache.DelGroupMemberListHashFromCache(req.GroupID); err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), req.GroupID, err.Error())
 		}
-		if err := rocksCache.DelGroupMemberIDListFromCache(req.GroupID); err != nil {
+		if err := rocksCache.DelGroupMemberIDListFromCache(ctx, req.GroupID); err != nil {
 			log.NewError(req.OperationID, utils.GetSelfFuncName(), err.Error(), req.GroupID)
 		}
 		reqPb := pbConversation.ModifyConversationFieldReq{Conversation: &pbConversation.Conversation{}}
@@ -1024,14 +997,7 @@ func (s *groupServer) GroupApplicationResponse(ctx context.Context, req *pbGroup
 			log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "SetConversation success", respPb.String())
 		}
 
-		etcdCacheConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, req.OperationID)
-		if etcdCacheConn == nil {
-			errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(req.OperationID, errMsg)
-			return &pbGroup.GroupApplicationResponseResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrInternal.ErrCode, ErrMsg: errMsg}}, nil
-		}
-		cacheClient := pbCache.NewCacheClient(etcdCacheConn)
-		cacheResp, err := cacheClient.DelGroupMemberIDListFromCache(context.Background(), &pbCache.DelGroupMemberIDListFromCacheReq{OperationID: req.OperationID, GroupID: req.GroupID})
+		cacheResp, err := s.cacheClient.DelGroupMemberIDListFromCache(context.Background(), &pbCache.DelGroupMemberIDListFromCacheReq{OperationID: req.OperationID, GroupID: req.GroupID})
 		if err != nil {
 			log.NewError(req.OperationID, "DelGroupMemberIDListFromCache rpc call failed ", err.Error())
 			return &pbGroup.GroupApplicationResponseResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: constant.ErrDB.ErrMsg}}, nil
@@ -1357,14 +1323,8 @@ func (s *groupServer) SetGroupInfo(ctx context.Context, req *pbGroup.SetGroupInf
 	if req.GroupInfoForSet.Notification != "" {
 		//get group member user id
 		getGroupMemberIDListFromCacheReq := &pbCache.GetGroupMemberIDListFromCacheReq{OperationID: req.OperationID, GroupID: req.GroupInfoForSet.GroupID}
-		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, req.OperationID)
-		if etcdConn == nil {
-			errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(req.OperationID, errMsg)
-			return &pbGroup.SetGroupInfoResp{CommonResp: &pbGroup.CommonResp{ErrCode: constant.ErrInternal.ErrCode, ErrMsg: errMsg}}, nil
-		}
-		client := pbCache.NewCacheClient(etcdConn)
-		cacheResp, err := client.GetGroupMemberIDListFromCache(context.Background(), getGroupMemberIDListFromCacheReq)
+
+		cacheResp, err := s.cacheClient.GetGroupMemberIDListFromCache(context.Background(), getGroupMemberIDListFromCacheReq)
 		if err != nil {
 			log.NewError(req.OperationID, "GetGroupMemberIDListFromCache rpc call failed ", err.Error())
 			return &pbGroup.SetGroupInfoResp{CommonResp: &pbGroup.CommonResp{}}, nil
@@ -1977,14 +1937,7 @@ func (s *groupServer) GetGroupAbstractInfo(ctx context.Context, req *pbGroup.Get
 
 func (s *groupServer) DelGroupAndUserCache(operationID, groupID string, userIDList []string) error {
 	if groupID != "" {
-		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, operationID)
-		if etcdConn == nil {
-			errMsg := operationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(operationID, errMsg)
-			return errors.New("etcdConn is nil")
-		}
-		cacheClient := pbCache.NewCacheClient(etcdConn)
-		cacheResp, err := cacheClient.DelGroupMemberIDListFromCache(context.Background(), &pbCache.DelGroupMemberIDListFromCacheReq{
+		cacheResp, err := s.cacheClient.DelGroupMemberIDListFromCache(context.Background(), &pbCache.DelGroupMemberIDListFromCacheReq{
 			GroupID:     groupID,
 			OperationID: operationID,
 		})

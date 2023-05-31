@@ -7,6 +7,7 @@
 package push
 
 import (
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	kfk "Open_IM/pkg/common/kafka"
@@ -25,15 +26,18 @@ type fcb func(msg []byte)
 type PushConsumerHandler struct {
 	msgHandle         map[string]fcb
 	pushConsumerGroup *kfk.MConsumerGroup
+	cacheClient       cacheclient.CacheClient
 }
 
-func (ms *PushConsumerHandler) Init() {
+func (ms *PushConsumerHandler) Init(cache cacheclient.CacheClient) {
 	ms.msgHandle = make(map[string]fcb)
 	ms.msgHandle[config.Config.Kafka.Ms2pschat.Topic] = ms.handleMs2PsChat
 	ms.pushConsumerGroup = kfk.NewMConsumerGroup(&kfk.MConsumerGroupConfig{KafkaVersion: sarama.V2_0_0_0,
 		OffsetsInitial: sarama.OffsetNewest, IsReturnErr: false}, []string{config.Config.Kafka.Ms2pschat.Topic}, config.Config.Kafka.Ms2pschat.Addr,
 		config.Config.Kafka.ConsumerGroupID.MsgToPush)
+	ms.cacheClient = cache
 }
+
 func (ms *PushConsumerHandler) handleMs2PsChat(msg []byte) {
 	logx.Debug("", "msg come from kafka  And push!!!", "msg", string(msg))
 	msgFromMQ := pbChat.PushMsgDataToMQ{}
@@ -53,7 +57,7 @@ func (ms *PushConsumerHandler) handleMs2PsChat(msg []byte) {
 	}
 	switch msgFromMQ.MsgData.SessionType {
 	case constant.SuperGroupChatType:
-		MsgToSuperGroupUser(context.Background(), pbData)
+		MsgToSuperGroupUser(context.Background(), ms.cacheClient, pbData)
 	default:
 		MsgToUser(context.Background(), pbData)
 	}

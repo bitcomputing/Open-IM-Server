@@ -13,8 +13,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zeromicro/go-zero/core/discov"
-	"github.com/zeromicro/go-zero/zrpc"
 )
 
 var (
@@ -23,36 +21,8 @@ var (
 )
 
 func init() {
-	conversationClient = conversationclient.NewConversationClient(zrpc.RpcClientConf{
-		Etcd: discov.EtcdConf{
-			Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
-			Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
-		},
-		Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
-		KeepaliveTime: 0,
-		Middlewares: zrpc.ClientMiddlewaresConf{
-			Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
-			Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
-			Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
-			Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
-			Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
-		},
-	})
-	userClient = userclient.NewUserClient(zrpc.RpcClientConf{
-		Etcd: discov.EtcdConf{
-			Hosts: config.Config.ClientConfigs.User.Disconvery.Hosts,
-			Key:   config.Config.ClientConfigs.User.Disconvery.Key,
-		},
-		Timeout:       config.Config.ClientConfigs.User.Timeout,
-		KeepaliveTime: 0,
-		Middlewares: zrpc.ClientMiddlewaresConf{
-			Trace:      config.Config.ClientConfigs.User.Middlewares.Trace,
-			Duration:   config.Config.ClientConfigs.User.Middlewares.Duration,
-			Prometheus: config.Config.ClientConfigs.User.Middlewares.Prometheus,
-			Breaker:    config.Config.ClientConfigs.User.Middlewares.Breaker,
-			Timeout:    config.Config.ClientConfigs.User.Middlewares.Timeout,
-		},
-	})
+	conversationClient = conversationclient.NewConversationClient(config.ConvertClientConfig(config.Config.ClientConfigs.Conversation))
+	userClient = userclient.NewUserClient(config.ConvertClientConfig(config.Config.ClientConfigs.User))
 }
 
 func SetConversation(c *gin.Context) {

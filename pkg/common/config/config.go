@@ -7,6 +7,10 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/core/prometheus"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/zrpc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -535,6 +539,7 @@ type config struct {
 		Push         ServerConfig `yaml:"push"`
 		Conversation ServerConfig `yaml:"conversation"`
 		User         ServerConfig `yaml:"user"`
+		Cache        ServerConfig `yaml:"cache"`
 	} `yaml:"serverConfigs"`
 
 	ClientConfigs struct {
@@ -542,6 +547,7 @@ type config struct {
 		Push         ClientConfig `yaml:"push"`
 		Conversation ClientConfig `yaml:"conversation"`
 		User         ClientConfig `yaml:"user"`
+		Cache        ClientConfig `yaml:"cache"`
 	} `yaml:"clientConfigs"`
 }
 type PConversation struct {
@@ -581,6 +587,32 @@ type ServerConfig struct {
 	} `yaml:"middlewares"`
 }
 
+func ConvertServerConfig(c ServerConfig) zrpc.RpcServerConf {
+	return zrpc.RpcServerConf{
+		ServiceConf: service.ServiceConf{
+			Name: c.Name,
+			Prometheus: prometheus.Config{
+				Host: c.Prometheus.Host,
+				Port: c.Prometheus.Port,
+				Path: c.Prometheus.Path,
+			},
+		},
+		ListenOn: fmt.Sprintf("0.0.0.0:%d", c.Port),
+		Etcd: discov.EtcdConf{
+			Hosts: c.Discovery.Hosts,
+			Key:   c.Discovery.Key,
+		},
+		Timeout: c.Timeout,
+		Middlewares: zrpc.ServerMiddlewaresConf{
+			Trace:      c.Middlewares.Trace,
+			Recover:    c.Middlewares.Recover,
+			Stat:       c.Middlewares.Stat,
+			Prometheus: c.Middlewares.Prometheus,
+			Breaker:    c.Middlewares.Breaker,
+		},
+	}
+}
+
 type ClientConfig struct {
 	Disconvery struct {
 		Hosts []string `yaml:"hosts"`
@@ -596,6 +628,22 @@ type ClientConfig struct {
 	}
 }
 
+func ConvertClientConfig(c ClientConfig) zrpc.RpcClientConf {
+	return zrpc.RpcClientConf{
+		Etcd: discov.EtcdConf{
+			Hosts: c.Disconvery.Hosts,
+			Key:   c.Disconvery.Key,
+		},
+		Timeout: c.Timeout,
+		Middlewares: zrpc.ClientMiddlewaresConf{
+			Trace:      c.Middlewares.Trace,
+			Duration:   c.Middlewares.Duration,
+			Prometheus: c.Middlewares.Prometheus,
+			Breaker:    c.Middlewares.Breaker,
+			Timeout:    c.Middlewares.Timeout,
+		},
+	}
+}
 func unmarshalConfig(config interface{}, configName string) {
 	var env string
 	if configName == "config.yaml" {

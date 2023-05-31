@@ -2,6 +2,7 @@ package im_mysql_model
 
 import (
 	"Open_IM/pkg/common/db"
+	"context"
 	"fmt"
 	"time"
 )
@@ -35,9 +36,9 @@ func GetFriendListByUserID(OwnerUserID string) ([]db.Friend, error) {
 	return friends, nil
 }
 
-func GetFriendIDListByUserID(OwnerUserID string) ([]string, error) {
+func GetFriendIDListByUserID(ctx context.Context, OwnerUserID string) ([]string, error) {
 	var friendIDList []string
-	err := db.DB.MysqlDB.DefaultGormDB().Table("friends").Where("owner_user_id=?", OwnerUserID).Pluck("friend_user_id", &friendIDList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("friends").Where("owner_user_id=?", OwnerUserID).Pluck("friend_user_id", &friendIDList).Error
 	if err != nil {
 		return nil, err
 	}

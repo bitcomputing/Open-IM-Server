@@ -2,6 +2,7 @@ package msg
 
 import (
 	pushclient "Open_IM/internal/push/client"
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	conversationclient "Open_IM/internal/rpc/conversation/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
@@ -19,8 +20,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/zeromicro/go-zero/core/discov"
-	"github.com/zeromicro/go-zero/zrpc"
 
 	"google.golang.org/grpc"
 )
@@ -40,6 +39,7 @@ type rpcChat struct {
 	msg.UnimplementedMsgServer
 	conversationClient conversationclient.ConversationClient
 	pushClient         pushclient.PushClient
+	cacheClient        cacheclient.CacheClient
 }
 
 type deleteMsg struct {
@@ -52,43 +52,14 @@ type deleteMsg struct {
 func NewRpcChatServer(port int) *rpcChat {
 	log.NewPrivateLog(constant.LogFileName)
 	rc := rpcChat{
-		rpcPort:         port,
-		rpcRegisterName: config.Config.RpcRegisterName.OpenImMsgName,
-		etcdSchema:      config.Config.Etcd.EtcdSchema,
-		etcdAddr:        config.Config.Etcd.EtcdAddr,
-		dMessageLocker:  NewLockerMessage(),
-		conversationClient: conversationclient.NewConversationClient(zrpc.RpcClientConf{
-			Etcd: discov.EtcdConf{
-				Hosts: config.Config.ClientConfigs.Conversation.Disconvery.Hosts,
-				Key:   config.Config.ClientConfigs.Conversation.Disconvery.Key,
-			},
-			Timeout:       config.Config.ClientConfigs.Conversation.Timeout,
-			KeepaliveTime: 0,
-			Middlewares: zrpc.ClientMiddlewaresConf{
-				Trace:      config.Config.ClientConfigs.Conversation.Middlewares.Trace,
-				Duration:   config.Config.ClientConfigs.Conversation.Middlewares.Duration,
-				Prometheus: config.Config.ClientConfigs.Conversation.Middlewares.Prometheus,
-				Breaker:    config.Config.ClientConfigs.Conversation.Middlewares.Breaker,
-				Timeout:    config.Config.ClientConfigs.Conversation.Middlewares.Timeout,
-			},
-		}),
-		pushClient: pushclient.NewPushClient(
-			zrpc.RpcClientConf{
-				Etcd: discov.EtcdConf{
-					Hosts: config.Config.ClientConfigs.Push.Disconvery.Hosts,
-					Key:   config.Config.ClientConfigs.Push.Disconvery.Key,
-				},
-				Timeout:       config.Config.ClientConfigs.Push.Timeout,
-				KeepaliveTime: 0,
-				Middlewares: zrpc.ClientMiddlewaresConf{
-					Trace:      config.Config.ClientConfigs.Push.Middlewares.Trace,
-					Duration:   config.Config.ClientConfigs.Push.Middlewares.Duration,
-					Prometheus: config.Config.ClientConfigs.Push.Middlewares.Prometheus,
-					Breaker:    config.Config.ClientConfigs.Push.Middlewares.Breaker,
-					Timeout:    config.Config.ClientConfigs.Push.Middlewares.Timeout,
-				},
-			},
-		),
+		rpcPort:            port,
+		rpcRegisterName:    config.Config.RpcRegisterName.OpenImMsgName,
+		etcdSchema:         config.Config.Etcd.EtcdSchema,
+		etcdAddr:           config.Config.Etcd.EtcdAddr,
+		dMessageLocker:     NewLockerMessage(),
+		conversationClient: conversationclient.NewConversationClient(config.ConvertClientConfig(config.Config.ClientConfigs.Conversation)),
+		pushClient:         pushclient.NewPushClient(config.ConvertClientConfig(config.Config.ClientConfigs.Push)),
+		cacheClient:        cacheclient.NewCacheClient(config.ConvertClientConfig(config.Config.ClientConfigs.Cache)),
 	}
 	rc.messageWriter = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic)
 	//rc.offlineProducer = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschatOffline.Addr, config.Config.Kafka.Ws2mschatOffline.Topic)

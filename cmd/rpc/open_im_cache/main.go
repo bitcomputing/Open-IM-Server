@@ -1,27 +1,29 @@
 package main
 
 import (
-	rpcCache "Open_IM/internal/rpc/cache"
+	"Open_IM/internal/rpc/cache"
 	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-	promePkg "Open_IM/pkg/common/prometheus"
-
+	"Open_IM/pkg/common/interceptors"
+	pbcache "Open_IM/pkg/proto/cache"
 	"flag"
-	"fmt"
+
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	defaultPorts := config.Config.RpcPort.OpenImCachePort
-	rpcPort := flag.Int("port", defaultPorts[0], "RpcToken default listen port 10800")
-	prometheusPort := flag.Int("prometheus_port", config.Config.Prometheus.CachePrometheusPort[0], "cachePrometheusPort default listen port")
+	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.Cache)
+	rpcPort := flag.Int("port", config.Config.ServerConfigs.Cache.Port, "RpcToken default listen port 10800")
 	flag.Parse()
-	fmt.Println("start cache rpc server, port: ", *rpcPort, ", OpenIM version: ", constant.CurrentVersion, "\n")
-	rpcServer := rpcCache.NewCacheServer(*rpcPort)
-	go func() {
-		err := promePkg.StartPromeSrv(*prometheusPort)
-		if err != nil {
-			panic(err)
-		}
-	}()
-	rpcServer.Run()
+	server := cache.NewCacheServer(*rpcPort)
+	s := zrpc.MustNewServer(cfg, func(s *grpc.Server) {
+		pbcache.RegisterCacheServer(s, server)
+	})
+	defer s.Stop()
+
+	server.RegisterLegacyDiscovery()
+
+	s.AddUnaryInterceptors(interceptors.ResponseLogger)
+
+	s.Start()
 }

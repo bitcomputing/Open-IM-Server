@@ -131,15 +131,8 @@ func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMs
 		}
 		log.NewDebug(data.OperationID, *config.Config.MessageVerify.FriendVerify)
 		reqGetBlackIDListFromCache := &cacheRpc.GetBlackIDListFromCacheReq{UserID: data.MsgData.RecvID, OperationID: data.OperationID}
-		etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, data.OperationID)
-		if etcdConn == nil {
-			errMsg := data.OperationID + "getcdv3.GetDefaultConn == nil"
-			log.NewError(data.OperationID, errMsg)
-			return true, 0, "", nil
-		}
 
-		cacheClient := cacheRpc.NewCacheClient(etcdConn)
-		cacheResp, err := cacheClient.GetBlackIDListFromCache(context.Background(), reqGetBlackIDListFromCache)
+		cacheResp, err := rpc.cacheClient.GetBlackIDListFromCache(context.Background(), reqGetBlackIDListFromCache)
 		if err != nil {
 			log.NewError(data.OperationID, "GetBlackIDListFromCache rpc call failed ", err.Error())
 		} else {
@@ -154,14 +147,8 @@ func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMs
 		log.NewDebug(data.OperationID, *config.Config.MessageVerify.FriendVerify)
 		if *config.Config.MessageVerify.FriendVerify {
 			reqGetFriendIDListFromCache := &cacheRpc.GetFriendIDListFromCacheReq{UserID: data.MsgData.RecvID, OperationID: data.OperationID}
-			etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, data.OperationID)
-			if etcdConn == nil {
-				errMsg := data.OperationID + "getcdv3.GetDefaultConn == nil"
-				log.NewError(data.OperationID, errMsg)
-				return true, 0, "", nil
-			}
-			cacheClient := cacheRpc.NewCacheClient(etcdConn)
-			cacheResp, err := cacheClient.GetFriendIDListFromCache(context.Background(), reqGetFriendIDListFromCache)
+
+			cacheResp, err := rpc.cacheClient.GetFriendIDListFromCache(context.Background(), reqGetFriendIDListFromCache)
 			if err != nil {
 				log.NewError(data.OperationID, "GetFriendIDListFromCache rpc call failed ", err.Error())
 			} else {
@@ -178,7 +165,7 @@ func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMs
 			return true, 0, "", nil
 		}
 	case constant.GroupChatType:
-		userIDList, err := utils2.GetGroupMemberUserIDList(ctx, data.MsgData.GroupID, data.OperationID)
+		userIDList, err := utils2.GetGroupMemberUserIDList(ctx, rpc.cacheClient, data.MsgData.GroupID, data.OperationID)
 		if err != nil {
 			errMsg := data.OperationID + err.Error()
 			log.NewError(data.OperationID, errMsg)
@@ -252,7 +239,7 @@ func (rpc *rpcChat) messageVerification(ctx context.Context, data *pbChat.SendMs
 		if groupInfo.GroupType == constant.SuperGroup {
 			return true, 0, "", nil
 		} else {
-			userIDList, err := utils2.GetGroupMemberUserIDList(ctx, data.MsgData.GroupID, data.OperationID)
+			userIDList, err := utils2.GetGroupMemberUserIDList(ctx, rpc.cacheClient, data.MsgData.GroupID, data.OperationID)
 			if err != nil {
 				errMsg := data.OperationID + err.Error()
 				log.NewError(data.OperationID, errMsg)

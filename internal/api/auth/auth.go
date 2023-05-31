@@ -14,9 +14,7 @@ import (
 
 	"github.com/fatih/structs"
 	"github.com/gin-gonic/gin"
-	"github.com/zeromicro/go-zero/core/discov"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/zrpc"
 )
 
 var (
@@ -24,21 +22,7 @@ var (
 )
 
 func Init() {
-	authClientConfig := zrpc.RpcClientConf{
-		Etcd: discov.EtcdConf{
-			Hosts: config.Config.ClientConfigs.Auth.Disconvery.Hosts,
-			Key:   config.Config.ClientConfigs.Auth.Disconvery.Key,
-		},
-		Timeout: config.Config.ClientConfigs.Auth.Timeout,
-		Middlewares: zrpc.ClientMiddlewaresConf{
-			Trace:      config.Config.ClientConfigs.Auth.Middlewares.Trace,
-			Duration:   config.Config.ClientConfigs.Auth.Middlewares.Duration,
-			Prometheus: config.Config.ClientConfigs.Auth.Middlewares.Prometheus,
-			Breaker:    config.Config.ClientConfigs.Auth.Middlewares.Breaker,
-			Timeout:    config.Config.ClientConfigs.Auth.Middlewares.Timeout,
-		},
-	}
-	authClient = authclient.NewAuthClient(authClientConfig)
+	authClient = authclient.NewAuthClient(config.ConvertClientConfig(config.Config.ClientConfigs.User))
 }
 
 // @Summary 用户注册

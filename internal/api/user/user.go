@@ -1,6 +1,7 @@
 package user
 
 import (
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	userclient "Open_IM/internal/rpc/user/client"
 	jsonData "Open_IM/internal/utils"
 	api "Open_IM/pkg/base_info"
@@ -18,29 +19,16 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zeromicro/go-zero/core/discov"
-	"github.com/zeromicro/go-zero/zrpc"
 )
 
 var (
-	userClient userclient.UserClient
+	userClient  userclient.UserClient
+	cacheClient cacheclient.CacheClient
 )
 
 func init() {
-	userClient = userclient.NewUserClient(zrpc.RpcClientConf{
-		Etcd: discov.EtcdConf{
-			Hosts: config.Config.ClientConfigs.User.Disconvery.Hosts,
-			Key:   config.Config.ClientConfigs.User.Disconvery.Key,
-		},
-		Timeout: config.Config.ClientConfigs.User.Timeout,
-		Middlewares: zrpc.ClientMiddlewaresConf{
-			Trace:      config.Config.ClientConfigs.User.Middlewares.Trace,
-			Duration:   config.Config.ClientConfigs.User.Middlewares.Duration,
-			Prometheus: config.Config.ClientConfigs.User.Middlewares.Prometheus,
-			Breaker:    config.Config.ClientConfigs.User.Middlewares.Breaker,
-			Timeout:    config.Config.ClientConfigs.User.Middlewares.Timeout,
-		},
-	})
+	userClient = userclient.NewUserClient(config.ConvertClientConfig(config.Config.ClientConfigs.User))
+	cacheClient = cacheclient.NewCacheClient(config.ConvertClientConfig(config.Config.ClientConfigs.Cache))
 }
 
 func GetUsersInfoFromCache(c *gin.Context) {
@@ -102,15 +90,8 @@ func GetFriendIDListFromCache(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := cacheRpc.NewCacheClient(etcdConn)
-	respPb, err := client.GetFriendIDListFromCache(c.Request.Context(), &reqPb)
+
+	respPb, err := cacheClient.GetFriendIDListFromCache(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetFriendIDListFromCache", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call  rpc server failed:" + err.Error()})
@@ -144,15 +125,8 @@ func GetBlackIDListFromCache(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
 		return
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImCacheName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := cacheRpc.NewCacheClient(etcdConn)
-	respPb, err := client.GetBlackIDListFromCache(c.Request.Context(), &reqPb)
+
+	respPb, err := cacheClient.GetBlackIDListFromCache(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetFriendIDListFromCache", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": "call  rpc server failed:" + err.Error()})

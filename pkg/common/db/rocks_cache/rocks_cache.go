@@ -69,9 +69,9 @@ func DelKeys() {
 	}
 }
 
-func GetFriendIDListFromCache(userID string) ([]string, error) {
+func GetFriendIDListFromCache(ctx context.Context, userID string) ([]string, error) {
 	getFriendIDList := func() (string, error) {
-		friendIDList, err := imdb.GetFriendIDListByUserID(userID)
+		friendIDList, err := imdb.GetFriendIDListByUserID(ctx, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "")
 		}
@@ -81,7 +81,7 @@ func GetFriendIDListFromCache(userID string) ([]string, error) {
 		}
 		return string(bytes), nil
 	}
-	friendIDListStr, err := db.DB.Rc.Fetch(friendRelationCache+userID, time.Second*30*60, getFriendIDList)
+	friendIDListStr, err := db.DB.Rc.Fetch2(ctx, friendRelationCache+userID, time.Second*30*60, getFriendIDList)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}
@@ -90,14 +90,14 @@ func GetFriendIDListFromCache(userID string) ([]string, error) {
 	return friendIDList, utils.Wrap(err, "")
 }
 
-func DelFriendIDListFromCache(userID string) error {
-	err := db.DB.Rc.TagAsDeleted(friendRelationCache + userID)
+func DelFriendIDListFromCache(ctx context.Context, userID string) error {
+	err := db.DB.Rc.TagAsDeleted2(ctx, friendRelationCache+userID)
 	return err
 }
 
-func GetBlackListFromCache(userID string) ([]string, error) {
+func GetBlackListFromCache(ctx context.Context, userID string) ([]string, error) {
 	getBlackIDList := func() (string, error) {
-		blackIDList, err := imdb.GetBlackIDListByUserID(userID)
+		blackIDList, err := imdb.GetBlackIDListByUserID(ctx, userID)
 		if err != nil {
 			return "", utils.Wrap(err, "")
 		}
@@ -107,7 +107,7 @@ func GetBlackListFromCache(userID string) ([]string, error) {
 		}
 		return string(bytes), nil
 	}
-	blackIDListStr, err := db.DB.Rc.Fetch(blackListCache+userID, time.Second*30*60, getBlackIDList)
+	blackIDListStr, err := db.DB.Rc.Fetch2(ctx, blackListCache+userID, time.Second*30*60, getBlackIDList)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}
@@ -116,8 +116,8 @@ func GetBlackListFromCache(userID string) ([]string, error) {
 	return blackIDList, utils.Wrap(err, "")
 }
 
-func DelBlackIDListFromCache(userID string) error {
-	return db.DB.Rc.TagAsDeleted(blackListCache + userID)
+func DelBlackIDListFromCache(ctx context.Context, userID string) error {
+	return db.DB.Rc.TagAsDeleted2(ctx, blackListCache+userID)
 }
 
 func GetJoinedGroupIDListFromCache(ctx context.Context, userID string) ([]string, error) {
@@ -145,8 +145,8 @@ func DelJoinedGroupIDListFromCache(userID string) error {
 	return db.DB.Rc.TagAsDeleted(joinedGroupListCache + userID)
 }
 
-func DelGroupMemberIDListFromCache(groupID string) error {
-	err := db.DB.Rc.TagAsDeleted(groupCache + groupID)
+func DelGroupMemberIDListFromCache(ctx context.Context, groupID string) error {
+	err := db.DB.Rc.TagAsDeleted2(ctx, groupCache+groupID)
 	return err
 }
 

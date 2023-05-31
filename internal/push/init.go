@@ -12,6 +12,7 @@ import (
 	"Open_IM/internal/push/providers/getui"
 	jpush "Open_IM/internal/push/providers/jpush"
 	"Open_IM/internal/push/providers/mobpush"
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	"Open_IM/pkg/common/config"
 
 	"github.com/zeromicro/go-zero/core/metric"
@@ -23,10 +24,11 @@ var (
 	offlinePusher             pusher.OfflinePusher
 	offlinePushSuccessCounter metric.CounterVec
 	offlinePushFailureCounter metric.CounterVec
+	cacheClient               cacheclient.CacheClient
 )
 
-func Init() {
-	pushCh.Init()
+func Init(cache cacheclient.CacheClient) {
+	pushCh.Init(cache)
 	offlinePushSuccessCounter = metric.NewCounterVec(&metric.CounterVecOpts{
 		Name: "msg_offline_push_success",
 		Help: "The number of msg successful offline pushed",

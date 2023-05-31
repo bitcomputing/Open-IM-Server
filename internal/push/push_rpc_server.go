@@ -1,6 +1,7 @@
 package push
 
 import (
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
@@ -19,6 +20,7 @@ type RPCServer struct {
 	etcdSchema      string
 	etcdAddr        []string
 	pbPush.UnimplementedPushMsgServiceServer
+	CacheClient cacheclient.CacheClient
 }
 
 func NewPushServer(port int) *RPCServer {
@@ -27,6 +29,7 @@ func NewPushServer(port int) *RPCServer {
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImPushName,
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
 		etcdAddr:        config.Config.Etcd.EtcdAddr,
+		CacheClient:     cacheclient.NewCacheClient(config.ConvertClientConfig(config.Config.ClientConfigs.Cache)),
 	}
 }
 
@@ -103,7 +106,7 @@ func (r *RPCServer) PushMsg(ctx context.Context, pbData *pbPush.PushMsgReq) (*pb
 	//Call push module to send message to the user
 	switch pbData.MsgData.SessionType {
 	case constant.SuperGroupChatType:
-		MsgToSuperGroupUser(ctx, pbData)
+		MsgToSuperGroupUser(ctx, r.CacheClient, pbData)
 	default:
 		MsgToUser(ctx, pbData)
 	}

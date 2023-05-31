@@ -8,6 +8,7 @@ package push
 
 import (
 	push "Open_IM/internal/push/providers"
+	cacheclient "Open_IM/internal/rpc/cache/client"
 	utils2 "Open_IM/internal/utils"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
@@ -154,7 +155,7 @@ func MsgToUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	}
 }
 
-func MsgToSuperGroupUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
+func MsgToSuperGroupUser(ctx context.Context, cacheClient cacheclient.CacheClient, pushMsg *pbPush.PushMsgReq) {
 	logger := logx.WithContext(ctx).WithFields(logx.Field("op", pushMsg.OperationID))
 	var wsResult []*pbRelay.SingelMsgToUserResultList
 	isOfflinePush := utils.GetSwitchFromOptions(pushMsg.MsgData.Options, constant.IsOfflinePush)
@@ -173,7 +174,7 @@ func MsgToSuperGroupUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 		logger.Debug("callback userIDList Resp", pushToUserIDList)
 	}
 	if len(pushToUserIDList) == 0 {
-		userIDList, err := utils2.GetGroupMemberUserIDList(ctx, pushMsg.MsgData.GroupID, pushMsg.OperationID)
+		userIDList, err := utils2.GetGroupMemberUserIDList(ctx, cacheClient, pushMsg.MsgData.GroupID, pushMsg.OperationID)
 		if err != nil {
 			logger.Error("GetGroupMemberUserIDList failed ", err.Error(), pushMsg.MsgData.GroupID)
 			return
