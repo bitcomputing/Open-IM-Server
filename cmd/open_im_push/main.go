@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.Auth)
-	rpcPort := flag.Int("port", config.Config.ServerConfigs.Auth.Port, "rpc listening port")
+	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.Push)
+	rpcPort := flag.Int("port", config.Config.ServerConfigs.Push.Port, "rpc listening port")
 	flag.Parse()
 
 	server := push.NewPushServer(*rpcPort)
