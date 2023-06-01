@@ -91,9 +91,9 @@ func GetConversations(OwnerUserID string, conversationIDs []string) ([]db.Conver
 	return conversations, err
 }
 
-func GetConversationsByConversationIDMultipleOwner(OwnerUserIDList []string, conversationID string) ([]db.Conversation, error) {
+func GetConversationsByConversationIDMultipleOwner(ctx context.Context, OwnerUserIDList []string, conversationID string) ([]db.Conversation, error) {
 	var conversations []db.Conversation
-	err := db.DB.MysqlDB.DefaultGormDB().Model(&db.Conversation{}).Where("owner_user_id IN (?) and  conversation_id=?", OwnerUserIDList, conversationID).Find(&conversations).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&db.Conversation{}).Where("owner_user_id IN (?) and  conversation_id=?", OwnerUserIDList, conversationID).Find(&conversations).Error
 	return conversations, err
 }
 

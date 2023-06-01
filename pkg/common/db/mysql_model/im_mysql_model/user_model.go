@@ -71,9 +71,9 @@ func GetUsersByUserIDList(userIDList []string) ([]*db.User, error) {
 	return userList, err
 }
 
-func GetUserNameByUserID(userID string) (string, error) {
+func GetUserNameByUserID(ctx context.Context, userID string) (string, error) {
 	var user db.User
-	err := db.DB.MysqlDB.DefaultGormDB().Table("users").Select("name").Where("user_id=?", userID).First(&user).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("users").Select("name").Where("user_id=?", userID).First(&user).Error
 	if err != nil {
 		return "", err
 	}

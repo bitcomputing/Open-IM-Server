@@ -93,7 +93,7 @@ func GroupDBCopyOpenIM(ctx context.Context, dst *open_im_sdk.GroupInfo, src *db.
 	}
 	dst.OwnerUserID = user.UserID
 
-	memberCount, err := imdb.GetGroupMemberNumByGroupID(src.GroupID)
+	memberCount, err := imdb.GetGroupMemberNumByGroupID(ctx, src.GroupID)
 	dst.MemberCount = uint32(memberCount)
 	if err != nil {
 		return utils.Wrap(err, "")

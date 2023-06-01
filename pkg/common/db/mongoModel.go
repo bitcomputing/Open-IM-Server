@@ -789,7 +789,7 @@ func (d *DataBases) GetGroupMember(groupID string) []string {
 	//return groupInfo.UIDList
 }
 
-func (d *DataBases) AddGroupMember(groupID, uid string) error {
+func (d *DataBases) AddGroupMember(ctx context.Context, groupID, uid string) error {
 	return nil
 	//session := d.mgoSession.Clone()
 	//if session == nil {
@@ -822,7 +822,7 @@ func (d *DataBases) AddGroupMember(groupID, uid string) error {
 	//return nil
 }
 
-func (d *DataBases) DelGroupMember(groupID, uid string) error {
+func (d *DataBases) DelGroupMember(ctx context.Context, groupID, uid string) error {
 	return nil
 	//session := d.mgoSession.Clone()
 	//if session == nil {
@@ -1151,8 +1151,7 @@ type UserToSuperGroup struct {
 	GroupIDList []string `bson:"group_id_list" json:"groupIDList"`
 }
 
-func (d *DataBases) CreateSuperGroup(groupID string, initMemberIDList []string, memberNumCount int) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) CreateSuperGroup(ctx context.Context, groupID string, initMemberIDList []string, memberNumCount int) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1196,16 +1195,14 @@ func (d *DataBases) CreateSuperGroup(groupID string, initMemberIDList []string, 
 	return err
 }
 
-func (d *DataBases) GetSuperGroup(groupID string) (SuperGroup, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) GetSuperGroup(ctx context.Context, groupID string) (SuperGroup, error) {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	superGroup := SuperGroup{}
 	err := c.FindOne(ctx, bson.M{"group_id": groupID}).Decode(&superGroup)
 	return superGroup, err
 }
 
-func (d *DataBases) AddUserToSuperGroup(groupID string, userIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) AddUserToSuperGroup(ctx context.Context, groupID string, userIDList []string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1242,8 +1239,7 @@ func (d *DataBases) AddUserToSuperGroup(groupID string, userIDList []string) err
 	_ = session.CommitTransaction(ctx)
 	return err
 }
-func (d *DataBases) AddUserToSuperGroups(groupIDList []string, userID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) AddUserToSuperGroups(ctx context.Context, groupIDList []string, userID string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1273,8 +1269,7 @@ func (d *DataBases) AddUserToSuperGroups(groupIDList []string, userID string) er
 	return err
 }
 
-func (d *DataBases) RemoverUserFromSuperGroup(groupID string, userIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) RemoverUserFromSuperGroup(ctx context.Context, groupID string, userIDList []string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1296,16 +1291,14 @@ func (d *DataBases) RemoverUserFromSuperGroup(groupID string, userIDList []strin
 	return err
 }
 
-func (d *DataBases) GetSuperGroupByUserID(userID string) (UserToSuperGroup, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) GetSuperGroupByUserID(ctx context.Context, userID string) (UserToSuperGroup, error) {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cUserToSuperGroup)
 	var user UserToSuperGroup
 	_ = c.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
 	return user, nil
 }
 
-func (d *DataBases) DeleteSuperGroup(groupID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) DeleteSuperGroup(ctx context.Context, groupID string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
