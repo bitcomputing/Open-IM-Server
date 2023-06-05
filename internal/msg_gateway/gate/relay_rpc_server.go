@@ -294,6 +294,7 @@ func (r *RPCServer) SuperGroupBackgroundOnlinePush(ctx context.Context, req *pbR
 			UserID: v,
 		}
 		userConnMap := ws.getUserAllCons(v)
+		logger.Debugv(userConnMap)
 		for platform, userConns := range userConnMap {
 			if len(userConns) != 0 {
 				for _, userConn := range userConns {

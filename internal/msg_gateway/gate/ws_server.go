@@ -201,13 +201,13 @@ func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int
 	ctx := logx.ContextWithFields(context.Background(), logx.Field("op", operationID))
 	logger := logx.WithContext(ctx)
 	grpcCons := ws.gatewayClient.ClientConns()
-	logger.Info(operationID, utils.GetSelfFuncName(), "args  grpcCons: ", userID, platformID, grpcCons)
+	logger.Info("args  grpcCons: ", userID, platformID, grpcCons)
 	for i := 0; i < len(grpcCons); i++ {
-		if grpcCons[i].Target() == rpcSvr.target {
-			logger.Debug(operationID, "Filter out this node ", rpcSvr.target)
-			continue
-		}
-		logger.Debug(operationID, "call this node ", grpcCons[i].Target(), rpcSvr.target)
+		// if grpcCons[i].Target() == rpcSvr.target {
+		// 	logger.Debug(operationID, "Filter out this node ", rpcSvr.target)
+		// 	continue
+		// }
+		// logger.Debug(operationID, "call this node ", grpcCons[i].Target(), rpcSvr.target)
 		client := pbRelay.NewRelayClient(grpcCons[i])
 		req := &pbRelay.MultiTerminalLoginCheckReq{OperationID: operationID, PlatformID: platformID, UserID: userID, Token: token}
 		logger.Info(operationID, "MultiTerminalLoginCheckReq ", client, req.String())
