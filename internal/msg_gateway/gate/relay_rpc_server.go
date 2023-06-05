@@ -230,6 +230,7 @@ func (r *RPCServer) SuperGroupOnlineBatchPushOneMsg(ctx context.Context, req *pb
 			UserID: v,
 		}
 		userConnMap := ws.getUserAllCons(v)
+		logger.Debugv(userConnMap)
 		for platform, userConns := range userConnMap {
 			if len(userConns) != 0 {
 				logger.Infof("count: %v, platform: %d, conns: %v", len(userConns), platform, userConns)
