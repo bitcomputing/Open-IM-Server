@@ -9,8 +9,7 @@ import (
 var (
 	rwLock   *sync.RWMutex
 	validate *validator.Validate
-	ws       WServer
-	rpcSvr   RPCServer
+	ws       *WServer
 )
 
 func init() {

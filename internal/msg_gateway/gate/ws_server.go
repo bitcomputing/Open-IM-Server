@@ -61,7 +61,7 @@ func NewWebsocketServer(wsPort int) *WServer {
 	if err != nil {
 		panic(err)
 	}
-	return &WServer{
+	ws = &WServer{
 		wsAddr:       fmt.Sprintf(":%d", wsPort),
 		wsMaxConnNum: config.Config.LongConnSvr.WebsocketMaxConnNum,
 		wsUpGrader: &websocket.Upgrader{
@@ -93,6 +93,8 @@ func NewWebsocketServer(wsPort int) *WServer {
 			Help: "The number of online user num",
 		}),
 	}
+
+	return ws
 }
 
 func (ws *WServer) Start() {
