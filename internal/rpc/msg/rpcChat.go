@@ -4,6 +4,7 @@ import (
 	pushclient "Open_IM/internal/push/client"
 	cacheclient "Open_IM/internal/rpc/cache/client"
 	conversationclient "Open_IM/internal/rpc/conversation/client"
+	messageclient "Open_IM/internal/rpc/msg/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/kafka"
@@ -19,6 +20,14 @@ import (
 	"github.com/zeromicro/go-zero/core/metric"
 	"google.golang.org/protobuf/proto"
 )
+
+var (
+	messageClient messageclient.MsgClient
+)
+
+func init() {
+	messageClient = messageclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message))
+}
 
 type MessageWriter interface {
 	SendMessage(m proto.Message, key string, operationID string) (int32, int64, error)
@@ -122,10 +131,12 @@ func NewRpcChatServer(port int) *rpcChat {
 			Name: "work_super_group_chat_msg_process_failed",
 			Help: "The number of work/super group chat msg failed processed",
 		}),
+		messageWriter: kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic),
+		delMsgCh:      make(chan deleteMsg, 1000),
 	}
-	rc.messageWriter = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic)
+	// rc.messageWriter = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschat.Addr, config.Config.Kafka.Ws2mschat.Topic)
 	//rc.offlineProducer = kafka.NewKafkaProducer(config.Config.Kafka.Ws2mschatOffline.Addr, config.Config.Kafka.Ws2mschatOffline.Topic)
-	rc.delMsgCh = make(chan deleteMsg, 1000)
+	// rc.delMsgCh = make(chan deleteMsg, 1000)
 	return &rc
 }
 

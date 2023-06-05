@@ -128,7 +128,7 @@ func messageReactionSender(ctx context.Context, operationID, sendID string, sour
 	// 	return
 	// }
 	// client := msg.NewMsgClient(etcdConn)
-	reply, err := new(rpcChat).SendMsg(ctx, &pbData)
+	reply, err := messageClient.SendMsg(ctx, &pbData)
 	if err != nil {
 		logger.Error("SendMsg rpc failed, ", pbData.String(), err.Error())
 	} else if reply.ErrCode != 0 {

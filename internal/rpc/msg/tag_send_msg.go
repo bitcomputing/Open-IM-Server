@@ -41,7 +41,7 @@ func TagSendMessage(ctx context.Context, operationID string, user *db.User, recv
 	// }
 
 	// client := pbChat.NewMsgClient(etcdConn)
-	respPb, err := new(rpcChat).SendMsg(ctx, &req)
+	respPb, err := messageClient.SendMsg(ctx, &req)
 	if err != nil {
 		logger.Error("send msg failed", err.Error())
 		return

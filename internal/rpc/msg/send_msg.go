@@ -1045,7 +1045,7 @@ func Notification(ctx context.Context, n *NotificationMsg) {
 
 	// client := pbChat.NewMsgClient(etcdConn)
 	// reply, err := client.SendMsg(ctx, &req)
-	reply, err := new(rpcChat).SendMsg(ctx, &req)
+	reply, err := messageClient.SendMsg(ctx, &req)
 	if err != nil {
 		logger.Error("SendMsg rpc failed, ", req.String(), err.Error())
 	} else if reply.ErrCode != 0 {
