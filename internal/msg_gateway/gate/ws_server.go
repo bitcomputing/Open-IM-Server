@@ -72,6 +72,26 @@ func NewWebsocketServer(wsPort int) *WServer {
 		wsUserToConn:  make(map[string]map[int][]*UserConn),
 		gatewayClient: gc,
 		messageClient: messageclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message)),
+		msgRecvTotal: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "msg_recv_total",
+			Help: "The number of msg received",
+		}),
+		getNewestSeqTotal: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "get_newest_seq_total",
+			Help: "the number of get newest seq",
+		}),
+		pullMsgBySeqListTotal: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "pull_msg_by_seq_list_total",
+			Help: "The number of pull msg by seq list",
+		}),
+		msgOnlinePushSuccess: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "msg_online_push_success",
+			Help: "The number of msg successful online pushed",
+		}),
+		onlineUser: metric.NewGaugeVec(&metric.GaugeVecOpts{
+			Name: "online_user_num",
+			Help: "The number of online user num",
+		}),
 	}
 }
 
