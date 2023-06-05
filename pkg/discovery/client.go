@@ -85,9 +85,9 @@ func (c *Client) buildInterceptors(cfg zrpc.RpcClientConf) {
 		c.clientInterceptors = append(c.clientInterceptors, clientInterceptors.DurationInterceptor)
 	}
 
-	if cfg.Middlewares.Prometheus {
-		c.clientInterceptors = append(c.clientInterceptors, clientInterceptors.PrometheusInterceptor)
-	}
+	// if cfg.Middlewares.Prometheus {
+	// 	c.clientInterceptors = append(c.clientInterceptors, clientInterceptors.PrometheusInterceptor)
+	// }
 
 	if cfg.Middlewares.Trace {
 		c.clientInterceptors = append(c.clientInterceptors, clientInterceptors.UnaryTracingInterceptor)
