@@ -648,6 +648,7 @@ func ConvertClientConfig(c ClientConfig) zrpc.RpcClientConf {
 			Breaker:    c.Middlewares.Breaker,
 			Timeout:    c.Middlewares.Timeout,
 		},
+		NonBlock: true,
 	}
 }
 func unmarshalConfig(config interface{}, configName string) {
