@@ -55,6 +55,10 @@ type RPCServer struct {
 // }
 
 func NewRPCServer(rpcPort int) *RPCServer {
+	serviceIP, err := utils.GetLocalIP()
+	if err != nil {
+		panic(err)
+	}
 	server = &RPCServer{
 		rpcPort:         rpcPort,
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImRelayName,
@@ -63,6 +67,7 @@ func NewRPCServer(rpcPort int) *RPCServer {
 		platformList:    genPlatformArray(),
 		pushTerminal:    []int{constant.IOSPlatformID, constant.AndroidPlatformID},
 		msgClient:       msgclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message)),
+		target:          fmt.Sprintf("%s:%d", serviceIP, config.Config.ServerConfigs.Gateway.Port),
 	}
 
 	return server
