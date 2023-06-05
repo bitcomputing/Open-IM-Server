@@ -185,7 +185,7 @@ func ManagementSendMsg(c *gin.Context) {
 	}
 	log.NewInfo(params.OperationID, data, params)
 	token := c.Request.Header.Get("token")
-	claims, err := token_verify.ParseToken(token, params.OperationID)
+	claims, err := token_verify.ParseToken(c.Request.Context(), token, params.OperationID)
 	if err != nil {
 		log.NewError(params.OperationID, "parse token failed", err.Error(), token)
 		c.JSON(http.StatusOK, gin.H{"errCode": 400, "errMsg": "parse token failed", "sendTime": 0, "MsgID": ""})
@@ -310,7 +310,7 @@ func ManagementBatchSendMsg(c *gin.Context) {
 	}
 	log.NewInfo(params.OperationID, data, params)
 	token := c.Request.Header.Get("token")
-	claims, err := token_verify.ParseToken(token, params.OperationID)
+	claims, err := token_verify.ParseToken(c.Request.Context(), token, params.OperationID)
 	if err != nil {
 		log.NewError(params.OperationID, "parse token failed", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": "parse token failed", "sendTime": 0, "MsgID": ""})

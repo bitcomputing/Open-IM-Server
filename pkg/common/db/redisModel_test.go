@@ -17,12 +17,12 @@ func Test_SetTokenMapByUidPid(t *testing.T) {
 	m["test1"] = 1
 	m["test2"] = 2
 	m["2332"] = 4
-	err := DB.SetTokenMapByUidPid("1234", 2, m)
+	err := DB.SetTokenMapByUidPid(context.Background(), "1234", 2, m)
 	assert.Nil(t, err)
 
 }
 func Test_GetTokenMapByUidPid(t *testing.T) {
-	m, err := DB.GetTokenMapByUidPid("1234", "Android")
+	m, err := DB.GetTokenMapByUidPid(context.Background(), "1234", "Android")
 	assert.Nil(t, err)
 	fmt.Println(m)
 }

@@ -543,6 +543,7 @@ type config struct {
 		Friend       ServerConfig `yaml:"friend"`
 		Message      ServerConfig `yaml:"message"`
 		Group        ServerConfig `yaml:"group"`
+		Gateway      ServerConfig `yaml:"gateway"`
 	} `yaml:"serverConfigs"`
 
 	ClientConfigs struct {
@@ -554,6 +555,7 @@ type config struct {
 		Friend       ClientConfig `yaml:"friend"`
 		Message      ClientConfig `yaml:"message"`
 		Group        ClientConfig `yaml:"group"`
+		Gateway      ClientConfig `yaml:"gateway"`
 	} `yaml:"clientConfigs"`
 }
 type PConversation struct {

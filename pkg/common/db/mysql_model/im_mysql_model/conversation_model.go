@@ -2,8 +2,6 @@ package im_mysql_model
 
 import (
 	"Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/utils"
 	"context"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -13,11 +11,9 @@ func SetConversation(ctx context.Context, conversation db.Conversation) (bool, e
 	var isUpdate bool
 	newConversation := conversation
 	if db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&db.Conversation{}).Find(&newConversation).RowsAffected == 0 {
-		log.NewDebug("", utils.GetSelfFuncName(), "conversation", conversation, "not exist in db, create")
 		return isUpdate, db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&db.Conversation{}).Create(&conversation).Error
 		// if exist, then update record
 	} else {
-		log.NewDebug("", utils.GetSelfFuncName(), "conversation", conversation, "exist in db, update")
 		//force update
 		isUpdate = true
 		return isUpdate, db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(conversation).Where("owner_user_id = ? and conversation_id = ?", conversation.OwnerUserID, conversation.ConversationID).
@@ -48,11 +44,9 @@ func SetRecvMsgOpt(ctx context.Context, conversation db.Conversation) (bool, err
 	var isUpdate bool
 	newConversation := conversation
 	if db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&db.Conversation{}).Find(&newConversation).RowsAffected == 0 {
-		log.NewDebug("", utils.GetSelfFuncName(), "conversation", conversation, "not exist in db, create")
 		return isUpdate, db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(&db.Conversation{}).Create(&conversation).Error
 		// if exist, then update record
 	} else {
-		log.NewDebug("", utils.GetSelfFuncName(), "conversation", conversation, "exist in db, update")
 		//force update
 		isUpdate = true
 		return isUpdate, db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Model(conversation).Where("owner_user_id = ? and conversation_id = ?", conversation.OwnerUserID, conversation.ConversationID).

@@ -13,17 +13,28 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
+	"Open_IM/pkg/discovery"
 	pbPush "Open_IM/pkg/proto/push"
 	pbRelay "Open_IM/pkg/proto/relay"
 	pbRtc "Open_IM/pkg/proto/rtc"
 	"Open_IM/pkg/utils"
 	"context"
-	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/protobuf/proto"
 )
+
+var (
+	gatewayClient *discovery.Client
+)
+
+func init() {
+	gc, err := discovery.NewClient(config.ConvertClientConfig(config.Config.ClientConfigs.Gateway))
+	if err != nil {
+		panic(err)
+	}
+	gatewayClient = gc
+}
 
 type OpenIMContent struct {
 	SessionType int    `json:"sessionType"`
@@ -43,7 +54,8 @@ func MsgToUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	var wsResult []*pbRelay.SingelMsgToUserResultList
 	isOfflinePush := utils.GetSwitchFromOptions(pushMsg.MsgData.Options, constant.IsOfflinePush)
 	logger.Debugv(pushMsg)
-	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
+	// grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
+	grpcConns := gatewayClient.ClientConns()
 
 	var UIDList = []string{pushMsg.PushToUserID}
 	callbackResp := callbackOnlinePush(ctx, pushMsg.OperationID, UIDList, pushMsg.MsgData)
@@ -57,8 +69,8 @@ func MsgToUser(ctx context.Context, pushMsg *pbPush.PushMsgReq) {
 	}
 
 	//Online push message
-	logger.Debug("len  grpc", len(grpcCons), "data", pushMsg.String())
-	for _, v := range grpcCons {
+	logger.Debug("len  grpc", len(grpcConns), "data", pushMsg.String())
+	for _, v := range grpcConns {
 		msgClient := pbRelay.NewRelayClient(v)
 		reply, err := msgClient.SuperGroupOnlineBatchPushOneMsg(ctx, &pbRelay.OnlineBatchPushOneMsgReq{OperationID: pushMsg.OperationID, MsgData: pushMsg.MsgData, PushToUserIDList: []string{pushMsg.PushToUserID}})
 		if err != nil {
@@ -182,11 +194,12 @@ func MsgToSuperGroupUser(ctx context.Context, cacheClient cacheclient.CacheClien
 		pushToUserIDList = userIDList
 	}
 
-	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
+	// grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
+	grpcConns := gatewayClient.ClientConns()
 
 	//Online push message
-	logger.Debug("len  grpc", len(grpcCons), "data", pushMsg.String())
-	for _, v := range grpcCons {
+	logger.Debug("len  grpc", len(grpcConns), "data", pushMsg.String())
+	for _, v := range grpcConns {
 		msgClient := pbRelay.NewRelayClient(v)
 		reply, err := msgClient.SuperGroupOnlineBatchPushOneMsg(ctx, &pbRelay.OnlineBatchPushOneMsgReq{OperationID: pushMsg.OperationID, MsgData: pushMsg.MsgData, PushToUserIDList: pushToUserIDList})
 		if err != nil {
@@ -303,11 +316,12 @@ func MsgToSuperGroupUser(ctx context.Context, cacheClient cacheclient.CacheClien
 				logger.Debug("offline push return result is ", pushResult, pushMsg.MsgData)
 			}
 			needBackgroupPushUserID := utils.IntersectString(needOfflinePushUserIDList, WebAndPcBackgroundUserIDList)
-			grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
+			// grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), pushMsg.OperationID)
+			grpcConns := gatewayClient.ClientConns()
 			if len(needBackgroupPushUserID) > 0 {
 				//Online push message
-				logger.Debug("len  grpc", len(grpcCons), "data", pushMsg.String())
-				for _, v := range grpcCons {
+				logger.Debug("len  grpc", len(grpcConns), "data", pushMsg.String())
+				for _, v := range grpcConns {
 					msgClient := pbRelay.NewRelayClient(v)
 					_, err := msgClient.SuperGroupBackgroundOnlinePush(ctx, &pbRelay.OnlineBatchPushOneMsgReq{OperationID: pushMsg.OperationID, MsgData: pushMsg.MsgData,
 						PushToUserIDList: needBackgroupPushUserID})

@@ -3,7 +3,8 @@ package db
 import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
-	log2 "Open_IM/pkg/common/log"
+
+	// log2 "Open_IM/pkg/common/log"
 	pbChat "Open_IM/pkg/proto/msg"
 	pbRtc "Open_IM/pkg/proto/rtc"
 	pbCommon "Open_IM/pkg/proto/sdk_ws"
@@ -55,10 +56,12 @@ func (d *DataBases) JudgeAccountEXISTS(account string) (bool, error) {
 		return false, err
 	}
 }
+
 func (d *DataBases) SetAccountCode(account string, code, ttl int) (err error) {
 	key := accountTempCode + account
 	return d.RDB.Set(context.Background(), key, code, time.Duration(ttl)*time.Second).Err()
 }
+
 func (d *DataBases) GetAccountCode(account string) (string, error) {
 	key := accountTempCode + account
 	return d.RDB.Get(context.Background(), key).Result()
@@ -130,29 +133,28 @@ func (d *DataBases) SetGroupMinSeq(groupID string, minSeq uint32) error {
 }
 
 // Store userid and platform class to redis
-func (d *DataBases) AddTokenFlag(userID string, platformID int, token string, flag int) error {
+func (d *DataBases) AddTokenFlag(ctx context.Context, userID string, platformID int, token string, flag int) error {
 	key := uidPidToken + userID + ":" + constant.PlatformIDToName(platformID)
-	log2.NewDebug("", "add token key is ", key)
-	return d.RDB.HSet(context.Background(), key, token, flag).Err()
+	return d.RDB.HSet(ctx, key, token, flag).Err()
 }
 
-func (d *DataBases) GetTokenMapByUidPid(userID, platformID string) (map[string]int, error) {
+func (d *DataBases) GetTokenMapByUidPid(ctx context.Context, userID, platformID string) (map[string]int, error) {
 	key := uidPidToken + userID + ":" + platformID
-	log2.NewDebug("", "get token key is ", key)
-	m, err := d.RDB.HGetAll(context.Background(), key).Result()
+	m, err := d.RDB.HGetAll(ctx, key).Result()
 	mm := make(map[string]int)
 	for k, v := range m {
 		mm[k] = utils.StringToInt(v)
 	}
 	return mm, err
 }
-func (d *DataBases) SetTokenMapByUidPid(userID string, platformID int, m map[string]int) error {
+
+func (d *DataBases) SetTokenMapByUidPid(ctx context.Context, userID string, platformID int, m map[string]int) error {
 	key := uidPidToken + userID + ":" + constant.PlatformIDToName(platformID)
 	mm := make(map[string]interface{})
 	for k, v := range m {
 		mm[k] = v
 	}
-	return d.RDB.HSet(context.Background(), key, mm).Err()
+	return d.RDB.HSet(ctx, key, mm).Err()
 }
 func (d *DataBases) DeleteTokenByUidPid(userID string, platformID int, fields []string) error {
 	key := uidPidToken + userID + ":" + constant.PlatformIDToName(platformID)
@@ -209,16 +211,13 @@ func (d *DataBases) GetMessageListBySeq(ctx context.Context, userID string, seqL
 		if err != nil {
 			errResult = err
 			failedSeqList = append(failedSeqList, v)
-			log2.Debug(operationID, "redis get message error: ", err.Error(), v)
 		} else {
 			msg := pbCommon.MsgData{}
 			err = protojson.Unmarshal([]byte(result), &msg)
 			if err != nil {
 				errResult = err
 				failedSeqList = append(failedSeqList, v)
-				log2.NewWarn(operationID, "Unmarshal err ", result, err.Error())
 			} else {
-				log2.NewDebug(operationID, "redis get msg is ", msg.String())
 				seqMsg = append(seqMsg, &msg)
 			}
 
@@ -234,14 +233,11 @@ func (d *DataBases) SetMessageToCache(ctx context.Context, msgList []*pbChat.Msg
 		key := messageCache + uid + "_" + strconv.Itoa(int(msg.MsgData.Seq))
 		s, err := utils.Pb2String(msg.MsgData)
 		if err != nil {
-			log2.NewWarn(operationID, utils.GetSelfFuncName(), "Pb2String failed", msg.MsgData.String(), uid, err.Error())
 			continue
 		}
-		log2.NewDebug(operationID, "convert string is ", s)
 		err = pipe.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err()
 		//err = d.rdb.HMSet(context.Background(), "12", map[string]interface{}{"1": 2, "343": false}).Err()
 		if err != nil {
-			log2.NewWarn(operationID, utils.GetSelfFuncName(), "redis failed", "args:", key, *msg, uid, s, err.Error())
 			failedList = append(failedList, *msg)
 		}
 	}
@@ -267,7 +263,6 @@ func (d *DataBases) DeleteMessageFromCache(msgList []*pbChat.MsgDataToMQ, uid st
 func (d *DataBases) CleanUpOneUserAllMsgFromRedis(ctx context.Context, userID string, operationID string) error {
 	key := messageCache + userID + "_" + "*"
 	vals, err := d.RDB.Keys(ctx, key).Result()
-	log2.Debug(operationID, "vals: ", vals)
 	if err == go_redis.Nil {
 		return nil
 	}
@@ -301,13 +296,10 @@ func (d *DataBases) HandleSignalInfo(operationID string, msg *pbCommon.MsgData, 
 	case *pbRtc.SignalReq_HungUp, *pbRtc.SignalReq_Cancel, *pbRtc.SignalReq_Reject, *pbRtc.SignalReq_Accept:
 		return false, errors.New("signalInfo do not need offlinePush")
 	default:
-		log2.NewDebug(operationID, utils.GetSelfFuncName(), "req invalid type", string(msg.Content))
 		return false, nil
 	}
 	if isInviteSignal {
-		log2.NewDebug(operationID, utils.GetSelfFuncName(), "invite userID list:", inviteeUserIDList)
 		for _, userID := range inviteeUserIDList {
-			log2.NewInfo(operationID, utils.GetSelfFuncName(), "invite userID:", userID)
 			timeout, err := strconv.Atoi(config.Config.Rtc.SignalTimeout)
 			if err != nil {
 				return false, err
@@ -363,7 +355,7 @@ func (d *DataBases) GetAvailableSignalInvitationInfo(userID string) (invitationI
 	if err != nil {
 		return nil, utils.Wrap(err, "GetAvailableSignalInvitationInfo failed")
 	}
-	log2.NewDebug("", utils.GetSelfFuncName(), result, result.String())
+
 	invitationInfo, err = d.GetSignalInfoFromCacheByClientMsgID(key)
 	if err != nil {
 		return nil, utils.Wrap(err, "GetSignalInfoFromCacheByClientMsgID")
@@ -387,25 +379,25 @@ func (d *DataBases) DelMsgFromCache(ctx context.Context, uid string, seqList []u
 		result, err := d.RDB.Get(ctx, key).Result()
 		if err != nil {
 			if err == go_redis.Nil {
-				log2.NewDebug(operationID, utils.GetSelfFuncName(), err.Error(), "redis nil")
+
 			} else {
-				log2.NewError(operationID, utils.GetSelfFuncName(), err.Error(), key)
+
 			}
 			continue
 		}
 		var msg pbCommon.MsgData
 		if err := protojson.Unmarshal([]byte(result), &msg); err != nil {
-			log2.Error(operationID, utils.GetSelfFuncName(), "String2Pb failed", msg, result, key, err.Error())
+
 			continue
 		}
 		msg.Status = constant.MsgDeleted
 		s, err := utils.Pb2String(&msg)
 		if err != nil {
-			log2.Error(operationID, utils.GetSelfFuncName(), "Pb2String failed", msg, err.Error())
+
 			continue
 		}
 		if err := d.RDB.Set(ctx, key, s, time.Duration(config.Config.MsgCacheTimeout)*time.Second).Err(); err != nil {
-			log2.Error(operationID, utils.GetSelfFuncName(), "Set failed", err.Error())
+
 		}
 	}
 }
@@ -450,9 +442,9 @@ func (d *DataBases) GetFcmToken(account string, platformID int) (string, error) 
 	key := FcmToken + account + ":" + strconv.Itoa(platformID)
 	return d.RDB.Get(context.Background(), key).Result()
 }
-func (d *DataBases) DelFcmToken(account string, platformID int) error {
+func (d *DataBases) DelFcmToken(ctx context.Context, account string, platformID int) error {
 	key := FcmToken + account + ":" + strconv.Itoa(platformID)
-	return d.RDB.Del(context.Background(), key).Err()
+	return d.RDB.Del(ctx, key).Err()
 }
 func (d *DataBases) IncrUserBadgeUnreadCountSum(uid string) (int, error) {
 	key := userBadgeUnreadCountSum + uid

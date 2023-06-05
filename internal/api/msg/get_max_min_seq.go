@@ -24,7 +24,7 @@ func GetSeq(c *gin.Context) {
 	}
 
 	token := c.Request.Header.Get("token")
-	if ok, err := token_verify.VerifyToken(token, params.SendID); !ok {
+	if ok, err := token_verify.VerifyToken(c.Request.Context(), token, params.SendID); !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 400, "errMsg": "token validate err" + err.Error()})
 		return
 	}

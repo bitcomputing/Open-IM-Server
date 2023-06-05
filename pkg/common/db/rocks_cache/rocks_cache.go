@@ -4,7 +4,6 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	imdb "Open_IM/pkg/common/db/mysql_model/im_mysql_model"
-	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/utils"
 	"context"
 	"encoding/json"
@@ -41,7 +40,6 @@ func DelKeys() {
 	fmt.Println("init to del old keys")
 	for _, key := range []string{groupCache, friendRelationCache, blackListCache, userInfoCache, groupInfoCache, groupOwnerIDCache, joinedGroupListCache,
 		groupMemberInfoCache, groupAllMemberInfoCache, allFriendInfoCache} {
-		fName := utils.GetSelfFuncName()
 		var cursor uint64
 		var n int
 		for {
@@ -55,7 +53,6 @@ func DelKeys() {
 			// for each for redis cluster
 			for _, key := range keys {
 				if err = db.DB.RDB.Del(context.Background(), key).Err(); err != nil {
-					log.NewError("", fName, key, err.Error())
 					err = db.DB.RDB.Del(context.Background(), key).Err()
 					if err != nil {
 						panic(err.Error())
@@ -236,7 +233,6 @@ func GetGroupMembersInfoFromCache(ctx context.Context, count, offset int32, grou
 	for _, userID := range groupMemberIDList {
 		groupMembers, err := GetGroupMemberInfoFromCache(ctx, groupID, userID)
 		if err != nil {
-			log.NewError("", utils.GetSelfFuncName(), err.Error(), groupID, userID)
 			continue
 		}
 		groupMemberList = append(groupMemberList, groupMembers)
@@ -489,7 +485,6 @@ func GetUserConversationIDListFromCache(ctx context.Context, userID string) ([]s
 		if err != nil {
 			return "", utils.Wrap(err, "getConversationIDList failed")
 		}
-		log.NewDebug("", utils.GetSelfFuncName(), conversationIDList)
 		bytes, err := json.Marshal(conversationIDList)
 		if err != nil {
 			return "", utils.Wrap(err, "")
@@ -551,7 +546,6 @@ func GetUserAllConversationList(ctx context.Context, ownerUserID string) ([]db.C
 		return nil, err
 	}
 	var conversationList []db.Conversation
-	log.NewDebug("", utils.GetSelfFuncName(), IDList)
 	for _, conversationID := range IDList {
 		conversation, err := GetConversationFromCache(ctx, ownerUserID, conversationID)
 		if err != nil {

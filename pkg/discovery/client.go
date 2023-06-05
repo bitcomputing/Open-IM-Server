@@ -37,10 +37,10 @@ func NewClient(cfg zrpc.RpcClientConf) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) ClientConns() []grpc.ClientConn {
-	clientConns := make([]grpc.ClientConn, 0)
+func (c *Client) ClientConns() []*grpc.ClientConn {
+	clientConns := make([]*grpc.ClientConn, 0)
 	c.conns.Range(func(key, value any) bool {
-		conn := value.(grpc.ClientConn)
+		conn := value.(*grpc.ClientConn)
 		clientConns = append(clientConns, conn)
 		return true
 	})

@@ -35,7 +35,7 @@ func PullMsgBySeqList(c *gin.Context) {
 	}
 
 	token := c.Request.Header.Get("token")
-	if ok, err := token_verify.VerifyToken(token, params.SendID); !ok {
+	if ok, err := token_verify.VerifyToken(c.Request.Context(), token, params.SendID); !ok {
 		if err != nil {
 			log.NewError(params.OperationID, utils.GetSelfFuncName(), err.Error(), token, params.SendID)
 		}

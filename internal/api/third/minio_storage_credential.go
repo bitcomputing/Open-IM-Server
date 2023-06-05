@@ -10,13 +10,14 @@ import (
 	_ "Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/utils"
 	"context"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
 	_ "github.com/minio/minio-go/v7"
 	cr "github.com/minio/minio-go/v7/pkg/credentials"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 // @Summary minio上传文件(web api)
@@ -53,7 +54,7 @@ func MinioUploadFile(c *gin.Context) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), req)
 	var ok bool
 	var errInfo string
-	ok, _, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.OperationID)
+	ok, _, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.OperationID, errMsg)
@@ -127,7 +128,7 @@ func MinioStorageCredential(c *gin.Context) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req)
 	var ok bool
 	var errInfo string
-	ok, _, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.OperationID)
+	ok, _, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.OperationID, errMsg)

@@ -46,7 +46,7 @@ func AddBlack(c *gin.Context) {
 	utils.CopyStructFields(req.CommID, &params)
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -89,7 +89,7 @@ func ImportFriend(c *gin.Context) {
 	utils.CopyStructFields(req, &params)
 	var ok bool
 	var errInfo string
-	ok, req.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.OperationID)
+	ok, req.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.OperationID, errMsg)
@@ -143,7 +143,7 @@ func AddFriend(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -191,7 +191,7 @@ func AddFriendResponse(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -238,7 +238,7 @@ func DeleteFriend(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -284,7 +284,7 @@ func GetBlacklist(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -337,7 +337,7 @@ func SetFriendRemark(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -383,7 +383,7 @@ func RemoveBlack(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -428,7 +428,7 @@ func IsFriend(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -475,7 +475,7 @@ func GetFriendList(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -523,7 +523,7 @@ func GetFriendApplyList(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)
@@ -570,7 +570,7 @@ func GetSelfFriendApplyList(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.CommID.OperationID)
+	ok, req.CommID.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.CommID.OperationID)
 	if !ok {
 		errMsg := req.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		log.NewError(req.CommID.OperationID, errMsg)

@@ -153,7 +153,7 @@ func ParseToken(c *gin.Context) {
 	var ok bool
 	var errInfo string
 	var expireTime int64
-	ok, _, errInfo, expireTime = token_verify.GetUserIDFromTokenExpireTime(c.Request.Header.Get("token"), params.OperationID)
+	ok, _, errInfo, expireTime = token_verify.GetUserIDFromTokenExpireTime(c.Request.Context(), c.Request.Header.Get("token"), params.OperationID)
 	if !ok {
 		errMsg := params.OperationID + " " + "GetUserIDFromTokenExpireTime failed " + errInfo
 		logger.Error(errMsg)
@@ -193,7 +193,7 @@ func ForceLogout(c *gin.Context) {
 
 	var ok bool
 	var errInfo string
-	ok, req.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Header.Get("token"), req.OperationID)
+	ok, req.OpUserID, errInfo = token_verify.GetUserIDFromToken(c.Request.Context(), c.Request.Header.Get("token"), req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + c.Request.Header.Get("token")
 		logger.Error(errMsg)

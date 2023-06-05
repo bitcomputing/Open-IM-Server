@@ -5,6 +5,7 @@ import (
 	"Open_IM/pkg/common/db"
 	imdb "Open_IM/pkg/common/db/mysql_model/im_mysql_model"
 	"Open_IM/pkg/common/token_verify"
+	"Open_IM/pkg/discovery"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbAuth "Open_IM/pkg/proto/auth"
 	pbRelay "Open_IM/pkg/proto/relay"
@@ -50,7 +51,7 @@ func (rpc *rpcAuth) UserToken(ctx context.Context, req *pbAuth.UserTokenReq) (*p
 		logger.Error("not this user:", req.FromUserID, req.String())
 		return &pbAuth.UserTokenResp{CommonResp: &pbAuth.CommonResp{ErrCode: constant.ErrDB.ErrCode, ErrMsg: err.Error()}}, nil
 	}
-	tokens, expTime, err := token_verify.CreateToken(req.FromUserID, int(req.Platform))
+	tokens, expTime, err := token_verify.CreateToken(ctx, req.FromUserID, int(req.Platform))
 	if err != nil {
 		errMsg := req.OperationID + " token_verify.CreateToken failed " + err.Error() + req.FromUserID + utils.Int32ToString(req.Platform)
 		logger.Error(errMsg)
@@ -62,7 +63,7 @@ func (rpc *rpcAuth) UserToken(ctx context.Context, req *pbAuth.UserTokenReq) (*p
 
 func (rpc *rpcAuth) ParseToken(ctx context.Context, req *pbAuth.ParseTokenReq) (*pbAuth.ParseTokenResp, error) {
 	logger := logx.WithContext(ctx).WithFields(logx.Field("op", req.OperationID))
-	claims, err := token_verify.ParseToken(req.Token, req.OperationID)
+	claims, err := token_verify.ParseToken(ctx, req.Token, req.OperationID)
 	if err != nil {
 		errMsg := "ParseToken failed " + err.Error() + req.OperationID + " token " + req.Token
 		logger.Error(errMsg, "token:", req.Token)
@@ -94,8 +95,9 @@ func (rpc *rpcAuth) ForceLogout(ctx context.Context, req *pbAuth.ForceLogoutReq)
 
 func (rpc *rpcAuth) forceKickOff(ctx context.Context, userID string, platformID int32, operationID string) error {
 	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
-	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), operationID)
-	for _, v := range grpcCons {
+	// grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), operationID)
+	grpcConns := rpc.gatewayClient.ClientConns()
+	for _, v := range grpcConns {
 		client := pbRelay.NewRelayClient(v)
 		kickReq := &pbRelay.KickUserOfflineReq{OperationID: operationID, KickUserIDList: []string{userID}, PlatformID: platformID}
 		logger.Info("KickUserOffline ", client, kickReq.String())
@@ -110,12 +112,17 @@ type rpcAuth struct {
 	rpcRegisterName string
 	etcdSchema      string
 	etcdAddr        []string
+	gatewayClient   *discovery.Client
 	pbAuth.UnimplementedAuthServer
 	userRegisterCounter metric.CounterVec
 	userLoginCounter    metric.CounterVec
 }
 
 func NewRpcAuthServer(port int) *rpcAuth {
+	gc, err := discovery.NewClient(config.ConvertClientConfig(config.Config.ClientConfigs.Gateway))
+	if err != nil {
+		panic(err)
+	}
 	return &rpcAuth{
 		rpcPort:         port,
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImAuthName,
@@ -129,6 +136,7 @@ func NewRpcAuthServer(port int) *rpcAuth {
 			Name: "user_register",
 			Help: "The number of user register",
 		}),
+		gatewayClient: gc,
 	}
 }
 
