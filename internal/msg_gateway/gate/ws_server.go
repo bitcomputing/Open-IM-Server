@@ -210,6 +210,7 @@ func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int
 		// 	continue
 		// }
 		// logger.Debug(operationID, "call this node ", grpcCons[i].Target(), rpcSvr.target)
+		logger.Info("current target:", grpcCons[i].Target())
 		client := pbRelay.NewRelayClient(grpcCons[i])
 		req := &pbRelay.MultiTerminalLoginCheckReq{OperationID: operationID, PlatformID: platformID, UserID: userID, Token: token}
 		logger.Info(operationID, "MultiTerminalLoginCheckReq ", client, req.String())

@@ -10,6 +10,7 @@ var (
 	rwLock   *sync.RWMutex
 	validate *validator.Validate
 	ws       *WServer
+	server   *RPCServer
 )
 
 func init() {

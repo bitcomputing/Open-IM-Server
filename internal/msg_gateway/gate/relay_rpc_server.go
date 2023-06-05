@@ -55,7 +55,7 @@ type RPCServer struct {
 // }
 
 func NewRPCServer(rpcPort int) *RPCServer {
-	return &RPCServer{
+	server = &RPCServer{
 		rpcPort:         rpcPort,
 		rpcRegisterName: config.Config.RpcRegisterName.OpenImRelayName,
 		etcdSchema:      config.Config.Etcd.EtcdSchema,
@@ -64,6 +64,8 @@ func NewRPCServer(rpcPort int) *RPCServer {
 		pushTerminal:    []int{constant.IOSPlatformID, constant.AndroidPlatformID},
 		msgClient:       msgclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message)),
 	}
+
+	return server
 }
 
 func (rpc *RPCServer) RegisterLegacyDiscovery() {
