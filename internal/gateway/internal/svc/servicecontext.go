@@ -7,6 +7,7 @@ import (
 	conversation "Open_IM/internal/rpc/conversation/client"
 	friend "Open_IM/internal/rpc/friend/client"
 	group "Open_IM/internal/rpc/group/client"
+	message "Open_IM/internal/rpc/msg/client"
 	user "Open_IM/internal/rpc/user/client"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -21,6 +22,7 @@ type ServiceContext struct {
 	ConversationClient   conversation.ConversationClient
 	FriendClient         friend.FriendClient
 	GroupClient          group.GroupClient
+	MessageClient        message.MsgClient
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -33,5 +35,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		ConversationClient:   conversation.NewConversationClient(c.ConversationClient),
 		FriendClient:         friend.NewFriendClient(c.FriendClient),
 		GroupClient:          group.NewGroupClient(c.GroupClient),
+		MessageClient:        message.NewMsgClient(c.MessageClient),
 	}
 }

@@ -249,3 +249,67 @@ service gateway {
 	@handler GetSuperGroupsInfo
 	post /get_groups_info (GetSuperGroupsInfoRequest) returns (GetSuperGroupsInfoResponse)
 }
+
+@server(
+	group: message
+	prefix: /msg
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Get seq"
+	@handler GetSeq
+	post /newest_seq (GetSeqRequest) returns (GetSeqResponse)
+	
+	@doc "Send msg"
+	@handler SendMsg
+	post /send_msg (SendMsgRequest) returns (SendMsgResponse)
+	
+	@doc "Pull msg by seq list"
+	@handler PullMsgBySeqList
+	post /pull_msg_by_seq (PullMsgBySeqListRequest) returns (PullMsgBySeqListResponse)
+	
+	@doc "Del msg"
+	@handler DelMsg
+	post /del_msg (DelMsgRequest) returns (DelMsgResponse)
+	
+	@doc "Del super group msg"
+	@handler DelSuperGroupMsg
+	post /del_super_group_msg (DelSuperGroupMsgRequest) returns (DelSuperGroupMsgResponse)
+	
+	@doc "Clear msg"
+	@handler ClearMsg
+	post /clear_msg (ClearMsgRequest) returns (ClearMsgResponse)
+	
+	@doc "Management send msg"
+	@handler ManagementSendMsg
+	post /manage_send_msg (ManagementSendMsgRequest) returns (ManagementSendMsgResponse)
+	
+	@doc "Management batch send msg"
+	@handler ManagementBatchSendMsg
+	post /batch_send_msg (ManagementBatchSendMsgRequest) returns (ManagementBatchSendMsgResponse)
+	
+	@doc "Check msg is send success"
+	@handler CheckMsgIsSendSuccess
+	post /check_msg_is_send_success (CheckMsgIsSendSuccessRequest) returns (CheckMsgIsSendSuccessResponse)
+	
+	@doc "Set msg min seq"
+	@handler SetMsgMinSeq
+	post /set_msg_min_seq (SetMsgMinSeqRequest) returns (SetMsgMinSeqResponse)
+	
+	@doc "Set message reaction extensions"
+	@handler SetMessageReactionExtensions
+	post /set_message_reaction_extensions (SetMessageReactionExtensionsRequest) returns (SetMessageReactionExtensionsResponse)
+	
+	@doc "Get message list reaction extensions"
+	@handler GetMessageListReactionExtensions
+	post /get_message_list_reaction_extensions (GetMessageListReactionExtensionsRequest) returns (GetMessageListReactionExtensionsResponse)
+	
+	@doc "Add message reaction extensions"
+	@handler AddMessageReactionExtensions
+	post /add_message_reaction_extensions (AddMessageReactionExtensionsRequest) returns (AddMessageReactionExtensionsResponse)
+	
+	@doc "Delete message reaction extensions"
+	@handler DeleteMessageReactionExtensions
+	post /delete_message_reaction_extensions (DeleteMessageReactionExtensionsRequest) returns (DeleteMessageReactionExtensionsResponse)
+}

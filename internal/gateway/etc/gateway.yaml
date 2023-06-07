@@ -31,3 +31,9 @@ GroupClient:
       - 127.0.0.1:2379
     Key: group.rpc
   Timeout: 3000
+MessageClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: msg.rpc
+  Timeout: 3000

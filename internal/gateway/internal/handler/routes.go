@@ -9,6 +9,7 @@ import (
 	conversation "Open_IM/internal/gateway/internal/handler/conversation"
 	friend "Open_IM/internal/gateway/internal/handler/friend"
 	group "Open_IM/internal/gateway/internal/handler/group"
+	message "Open_IM/internal/gateway/internal/handler/message"
 	supergroup "Open_IM/internal/gateway/internal/handler/supergroup"
 	"Open_IM/internal/gateway/internal/svc"
 
@@ -318,5 +319,84 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/super_group"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/newest_seq",
+					Handler: message.GetSeqHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/send_msg",
+					Handler: message.SendMsgHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/pull_msg_by_seq",
+					Handler: message.PullMsgBySeqListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/del_msg",
+					Handler: message.DelMsgHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/del_super_group_msg",
+					Handler: message.DelSuperGroupMsgHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/clear_msg",
+					Handler: message.ClearMsgHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/manage_send_msg",
+					Handler: message.ManagementSendMsgHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/batch_send_msg",
+					Handler: message.ManagementBatchSendMsgHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/check_msg_is_send_success",
+					Handler: message.CheckMsgIsSendSuccessHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_msg_min_seq",
+					Handler: message.SetMsgMinSeqHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_message_reaction_extensions",
+					Handler: message.SetMessageReactionExtensionsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_message_list_reaction_extensions",
+					Handler: message.GetMessageListReactionExtensionsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/add_message_reaction_extensions",
+					Handler: message.AddMessageReactionExtensionsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/delete_message_reaction_extensions",
+					Handler: message.DeleteMessageReactionExtensionsHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/msg"),
 	)
 }

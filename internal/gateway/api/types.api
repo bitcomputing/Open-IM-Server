@@ -610,3 +610,300 @@ type GetSuperGroupsInfoResponse {
 	CommResp
 	Data []map[string]interface{} `json:"data"`
 }
+
+type GetSeqRequest {
+	ReqIdentifier int    `json:"reqIdentifier" validate:"required"`
+	SendID        string `json:"sendID" validate:"required"`
+	OperationID   string `json:"operationID" validate:"required"`
+	MsgIncr       int    `json:"msgIncr" validate:"required"`
+}
+
+type GetSeqResponse {
+	CommResp
+	MsgIncr       int        `json:"msgIncr"`
+	ReqIdentifier int        `json:"reqIdentifier"`
+	Data          GetSeqData `json:"data"`
+}
+
+type GetSeqData {
+	MaxSeq uint32 `json:"maxSeq"`
+	MinSeq uint32 `json:"minSeq"`
+}
+
+type SendMsgRequest {
+	SenderPlatformID int32           `json:"senderPlatformID" validate:"required"`
+	SendID           string          `json:"sendID" validate:"required"`
+	SenderNickName   string          `json:"senderNickName"`
+	SenderFaceURL    string          `json:"senderFaceUrl"`
+	OperationID      string          `json:"operationID" validate:"required"`
+	SessionType      int32           `json:"sessionType" validate:"required"`
+	MsgFrom          int32           `json:"msgFrom" validate:"required"`
+	ContentType      int32           `json:"contentType" validate:"required"`
+	RecvID           string          `json:"recvID"`
+	GroupID          string          `json:"groupID"`
+	ForceList        []string        `json:"forceList"`
+	Content          []byte          `json:"content" validate:"required"`
+	Options          map[string]bool `json:"options"`
+	ClientMsgID      string          `json:"clientMsgID" validate:"required"`
+	CreateTime       int64           `json:"createTime" validate:"required"`
+	OfflineInfo      OfflinePushInfo `json:"offlineInfo"`
+}
+
+type OfflinePushInfo {
+	Title         string `json:"title,omitempty"`
+	Desc          string `json:"desc,omitempty"`
+	Ex            string `json:"ex,omitempty"`
+	IOSPushSound  string `json:"iOSPushSound,omitempty"`
+	IOSBadgeCount bool   `json:"iOSBadgeCount,omitempty"`
+}
+
+type SendMsgResponse {
+	CommResp
+	Data SendMsgData `json:"data"`
+}
+
+type SendMsgData {
+	ClientMsgID string `json:"clientMsgID"`
+	ServerMsgID string `json:"serverMsgID"`
+	SendTime    int64  `json:"sendTime"`
+}
+
+type PullMsgBySeqListRequest {
+	ReqIdentifier int      `json:"reqIdentifier" validate:"required"`
+	SendID        string   `json:"sendID" validate:"required"`
+	OperationID   string   `json:"operationID" validate:"required"`
+	SeqList       []uint32 `json:"seqList"`
+}
+
+type PullMsgBySeqListResponse {
+	CommResp
+	ReqIdentifier int       `json:"reqIdentifier"`
+	Data          []MsgData `json:"data"`
+}
+
+type MsgData {
+	SendID               string           `json:"sendID,omitempty"`
+	RecvID               string           `json:"recvID,omitempty"`
+	GroupID              string           `json:"groupID,omitempty"`
+	ClientMsgID          string           `json:"clientMsgID,omitempty"`
+	ServerMsgID          string           `json:"serverMsgID,omitempty"`
+	SenderPlatformID     int32            `json:"senderPlatformID,omitempty"`
+	SenderNickname       string           `json:"senderNickname,omitempty"`
+	SenderFaceURL        string           `json:"senderFaceURL,omitempty"`
+	SessionType          int32            `json:"sessionType,omitempty"`
+	MsgFrom              int32            `json:"msgFrom,omitempty"`
+	ContentType          int32            `json:"contentType,omitempty"`
+	Content              []byte           `json:"content,omitempty"`
+	Seq                  uint32           `json:"seq,omitempty"`
+	SendTime             int64            `json:"sendTime,omitempty"`
+	CreateTime           int64            `json:"createTime,omitempty"`
+	Status               int32            `json:"status,omitempty"`
+	Options              map[string]bool  `json:"options,omitempty"`
+	OfflinePushInfo      *OfflinePushInfo `json:"offlinePushInfo,omitempty"`
+	AtUserIDList         []string         `json:"atUserIDList,omitempty"`
+	MsgDataList          []byte           `json:"msgDataList,omitempty"`
+	AttachedInfo         string           `json:"attachedInfo,omitempty"`
+	Ex                   string           `json:"ex,omitempty"`
+	IsReact              bool             `json:"isReact,omitempty"`
+	IsExternalExtensions bool             `json:"isExternalExtensions,omitempty"`
+	MsgFirstModifyTime   int64            `json:"msgFirstModifyTime,omitempty"`
+}
+
+type DelMsgRequest {
+	UserID      string   `json:"userID" validate:"required"`
+	SeqList     []uint32 `json:"seqList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type DelMsgResponse {
+	CommResp
+}
+
+type DelSuperGroupMsgRequest {
+	UserID      string   `json:"userID" validate:"required"`
+	GroupID     string   `json:"groupID" validate:"required"`
+	SeqList     []uint32 `json:"seqList"`
+	IsAllDelete bool     `json:"isAllDelete"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type DelSuperGroupMsgResponse {
+	CommResp
+}
+
+type ClearMsgRequest {
+	UserID      string `json:"userID"  validate:"required"`
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type ClearMsgResponse {
+	CommResp
+}
+
+type ManagementSendMsgRequest {
+	ManagementSendMsg
+	RecvID string `json:"recvID"`
+}
+
+type ManagementSendMsg {
+	OperationID         string                 `json:"operationID" validate:"required"`
+	BusinessOperationID string                 `json:"businessOperationID"`
+	SendID              string                 `json:"sendID" validate:"required"`
+	GroupID             string                 `json:"groupID"`
+	SenderNickname      string                 `json:"senderNickname"`
+	SenderFaceURL       string                 `json:"senderFaceURL"`
+	SenderPlatformID    int32                  `json:"senderPlatformID"`
+	Content             map[string]interface{} `json:"content" validate:"required"`
+	ContentType         int32                  `json:"contentType" validate:"required"`
+	SessionType         int32                  `json:"sessionType" validate:"required"`
+	IsOnlineOnly        bool                   `json:"isOnlineOnly"`
+	NotOfflinePush      bool                   `json:"notOfflinePush"`
+	OfflinePushInfo     OfflinePushInfo        `json:"offlinePushInfo"`
+}
+
+type ManagementSendMsgResponse {
+	CommResp
+	ResultList UserSendMsgResp `json:"data"`
+}
+
+type UserSendMsgResp {
+	ServerMsgID string `json:"serverMsgID,omitempty"`
+	ClientMsgID string `json:"clientMsgID,omitempty"`
+	SendTime    int64  `json:"sendTime,omitempty"`
+	Ex          string `json:"ex,omitempty"`
+}
+
+type ManagementBatchSendMsgRequest {
+	ManagementSendMsg
+	IsSendAll  bool     `json:"isSendAll"`
+	RecvIDList []string `json:"recvIDList"`
+}
+
+type ManagementBatchSendMsgResponse {
+	CommResp
+	Data ManagementBatchSendMsgData `json:"data"`
+}
+
+type ManagementBatchSendMsgData {
+	ResultList []*SingleReturnResult `json:"resultList"`
+	// FailedIDList []string
+}
+
+type SingleReturnResult {
+	ServerMsgID string `json:"serverMsgID"`
+	ClientMsgID string `json:"clientMsgID"`
+	SendTime    int64  `json:"sendTime"`
+	RecvID      string `json:"recvID"`
+}
+
+type CheckMsgIsSendSuccessRequest {
+	OperationID string `json:"operationID"`
+}
+
+type CheckMsgIsSendSuccessResponse {
+	CommResp
+	Status int32 `json:"status"`
+}
+
+type SetMsgMinSeqRequest {
+	UserID      string `json:"userID"  validate:"required"`
+	GroupID     string `json:"groupID"`
+	MinSeq      uint32 `json:"minSeq"  validate:"required"`
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type SetMsgMinSeqResponse {
+	CommResp
+}
+
+type SetMessageReactionExtensionsRequest {
+	OperationID           string               `json:"operationID" validate:"required"`
+	SourceID              string               `json:"sourceID"  validate:"required"`
+	SessionType           int32                `json:"sessionType" validate:"required"`
+	ReactionExtensionList map[string]*KeyValue `json:"reactionExtensionList,omitempty" validate:"required"`
+	ClientMsgID           string               `json:"clientMsgID" validate:"required"`
+	Ex                    *string              `json:"ex"`
+	AttachedInfo          *string              `json:"attachedInfo"`
+	IsReact               bool                 `json:"isReact"`
+	IsExternalExtensions  bool                 `json:"isExternalExtensions"`
+	MsgFirstModifyTime    int64                `json:"msgFirstModifyTime"`
+	Seq                   uint32               `json:"seq"`
+}
+
+type KeyValue {
+	TypeKey          string `json:"typeKey,omitempty"`
+	Value            string `json:"value,omitempty"`
+	LatestUpdateTime int64  `json:"latestUpdateTime,omitempty"`
+}
+
+type SetMessageReactionExtensionsResponse {
+	CommResp
+	Data SetMessageReactionExtensionsData `json:"data"`
+}
+
+type SetMessageReactionExtensionsData {
+	ResultKeyValue     []*KeyValueResp `json:"result"`
+	MsgFirstModifyTime int64           `json:"msgFirstModifyTime"`
+	IsReact            bool            `json:"isReact"`
+}
+
+type KeyValueResp {
+	KeyValue *KeyValue `json:"keyValue,omitempty"`
+	ErrCode  int32     `json:"errCode,omitempty"`
+	ErrMsg   string    `json:"errMsg,omitempty"`
+}
+
+type GetMessageListReactionExtensionsRequest {
+	OperationID            string                                                    `json:"operationID" validate:"required"`
+	SourceID               string                                                    `json:"sourceID"  validate:"required"`
+	SessionType            int32                                                     `json:"sessionType" validate:"required"`
+	IsExternalExtensions   bool                                                      `json:"isExternalExtensions"`
+	TypeKeyList            []string                                                  `json:"typeKeyList"`
+	MessageReactionKeyList []*GetMessageListReactionExtensionsReq_MessageReactionKey `json:"messageReactionKeyList" validate:"required"`
+}
+
+type GetMessageListReactionExtensionsReq_MessageReactionKey {
+	ClientMsgID        string `json:"clientMsgID,omitempty"`
+	MsgFirstModifyTime int64  `json:"msgFirstModifyTime,omitempty"`
+}
+
+type GetMessageListReactionExtensionsResponse {
+	CommResp
+	Data []*SingleMessageExtensionResult `json:"data"`
+}
+
+type SingleMessageExtensionResult {
+	ErrCode               int32                `json:"errCode,omitempty"`
+	ErrMsg                string               `json:"errMsg,omitempty"`
+	ReactionExtensionList map[string]*KeyValue `json:"reactionExtensionList,omitempty"`
+	ClientMsgID           string               `json:"clientMsgID,omitempty"`
+}
+
+type AddMessageReactionExtensionsRequest {
+	SetMessageReactionExtensionsRequest
+}
+
+type AddMessageReactionExtensionsResponse {
+	SetMessageReactionExtensionsResponse
+}
+
+type DeleteMessageReactionExtensionsRequest {
+	OperationID           string      `json:"operationID" validate:"required"`
+	SourceID              string      `json:"sourceID" validate:"required"`
+	SessionType           int32       `json:"sessionType" validate:"required"`
+	ClientMsgID           string      `json:"clientMsgID" validate:"required"`
+	IsExternalExtensions  bool        `json:"isExternalExtensions"`
+	MsgFirstModifyTime    int64       `json:"msgFirstModifyTime" validate:"required"`
+	ReactionExtensionList []*KeyValue `json:"reactionExtensionList" validate:"required"`
+}
+
+type DeleteMessageReactionExtensionsResponse {
+	CommResp
+	// Data []*KeyValueResp
+}
+
+type MsgDeleteNotificationElem {
+	GroupID     string   `json:"groupID"`
+	IsAllDelete bool     `json:"isAllDelete"`
+	SeqList     []uint32 `json:"seqList"`
+}

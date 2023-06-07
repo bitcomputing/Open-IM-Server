@@ -12,4 +12,5 @@ type Config struct {
 	ConversationClient zrpc.RpcClientConf
 	FriendClient       zrpc.RpcClientConf
 	GroupClient        zrpc.RpcClientConf
+	MessageClient      zrpc.RpcClientConf
 }
