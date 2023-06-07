@@ -313,3 +313,19 @@ service gateway {
 	@handler DeleteMessageReactionExtensions
 	post /delete_message_reaction_extensions (DeleteMessageReactionExtensionsRequest) returns (DeleteMessageReactionExtensionsResponse)
 }
+
+@server(
+	group: third
+	prefix: /third
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "FCM update token"
+	@handler FCMUpdateToken
+	post /fcm_update_token (FCMUpdateTokenRequest) returns (FCMUpdateTokenResponse)
+	
+	@doc "Set App badge"
+	@handler SetAppBadge
+	post /set_app_badge (SetAppBadgeRequest) returns (SetAppBadgeResponse)
+}

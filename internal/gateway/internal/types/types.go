@@ -906,3 +906,23 @@ type MsgDeleteNotificationElem struct {
 	IsAllDelete bool     `json:"isAllDelete"`
 	SeqList     []uint32 `json:"seqList"`
 }
+
+type FCMUpdateTokenRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	Platform    int    `json:"platform" validate:"required,min=1,max=2"` // only for ios + android
+	FcmToken    string `json:"fcmToken" validate:"required"`
+}
+
+type FCMUpdateTokenResponse struct {
+	CommResp
+}
+
+type SetAppBadgeRequest struct {
+	OperationID    string `json:"operationID" validate:"required"`
+	FromUserID     string `json:"fromUserID" validate:"required"`
+	AppUnreadCount int32  `json:"appUnreadCount"`
+}
+
+type SetAppBadgeResponse struct {
+	CommResp
+}
