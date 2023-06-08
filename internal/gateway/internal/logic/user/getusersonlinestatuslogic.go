@@ -62,16 +62,20 @@ func (l *GetUsersOnlineStatusLogic) GetUsersOnlineStatus(req *types.GetUsersOnli
 	var respResult []*relay.GetUsersOnlineStatusResp_SuccessResult
 	flag := false
 
-	// todo
-	// reply, err := l.svcCtx..GetUsersOnlineStatus(l.ctx, rpcReq)
-	// 	if err != nil {
-	// 		log.NewError(req.OperationID, "GetUsersOnlineStatus rpc  err", rpcReq.String(), err.Error())
-	// 		continue
-	// 	} else {
-	// 		if reply.ErrCode == 0 {
-	// 			wsResult = append(wsResult, reply.SuccessResult...)
-	// 		}
-	// 	}
+	grpcConns := l.svcCtx.GatewayClient.ClientConns()
+	for _, v := range grpcConns {
+		logger.Debug(req.OperationID, "get node ", v, v.Target())
+		client := relay.NewRelayClient(v)
+		reply, err := client.GetUsersOnlineStatus(l.ctx, rpcReq)
+		if err != nil {
+			logger.Error(req.OperationID, "GetUsersOnlineStatus rpc  err", rpcReq.String(), err.Error())
+			continue
+		} else {
+			if reply.ErrCode == 0 {
+				wsResult = append(wsResult, reply.SuccessResult...)
+			}
+		}
+	}
 
 	for _, v1 := range req.UserIDList {
 		flag = false

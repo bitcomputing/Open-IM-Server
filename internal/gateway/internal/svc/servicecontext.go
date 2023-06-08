@@ -10,6 +10,8 @@ import (
 	group "Open_IM/internal/rpc/group/client"
 	message "Open_IM/internal/rpc/msg/client"
 	user "Open_IM/internal/rpc/user/client"
+	commoncfg "Open_IM/pkg/common/config"
+	"Open_IM/pkg/discovery"
 
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -24,11 +26,16 @@ type ServiceContext struct {
 	FriendClient         friend.FriendClient
 	GroupClient          group.GroupClient
 	MessageClient        message.MsgClient
-	// RelayClient          relay.RelayClient
-	CacheClient cache.CacheClient
+	CacheClient          cache.CacheClient
+	GatewayClient        *discovery.Client
 }
 
-func NewServiceContext(c config.Config) *ServiceContext {
+func NewServiceContext(c config.Config) (*ServiceContext, error) {
+	gatewayClient, err := discovery.NewClient(commoncfg.ConvertClientConfig(commoncfg.Config.ClientConfigs.Gateway))
+	if err != nil {
+		return nil, err
+	}
+
 	return &ServiceContext{
 		Config:               c,
 		CorsMiddleware:       middleware.NewCorsMiddleware().Handle,
@@ -39,7 +46,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		FriendClient:         friend.NewFriendClient(c.FriendClient),
 		GroupClient:          group.NewGroupClient(c.GroupClient),
 		MessageClient:        message.NewMsgClient(c.MessageClient),
-		// RelayClient:          relay.NewRelayClient(),
-		CacheClient: cache.NewCacheClient(c.CacheClient),
-	}
+		CacheClient:          cache.NewCacheClient(c.CacheClient),
+		GatewayClient:        gatewayClient,
+	}, nil
 }
