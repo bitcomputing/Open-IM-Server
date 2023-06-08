@@ -10,7 +10,6 @@ import (
 	group "Open_IM/internal/rpc/group/client"
 	message "Open_IM/internal/rpc/msg/client"
 	user "Open_IM/internal/rpc/user/client"
-	commoncfg "Open_IM/pkg/common/config"
 	"Open_IM/pkg/discovery"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -27,11 +26,11 @@ type ServiceContext struct {
 	GroupClient          group.GroupClient
 	MessageClient        message.MsgClient
 	CacheClient          cache.CacheClient
-	GatewayClient        *discovery.Client
+	RelayClient          *discovery.Client
 }
 
 func NewServiceContext(c config.Config) (*ServiceContext, error) {
-	gatewayClient, err := discovery.NewClient(commoncfg.ConvertClientConfig(commoncfg.Config.ClientConfigs.Gateway))
+	relayClient, err := discovery.NewClient(c.RelayClient)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +46,6 @@ func NewServiceContext(c config.Config) (*ServiceContext, error) {
 		GroupClient:          group.NewGroupClient(c.GroupClient),
 		MessageClient:        message.NewMsgClient(c.MessageClient),
 		CacheClient:          cache.NewCacheClient(c.CacheClient),
-		GatewayClient:        gatewayClient,
+		RelayClient:          relayClient,
 	}, nil
 }

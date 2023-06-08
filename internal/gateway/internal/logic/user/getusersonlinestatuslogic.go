@@ -62,7 +62,7 @@ func (l *GetUsersOnlineStatusLogic) GetUsersOnlineStatus(req *types.GetUsersOnli
 	var respResult []*relay.GetUsersOnlineStatusResp_SuccessResult
 	flag := false
 
-	grpcConns := l.svcCtx.GatewayClient.ClientConns()
+	grpcConns := l.svcCtx.RelayClient.ClientConns()
 	for _, v := range grpcConns {
 		logger.Debug(req.OperationID, "get node ", v, v.Target())
 		client := relay.NewRelayClient(v)

@@ -13,6 +13,6 @@ type Config struct {
 	FriendClient       zrpc.RpcClientConf
 	GroupClient        zrpc.RpcClientConf
 	MessageClient      zrpc.RpcClientConf
-	// RelayClient        zrpc.RpcClientConf
-	CacheClient zrpc.RpcClientConf
+	RelayClient        zrpc.RpcClientConf
+	CacheClient        zrpc.RpcClientConf
 }

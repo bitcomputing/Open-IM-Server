@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"Open_IM/internal/gateway/internal/common/header"
@@ -12,13 +13,12 @@ import (
 	"Open_IM/pkg/logger"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetGroupAllMemberListHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.GetGroupAllMemberListRequest
-		if err := httpx.Parse(r, &req); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
 			return
 		}
