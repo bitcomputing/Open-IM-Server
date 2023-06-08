@@ -926,3 +926,155 @@ type SetAppBadgeRequest struct {
 type SetAppBadgeResponse struct {
 	CommResp
 }
+
+type UpdateUserInfoRequest struct {
+	ApiUserInfo
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type UpdateUserInfoResponse struct {
+	CommResp
+}
+
+type SetGlobalRecvMessageOptRequest struct {
+	OperationID      string `json:"operationID" validate:"required"`
+	GlobalRecvMsgOpt *int32 `json:"globalRecvMsgOpt,optional" validate:"omitempty,oneof=0 1 2"`
+}
+
+type SetGlobalRecvMessageOptResponse struct {
+	CommResp
+}
+
+type GetUsersPublicInfoRequest struct {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+}
+
+type GetUsersPublicInfoResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSelfUserInfoRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type GetSelfUserInfoResponse struct {
+	CommResp
+	Data map[string]interface{} `json:"data"`
+}
+
+type GetUsersOnlineStatusRequest struct {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required,lte=200"`
+}
+
+type GetUsersOnlineStatusResponse struct {
+	CommResp
+	SuccessResult []*GetUsersOnlineStatusResp_SuccessResult `json:"data"`
+}
+
+type GetUsersOnlineStatusResp_SuccessResult struct {
+	UserID               string                                    `json:"userID,omitempty"`
+	Status               string                                    `json:"status,omitempty"`
+	DetailPlatformStatus []*GetUsersOnlineStatusResp_SuccessDetail `json:"detailPlatformStatus,omitempty"`
+}
+
+type GetUsersOnlineStatusResp_SuccessDetail struct {
+	Platform     string `json:"platform,omitempty"`
+	Status       string `json:"status,omitempty"`
+	ConnID       string `json:"connID,omitempty"`
+	IsBackground bool   `json:"isBackground,omitempty"`
+}
+
+type GetUsersInfoFromCacheRequest struct {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+}
+
+type GetUsersInfoFromCacheResponse struct {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetFriendIDListFromCacheRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetFriendIDListFromCacheResponse struct {
+	CommResp
+	UserIDList []string `json:"userIDList"`
+}
+
+type GetBlackIDListFromCacheRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetBlackIDListFromCacheResponse struct {
+	CommResp
+	UserIDList []string `json:"userIDList"`
+}
+
+type GetAllUsersUidRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetAllUsersUidResponse struct {
+	CommResp
+	UserIDList []string `json:"data"`
+}
+
+type AccountCheckRequest struct {
+	OperationID     string   `json:"operationID" validate:"required"`
+	CheckUserIDList []string `json:"checkUserIDList" validate:"required,lte=100"`
+}
+
+type AccountCheckResponse struct {
+	CommResp
+	ResultList []*AccountCheckResp_SingleUserStatus `json:"data"`
+}
+
+type AccountCheckResp_SingleUserStatus struct {
+	UserID        string `json:"userID,omitempty"`
+	AccountStatus string `json:"accountStatus,omitempty"`
+}
+
+type GetUsersRequest struct {
+	OperationID string `json:"operationID" validate:"required"`
+	UserName    string `json:"userName"`
+	UserID      string `json:"userID"`
+	Content     string `json:"content"`
+	PageNumber  int32  `json:"pageNumber" validate:"required"`
+	ShowNumber  int32  `json:"showNumber" validate:"required"`
+}
+
+type GetUsersResponse struct {
+	CommResp
+	Data GetUsersData `json:"data"`
+}
+
+type GetUsersData struct {
+	UserList    []*CMSUser `json:"userList"`
+	TotalNum    int32      `json:"totalNum"`
+	CurrentPage int32      `json:"currentPage"`
+	ShowNumber  int32      `json:"showNumber"`
+}
+
+type CMSUser struct {
+	UserID           string `json:"userID"`
+	Nickname         string `json:"nickname"`
+	FaceURL          string `json:"faceURL"`
+	Gender           int32  `json:"gender"`
+	PhoneNumber      string `json:"phoneNumber"`
+	Birth            uint32 `json:"birth"`
+	Email            string `json:"email"`
+	Ex               string `json:"ex"`
+	CreateIp         string `json:"createIp"`
+	CreateTime       uint32 `json:"createTime"`
+	LastLoginIp      string `json:"LastLoginIp"`
+	LastLoginTime    uint32 `json:"LastLoginTime"`
+	AppMangerLevel   int32  `json:"appMangerLevel"`
+	GlobalRecvMsgOpt int32  `json:"globalRecvMsgOpt"`
+	IsBlock          bool   `json:"isBlock"`
+}

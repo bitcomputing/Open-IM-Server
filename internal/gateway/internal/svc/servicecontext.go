@@ -4,6 +4,7 @@ import (
 	"Open_IM/internal/gateway/internal/config"
 	"Open_IM/internal/gateway/internal/middleware"
 	auth "Open_IM/internal/rpc/auth/client"
+	cache "Open_IM/internal/rpc/cache/client"
 	conversation "Open_IM/internal/rpc/conversation/client"
 	friend "Open_IM/internal/rpc/friend/client"
 	group "Open_IM/internal/rpc/group/client"
@@ -23,6 +24,8 @@ type ServiceContext struct {
 	FriendClient         friend.FriendClient
 	GroupClient          group.GroupClient
 	MessageClient        message.MsgClient
+	// RelayClient          relay.RelayClient
+	CacheClient cache.CacheClient
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -36,5 +39,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		FriendClient:         friend.NewFriendClient(c.FriendClient),
 		GroupClient:          group.NewGroupClient(c.GroupClient),
 		MessageClient:        message.NewMsgClient(c.MessageClient),
+		// RelayClient:          relay.NewRelayClient(),
+		CacheClient: cache.NewCacheClient(c.CacheClient),
 	}
 }

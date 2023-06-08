@@ -12,6 +12,7 @@ import (
 	message "Open_IM/internal/gateway/internal/handler/message"
 	supergroup "Open_IM/internal/gateway/internal/handler/supergroup"
 	third "Open_IM/internal/gateway/internal/handler/third"
+	user "Open_IM/internal/gateway/internal/handler/user"
 	"Open_IM/internal/gateway/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -418,5 +419,69 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/third"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CorsMiddleware, serverCtx.BodyLoggerMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/update_user_info",
+					Handler: user.UpdateUserInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/set_global_msg_recv_opt",
+					Handler: user.SetGlobalRecvMessageOptHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_users_info",
+					Handler: user.GetUsersPublicInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_self_user_info",
+					Handler: user.GetSelfUserInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_users_online_status",
+					Handler: user.GetUsersOnlineStatusHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_users_info_from_cache",
+					Handler: user.GetUsersInfoFromCacheHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_user_friend_from_cache",
+					Handler: user.GetFriendIDListFromCacheHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_black_list_from_cache",
+					Handler: user.GetBlackIDListFromCacheHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_all_users_uid",
+					Handler: user.GetAllUsersUidHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/account_check",
+					Handler: user.AccountCheckHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/get_users",
+					Handler: user.GetUsersHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/user"),
 	)
 }

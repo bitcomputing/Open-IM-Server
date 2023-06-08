@@ -37,3 +37,15 @@ MessageClient:
       - 127.0.0.1:2379
     Key: msg.rpc
   Timeout: 3000
+# RelayClient:
+#   Etcd:
+#     Hosts:
+#       - 127.0.0.1:2379
+#     Key: relay.rpc
+#   Timeout: 3000
+CacheClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: cache.rpc
+  Timeout: 3000

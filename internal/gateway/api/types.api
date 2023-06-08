@@ -927,3 +927,155 @@ type SetAppBadgeRequest {
 type SetAppBadgeResponse {
 	CommResp
 }
+
+type UpdateUserInfoRequest {
+	ApiUserInfo
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type UpdateUserInfoResponse {
+	CommResp
+}
+
+type SetGlobalRecvMessageOptRequest {
+	OperationID      string `json:"operationID" validate:"required"`
+	GlobalRecvMsgOpt *int32 `json:"globalRecvMsgOpt,optional" validate:"omitempty,oneof=0 1 2"`
+}
+
+type SetGlobalRecvMessageOptResponse {
+	CommResp
+}
+
+type GetUsersPublicInfoRequest {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+}
+
+type GetUsersPublicInfoResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSelfUserInfoRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type GetSelfUserInfoResponse {
+	CommResp
+	Data map[string]interface{} `json:"data"`
+}
+
+type GetUsersOnlineStatusRequest {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required,lte=200"`
+}
+
+type GetUsersOnlineStatusResponse {
+	CommResp
+	SuccessResult []*GetUsersOnlineStatusResp_SuccessResult `json:"data"`
+}
+
+type GetUsersOnlineStatusResp_SuccessResult {
+	UserID               string                                    `json:"userID,omitempty"`
+	Status               string                                    `json:"status,omitempty"`
+	DetailPlatformStatus []*GetUsersOnlineStatusResp_SuccessDetail `json:"detailPlatformStatus,omitempty"`
+}
+
+type GetUsersOnlineStatusResp_SuccessDetail {
+	Platform     string `json:"platform,omitempty"`
+	Status       string `json:"status,omitempty"`
+	ConnID       string `json:"connID,omitempty"`
+	IsBackground bool   `json:"isBackground,omitempty"`
+}
+
+type GetUsersInfoFromCacheRequest {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+}
+
+type GetUsersInfoFromCacheResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetFriendIDListFromCacheRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetFriendIDListFromCacheResponse {
+	CommResp
+	UserIDList []string `json:"userIDList"`
+}
+
+type GetBlackIDListFromCacheRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetBlackIDListFromCacheResponse {
+	CommResp
+	UserIDList []string `json:"userIDList"`
+}
+
+type GetAllUsersUidRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetAllUsersUidResponse {
+	CommResp
+	UserIDList []string `json:"data"`
+}
+
+type AccountCheckRequest {
+	OperationID     string   `json:"operationID" validate:"required"`
+	CheckUserIDList []string `json:"checkUserIDList" validate:"required,lte=100"`
+}
+
+type AccountCheckResponse {
+	CommResp
+	ResultList []*AccountCheckResp_SingleUserStatus `json:"data"`
+}
+
+type AccountCheckResp_SingleUserStatus {
+	UserID        string `json:"userID,omitempty"`
+	AccountStatus string `json:"accountStatus,omitempty"`
+}
+
+type GetUsersRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	UserName    string `json:"userName"`
+	UserID      string `json:"userID"`
+	Content     string `json:"content"`
+	PageNumber  int32  `json:"pageNumber" validate:"required"`
+	ShowNumber  int32  `json:"showNumber" validate:"required"`
+}
+
+type GetUsersResponse {
+	CommResp
+	Data GetUsersData `json:"data"`
+}
+
+type GetUsersData {
+	UserList    []*CMSUser `json:"userList"`
+	TotalNum    int32      `json:"totalNum"`
+	CurrentPage int32      `json:"currentPage"`
+	ShowNumber  int32      `json:"showNumber"`
+}
+
+type CMSUser {
+	UserID           string `json:"userID"`
+	Nickname         string `json:"nickname"`
+	FaceURL          string `json:"faceURL"`
+	Gender           int32  `json:"gender"`
+	PhoneNumber      string `json:"phoneNumber"`
+	Birth            uint32 `json:"birth"`
+	Email            string `json:"email"`
+	Ex               string `json:"ex"`
+	CreateIp         string `json:"createIp"`
+	CreateTime       uint32 `json:"createTime"`
+	LastLoginIp      string `json:"LastLoginIp"`
+	LastLoginTime    uint32 `json:"LastLoginTime"`
+	AppMangerLevel   int32  `json:"appMangerLevel"`
+	GlobalRecvMsgOpt int32  `json:"globalRecvMsgOpt"`
+	IsBlock          bool   `json:"isBlock"`
+}
