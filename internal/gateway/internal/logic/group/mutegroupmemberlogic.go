@@ -42,7 +42,7 @@ func (l *MuteGroupMemberLogic) MuteGroupMember(req *types.MuteGroupMemberRequest
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
-	ok, opuid, errInfo := token_verify.GetUserIDFromToken(token, rpcReq.OperationID)
+	ok, opuid, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, rpcReq.OperationID)
 	if !ok {
 		errMsg := rpcReq.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(rpcReq.OperationID, errMsg)

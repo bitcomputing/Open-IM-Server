@@ -35,7 +35,7 @@ func (l *GetSeqLogic) GetSeq(req *types.GetSeqRequest) (resp *types.GetSeqRespon
 		return nil, err
 	}
 
-	if ok, err := token_verify.VerifyToken(token, req.SendID); !ok {
+	if ok, err := token_verify.VerifyToken(l.ctx, token, req.SendID); !ok {
 		return nil, errors.BadRequest.WriteMessage(err.Error())
 	}
 

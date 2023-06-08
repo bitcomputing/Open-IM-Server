@@ -43,7 +43,7 @@ func (l *ClearMsgLogic) ClearMsg(req *types.ClearMsgRequest) (resp *types.ClearM
 		return nil, err
 	}
 
-	ok, opuid, errInfo := token_verify.GetUserIDFromToken(token, rpcReq.OperationID)
+	ok, opuid, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, rpcReq.OperationID)
 	if !ok {
 		errMsg := rpcReq.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(rpcReq.OperationID, errMsg)

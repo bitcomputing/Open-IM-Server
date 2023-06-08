@@ -36,7 +36,7 @@ func (l *PullMsgBySeqListLogic) PullMsgBySeqList(req *types.PullMsgBySeqListRequ
 		return nil, err
 	}
 
-	if ok, err := token_verify.VerifyToken(token, req.SendID); !ok {
+	if ok, err := token_verify.VerifyToken(l.ctx, token, req.SendID); !ok {
 		if err != nil {
 			logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error(), token, req.SendID)
 		}

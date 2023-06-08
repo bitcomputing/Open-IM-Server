@@ -103,7 +103,7 @@ func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.Manageme
 		return nil, err
 	}
 
-	claims, err := token_verify.ParseToken(token, req.OperationID)
+	claims, err := token_verify.ParseToken(l.ctx, token, req.OperationID)
 	if err != nil {
 		logger.Error(req.OperationID, "parse token failed", err.Error())
 		return nil, errors.BadRequest.WriteMessage(err.Error())
@@ -128,7 +128,7 @@ func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.Manageme
 	pbData := newUserSendMsgReq(logger, managementSendMsgReq)
 	var recvList []string
 	if req.IsSendAll {
-		recvList, err = im_mysql_model.SelectAllUserID()
+		recvList, err = im_mysql_model.SelectAllUserID(l.ctx)
 		if err != nil {
 			logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error())
 			return nil, errors.InternalError.WriteMessage(err.Error())

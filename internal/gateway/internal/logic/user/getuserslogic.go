@@ -39,7 +39,7 @@ func (l *GetUsersLogic) GetUsers(req *types.GetUsersRequest) (resp *types.GetUse
 		return nil, err
 	}
 
-	ok, _, errInfo := token_verify.GetUserIDFromToken(token, req.OperationID)
+	ok, _, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(req.OperationID, errMsg)

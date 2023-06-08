@@ -38,7 +38,7 @@ func (l *ForceLogoutLogic) ForceLogout(req *types.ForceLogoutRequest) (resp *typ
 
 	forceLogoutReq := &auth.ForceLogoutReq{}
 	utils.CopyStructFields(forceLogoutReq, &req)
-	ok, opUserID, errInfo := token_verify.GetUserIDFromToken(token, forceLogoutReq.OperationID)
+	ok, opUserID, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, forceLogoutReq.OperationID)
 	if !ok {
 		errMsg := forceLogoutReq.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(errMsg)

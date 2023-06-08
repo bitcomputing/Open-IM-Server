@@ -35,7 +35,7 @@ func (l *ParseTokenLogic) ParseToken(req *types.ParseTokenRequest) (resp *types.
 		return nil, err
 	}
 
-	ok, _, errInfo, expireTime := token_verify.GetUserIDFromTokenExpireTime(token, req.OperationID)
+	ok, _, errInfo, expireTime := token_verify.GetUserIDFromTokenExpireTime(l.ctx, token, req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromTokenExpireTime failed " + errInfo
 		logger.Error(errMsg)

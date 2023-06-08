@@ -44,7 +44,7 @@ func (l *GetUsersInfoFromCacheLogic) GetUsersInfoFromCache(req *types.GetUsersIn
 		return nil, err
 	}
 
-	ok, opuid, errInfo := token_verify.GetUserIDFromToken(token, rpcReq.OperationID)
+	ok, opuid, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, rpcReq.OperationID)
 	if !ok {
 		errMsg := "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(rpcReq.OperationID, errMsg)

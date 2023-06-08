@@ -42,7 +42,7 @@ func (l *SetMessageReactionExtensionsLogic) SetMessageReactionExtensions(req *ty
 		return nil, err
 	}
 
-	ok, opuid, errInfo, oppid := token_verify.GetUserIDAndPlatformIDFromToken(token, req.OperationID)
+	ok, opuid, errInfo, oppid := token_verify.GetUserIDAndPlatformIDFromToken(l.ctx, token, req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(req.OperationID, errMsg)

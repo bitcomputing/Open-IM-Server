@@ -36,7 +36,7 @@ func (l *GetClientConfigLogic) GetClientConfig(req *types.GetClientConfigRequest
 		return nil, err
 	}
 
-	err, _ = token_verify.ParseTokenGetUserID(token, req.OperationID)
+	err, _ = token_verify.ParseTokenGetUserID(l.ctx, token, req.OperationID)
 	if err != nil {
 		errMsg := "ParseTokenGetUserID failed " + err.Error() + token
 		logger.Error(req.OperationID, errMsg)

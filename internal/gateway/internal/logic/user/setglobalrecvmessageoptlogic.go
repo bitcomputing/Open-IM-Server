@@ -43,7 +43,7 @@ func (l *SetGlobalRecvMessageOptLogic) SetGlobalRecvMessageOpt(req *types.SetGlo
 		return nil, err
 	}
 
-	ok, userId, errInfo := token_verify.GetUserIDFromToken(token, rpcReq.OperationID)
+	ok, userId, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, rpcReq.OperationID)
 	if !ok {
 		errMsg := rpcReq.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(rpcReq.OperationID, errMsg)

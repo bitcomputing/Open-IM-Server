@@ -43,7 +43,7 @@ func (l *SetFriendRemarkLogic) SetFriendRemark(req *types.SetFriendRemarkRequest
 		return nil, err
 	}
 
-	ok, opuid, errInfo := token_verify.GetUserIDFromToken(token, rpcReq.CommID.OperationID)
+	ok, opuid, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, rpcReq.CommID.OperationID)
 	if !ok {
 		errMsg := rpcReq.CommID.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(rpcReq.CommID.OperationID, errMsg)

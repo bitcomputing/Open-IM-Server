@@ -35,7 +35,7 @@ func (l *SetAppBadgeLogic) SetAppBadge(req *types.SetAppBadgeRequest) (resp *typ
 		return nil, err
 	}
 
-	ok, opuid, errInfo := token_verify.GetUserIDFromToken(token, req.OperationID)
+	ok, opuid, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(req.OperationID, errMsg)

@@ -195,7 +195,7 @@ func (l *ManagementSendMsgLogic) ManagementSendMsg(req *types.ManagementSendMsgR
 		return nil, err
 	}
 
-	claims, err := token_verify.ParseToken(token, req.OperationID)
+	claims, err := token_verify.ParseToken(l.ctx, token, req.OperationID)
 	if err != nil {
 		logger.Error(req.OperationID, "parse token failed", err.Error(), token)
 		return &types.ManagementSendMsgResponse{

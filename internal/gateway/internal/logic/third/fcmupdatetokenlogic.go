@@ -35,7 +35,7 @@ func (l *FCMUpdateTokenLogic) FCMUpdateToken(req *types.FCMUpdateTokenRequest) (
 		return nil, err
 	}
 
-	ok, userId, errInfo := token_verify.GetUserIDFromToken(token, req.OperationID)
+	ok, userId, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, req.OperationID)
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(req.OperationID, errMsg)
