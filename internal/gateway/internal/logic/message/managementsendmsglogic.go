@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -9,6 +10,7 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/token_verify"
+	errors "Open_IM/pkg/errors/api"
 	message "Open_IM/pkg/proto/msg"
 	sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
@@ -161,33 +163,27 @@ func (l *ManagementSendMsgLogic) ManagementSendMsg(req *types.ManagementSendMsgR
 	//case constant.Quote:
 	default:
 		logger.Error("contentType err")
-		return &types.ManagementSendMsgResponse{
-			CommResp: types.CommResp{
-				ErrCode: 404,
-				ErrMsg:  "contentType err",
-			},
-			ResultList: types.UserSendMsgResp{},
-		}, nil
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           404,
+			Message:        "contentType err",
+		}
 	}
 
 	if err := mapstructure.WeakDecode(req.Content, &data); err != nil {
 		logger.Error("content to Data struct  err", err.Error())
-		return &types.ManagementSendMsgResponse{
-			CommResp: types.CommResp{
-				ErrCode: 401,
-				ErrMsg:  err.Error(),
-			},
-			ResultList: types.UserSendMsgResp{},
-		}, nil
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           401,
+			Message:        err.Error(),
+		}
 	} else if err := validate.Struct(data); err != nil {
 		logger.Error("data args validate  err", err.Error())
-		return &types.ManagementSendMsgResponse{
-			CommResp: types.CommResp{
-				ErrCode: 403,
-				ErrMsg:  err.Error(),
-			},
-			ResultList: types.UserSendMsgResp{},
-		}, nil
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           403,
+			Message:        err.Error(),
+		}
 	}
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -198,48 +194,40 @@ func (l *ManagementSendMsgLogic) ManagementSendMsg(req *types.ManagementSendMsgR
 	claims, err := token_verify.ParseToken(l.ctx, token, req.OperationID)
 	if err != nil {
 		logger.Error(req.OperationID, "parse token failed", err.Error(), token)
-		return &types.ManagementSendMsgResponse{
-			CommResp: types.CommResp{
-				ErrCode: 400,
-				ErrMsg:  "parse token failed",
-			},
-			ResultList: types.UserSendMsgResp{},
-		}, nil
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           400,
+			Message:        "parse token failed",
+		}
 	}
 
 	if !utils.IsContain(claims.UID, config.Config.Manager.AppManagerUid) {
 		logger.Error(req.OperationID, "not authorized", token)
-		return &types.ManagementSendMsgResponse{
-			CommResp: types.CommResp{
-				ErrCode: 400,
-				ErrMsg:  "not authorized",
-			},
-			ResultList: types.UserSendMsgResp{},
-		}, nil
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           400,
+			Message:        "not authorized",
+		}
 	}
 
 	switch req.SessionType {
 	case constant.SingleChatType:
 		if len(req.RecvID) == 0 {
 			logger.Error(req.OperationID, "recvID is a null string")
-			return &types.ManagementSendMsgResponse{
-				CommResp: types.CommResp{
-					ErrCode: 405,
-					ErrMsg:  "recvID is a null string",
-				},
-				ResultList: types.UserSendMsgResp{},
-			}, nil
+			return nil, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           405,
+				Message:        "recvID is a null string",
+			}
 		}
 	case constant.GroupChatType, constant.SuperGroupChatType:
 		if len(req.GroupID) == 0 {
 			logger.Error(req.OperationID, "groupID is a null string")
-			return &types.ManagementSendMsgResponse{
-				CommResp: types.CommResp{
-					ErrCode: 405,
-					ErrMsg:  "groupID is a null string",
-				},
-				ResultList: types.UserSendMsgResp{},
-			}, nil
+			return nil, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           405,
+				Message:        "groupID is a null string",
+			}
 		}
 	}
 

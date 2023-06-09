@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 
 	"Open_IM/internal/gateway/internal/svc"
 	"Open_IM/internal/gateway/internal/types"
@@ -53,9 +54,17 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 		errMsg := userRegisterReq.OperationID + " " + " UserRegister failed " + reply.CommonResp.ErrMsg + userRegisterReq.String()
 		logger.Error(errMsg)
 		if reply.CommonResp.ErrCode == constant.RegisterLimit {
-			return nil, errors.RegisterLimit
+			return nil, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           constant.RegisterLimit,
+				Message:        "用户注册被限制",
+			}
 		} else if reply.CommonResp.ErrCode == constant.InvitationError {
-			return nil, errors.InternalError
+			return nil, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           constant.InvitationError,
+				Message:        "邀请码错误",
+			}
 		} else {
 			return nil, errors.InternalError.WriteMessage(errMsg)
 		}

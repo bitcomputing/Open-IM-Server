@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -48,7 +49,11 @@ func (l *GetUsersOnlineStatusLogic) GetUsersOnlineStatus(req *types.GetUsersOnli
 	if !ok {
 		errMsg := rpcReq.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(rpcReq.OperationID, errMsg)
-		return nil, errors.BadRequest.WriteMessage(errMsg)
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           500,
+			Message:        errMsg,
+		}
 	}
 	rpcReq.OpUserID = opuid
 

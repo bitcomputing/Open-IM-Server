@@ -1,6 +1,7 @@
 package logger
 
 import (
+	errors "Open_IM/pkg/errors/api"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -18,6 +19,11 @@ func HandleResponse(ctx context.Context, w http.ResponseWriter, resp any) {
 
 func HandleError(ctx context.Context, w http.ResponseWriter, err error) {
 	logx.WithContext(ctx).Errorv(err)
+	e, ok := err.(errors.Error)
+	if !ok {
+		e = errors.InternalError
+	}
+	w.WriteHeader(e.HttpStatusCode)
 	httpx.ErrorCtx(ctx, w, err)
 }
 
@@ -34,6 +40,9 @@ func GetRequestParameters(r *http.Request) map[string]interface{} {
 		return parameters
 
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		if r.Body == nil {
+			return nil
+		}
 		buffer, err := io.ReadAll(r.Body)
 		if err != nil {
 			logger.Error(err)

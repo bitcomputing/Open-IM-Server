@@ -19,13 +19,22 @@ func ParseTokenHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.ParseTokenRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			// todo normalized error codes
+			logger.HandleError(r.Context(), w, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           1001,
+				Message:        err.Error(),
+			})
 			return
 		}
 
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
-			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			logger.HandleError(r.Context(), w, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           1001,
+				Message:        err.Error(),
+			})
 			return
 		}
 

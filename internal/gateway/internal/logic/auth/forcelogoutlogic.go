@@ -31,20 +31,24 @@ func NewForceLogoutLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Force
 func (l *ForceLogoutLogic) ForceLogout(req *types.ForceLogoutRequest) (resp *types.ForceLogoutResponse, err error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
+	forceLogoutReq := &auth.ForceLogoutReq{}
+	if err := utils.CopyStructFields(forceLogoutReq, &req); err != nil {
+		logger.Error(err)
+		return nil, errors.InternalError.WriteMessage(err.Error())
+	}
+
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
 	if err != nil {
 		return nil, err
 	}
 
-	forceLogoutReq := &auth.ForceLogoutReq{}
-	utils.CopyStructFields(forceLogoutReq, &req)
-	ok, opUserID, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, forceLogoutReq.OperationID)
+	ok, opuid, errInfo := token_verify.GetUserIDFromToken(l.ctx, token, forceLogoutReq.OperationID)
 	if !ok {
 		errMsg := forceLogoutReq.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(errMsg)
-		return nil, errors.InternalError.WriteMessage(errMsg)
+		return nil, errors.BadRequest.WriteMessage(errMsg)
 	}
-	forceLogoutReq.OpUserID = opUserID
+	forceLogoutReq.OpUserID = opuid
 
 	reply, err := l.svcCtx.AuthClient.ForceLogout(l.ctx, forceLogoutReq)
 	if err != nil {

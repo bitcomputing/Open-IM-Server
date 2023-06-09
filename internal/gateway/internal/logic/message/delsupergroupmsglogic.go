@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -49,7 +50,11 @@ func (l *DelSuperGroupMsgLogic) DelSuperGroupMsg(req *types.DelSuperGroupMsgRequ
 	if !ok {
 		errMsg := req.OperationID + " " + rpcReq.OpUserID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(req.OperationID, errMsg)
-		return nil, errors.BadRequest.WriteMessage(errMsg)
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           500,
+			Message:        errMsg,
+		}
 	}
 	rpcReq.OpUserID = opuid
 

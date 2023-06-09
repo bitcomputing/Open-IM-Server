@@ -4,7 +4,7 @@ import "fmt"
 
 type Error struct {
 	HttpStatusCode int    `json:"-"`
-	Code           int    `json:"errCode"`
+	Code           int32  `json:"errCode"`
 	Message        string `json:"errMsg"`
 }
 

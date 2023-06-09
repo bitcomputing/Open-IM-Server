@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -46,7 +47,11 @@ func (l *GetMessageListReactionExtensionsLogic) GetMessageListReactionExtensions
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromToken failed " + errInfo + " token:" + token
 		logger.Error(req.OperationID, errMsg)
-		return nil, errors.InternalError.WriteMessage(errMsg)
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           500,
+			Message:        errMsg,
+		}
 	}
 	rpcReq.OpUserID = opuid
 

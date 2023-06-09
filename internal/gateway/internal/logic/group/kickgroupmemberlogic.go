@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -40,7 +41,11 @@ func (l *KickGroupMemberLogic) KickGroupMember(req *types.KickGroupMemberRequest
 	if len(req.KickedUserIDList) > constant.MaxNotificationNum {
 		errMsg := req.OperationID + " too many members " + utils.IntToString(len(req.KickedUserIDList))
 		logger.Error(req.OperationID, errMsg)
-		return nil, errors.BadRequest.WriteMessage(errMsg)
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           400,
+			Message:        errMsg,
+		}
 	}
 
 	rpcReq := &group.KickGroupMemberReq{}

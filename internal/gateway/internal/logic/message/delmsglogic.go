@@ -2,6 +2,7 @@ package message
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -53,8 +54,12 @@ func (l *DelMsgLogic) DelMsg(req *types.DelMsgRequest) (resp *types.DelMsgRespon
 
 	rpcResp, err := l.svcCtx.MessageClient.DelMsgList(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error())
-		return nil, errors.InternalError.WriteMessage(constant.ErrServer.ErrMsg + err.Error())
+		logger.Error(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), rpcReq.String())
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           constant.ErrServer.ErrCode,
+			Message:        constant.ErrServer.ErrMsg + err.Error(),
+		}
 	}
 
 	return &types.DelMsgResponse{

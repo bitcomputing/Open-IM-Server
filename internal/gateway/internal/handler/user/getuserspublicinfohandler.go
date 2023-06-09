@@ -19,13 +19,22 @@ func GetUsersPublicInfoHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req types.GetUsersPublicInfoRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			// todo
+			logger.HandleError(r.Context(), w, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           http.StatusBadRequest,
+				Message:        err.Error(),
+			})
 			return
 		}
 
 		validate := validator.New()
 		if err := validate.Struct(req); err != nil {
-			logger.HandleError(r.Context(), w, errors.BadRequest.WriteMessage(err.Error()))
+			logger.HandleError(r.Context(), w, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           http.StatusBadRequest,
+				Message:        err.Error(),
+			})
 			return
 		}
 

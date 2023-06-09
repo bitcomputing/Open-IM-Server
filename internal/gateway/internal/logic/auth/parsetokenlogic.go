@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -39,7 +40,11 @@ func (l *ParseTokenLogic) ParseToken(req *types.ParseTokenRequest) (resp *types.
 	if !ok {
 		errMsg := req.OperationID + " " + "GetUserIDFromTokenExpireTime failed " + errInfo
 		logger.Error(errMsg)
-		return nil, errors.ParseTokenFailed.WriteMessage(errMsg)
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           1001,
+			Message:        errMsg,
+		}
 	}
 
 	expireTimeResp := types.ExpireTime{

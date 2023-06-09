@@ -2,6 +2,7 @@ package group
 
 import (
 	"context"
+	"net/http"
 
 	apiutils "Open_IM/internal/gateway/internal/common/utils"
 	"Open_IM/internal/gateway/internal/svc"
@@ -37,7 +38,11 @@ func (l *CreateGroupLogic) CreateGroup(req *types.CreateGroupRequest) (resp *typ
 	if len(req.MemberList) > constant.MaxNotificationNum {
 		errMsg := req.OperationID + " too many members " + utils.IntToString(len(req.MemberList))
 		logger.Error(req.OperationID, errMsg)
-		return nil, errors.BadRequest.WriteMessage(errMsg)
+		return nil, errors.Error{
+			HttpStatusCode: http.StatusOK,
+			Code:           400,
+			Message:        errMsg,
+		}
 	}
 
 	rpcReq := &group.CreateGroupReq{GroupInfo: &sdk.GroupInfo{}}
