@@ -71,6 +71,7 @@ func (s *groupServer) GetJoinedSuperGroupList(ctx context.Context, req *pbGroup.
 			return
 		}
 		groupInfo.MemberCount = uint32(len(groupMemberIDList))
+		writer.Write(groupInfo)
 	}, func(pipe <-chan *commonPb.GroupInfo, writer mr.Writer[[]*commonPb.GroupInfo], cancel func(error)) {
 		groupInfos := make([]*commonPb.GroupInfo, 0)
 		for v := range pipe {
