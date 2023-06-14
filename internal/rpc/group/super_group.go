@@ -1,6 +1,7 @@
 package group
 
 import (
+	"Open_IM/pkg/common/constant"
 	rocksCache "Open_IM/pkg/common/db/rocks_cache"
 	cp "Open_IM/pkg/common/utils"
 	pbGroup "Open_IM/pkg/proto/group"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/mr"
 )
 
 func (s *groupServer) GetJoinedSuperGroupList(ctx context.Context, req *pbGroup.GetJoinedSuperGroupListReq) (*pbGroup.GetJoinedSuperGroupListResp, error) {
@@ -24,15 +26,38 @@ func (s *groupServer) GetJoinedSuperGroupList(ctx context.Context, req *pbGroup.
 			return resp, nil
 		}
 		logger.Error("GetSuperGroupByUserID failed ", err.Error(), req.UserID)
-		//resp.CommonResp.ErrCode = constant.ErrDB.ErrCode
-		//resp.CommonResp.ErrMsg = constant.ErrDB.ErrMsg
+		resp.CommonResp.ErrCode = constant.ErrDB.ErrCode
+		resp.CommonResp.ErrMsg = constant.ErrDB.ErrMsg
 		return resp, nil
 	}
-	for _, groupID := range groupIDList {
+	// for _, groupID := range groupIDList {
+	// 	groupInfoFromCache, err := rocksCache.GetGroupInfoFromCache(ctx, groupID)
+	// 	if err != nil {
+	// 		logger.Error("GetGroupInfoByGroupID failed", groupID, err.Error())
+	// 		continue
+	// 	}
+	// 	groupInfo := &commonPb.GroupInfo{}
+	// 	if err := utils.CopyStructFields(groupInfo, groupInfoFromCache); err != nil {
+	// 		logger.Error(err.Error())
+	// 	}
+	// 	groupMemberIDList, err := rocksCache.GetGroupMemberIDListFromCache(ctx, groupID)
+	// 	if err != nil {
+	// 		logger.Error("GetSuperGroup failed", groupID, err.Error())
+	// 		continue
+	// 	}
+	// 	groupInfo.MemberCount = uint32(len(groupMemberIDList))
+	// 	resp.GroupList = append(resp.GroupList, groupInfo)
+	// }
+
+	ret, err := mr.MapReduce(func(groupID chan<- string) {
+		for _, v := range groupIDList {
+			groupID <- v
+		}
+	}, func(groupID string, writer mr.Writer[*commonPb.GroupInfo], cancel func(error)) {
 		groupInfoFromCache, err := rocksCache.GetGroupInfoFromCache(ctx, groupID)
 		if err != nil {
 			logger.Error("GetGroupInfoByGroupID failed", groupID, err.Error())
-			continue
+			cancel(err)
 		}
 		groupInfo := &commonPb.GroupInfo{}
 		if err := utils.CopyStructFields(groupInfo, groupInfoFromCache); err != nil {
@@ -41,11 +66,24 @@ func (s *groupServer) GetJoinedSuperGroupList(ctx context.Context, req *pbGroup.
 		groupMemberIDList, err := rocksCache.GetGroupMemberIDListFromCache(ctx, groupID)
 		if err != nil {
 			logger.Error("GetSuperGroup failed", groupID, err.Error())
-			continue
+			cancel(err)
 		}
 		groupInfo.MemberCount = uint32(len(groupMemberIDList))
-		resp.GroupList = append(resp.GroupList, groupInfo)
+	}, func(pipe <-chan *commonPb.GroupInfo, writer mr.Writer[[]*commonPb.GroupInfo], cancel func(error)) {
+		groupInfos := make([]*commonPb.GroupInfo, 0)
+		for v := range pipe {
+			groupInfos = append(groupInfos, v)
+		}
+		writer.Write(groupInfos)
+	})
+	if err != nil {
+		logger.Error(err)
+		resp.CommonResp.ErrCode = constant.ErrDB.ErrCode
+		resp.CommonResp.ErrMsg = constant.ErrDB.ErrMsg
+		return resp, nil
 	}
+
+	resp.GroupList = ret
 
 	return resp, nil
 }
