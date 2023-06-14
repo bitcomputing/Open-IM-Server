@@ -2,6 +2,12 @@ syntax = "v1"
 
 import "types.api"
 
+service gateway {
+	@doc "Health checker handler"
+	@handler index
+	get /
+}
+
 @server(
 	group: auth
 	prefix: /auth
