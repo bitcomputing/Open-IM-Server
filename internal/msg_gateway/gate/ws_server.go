@@ -98,7 +98,10 @@ func NewWebsocketServer(wsPort int) *WServer {
 }
 
 func (ws *WServer) Start() {
-	http.HandleFunc("/", ws.wsHandler)         //Get request from client to handle by wsHandler
+	http.HandleFunc("/", ws.wsHandler) //Get request from client to handle by wsHandler
+	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 	err := http.ListenAndServe(ws.wsAddr, nil) //Start listening
 	if err != nil {
 		panic("Ws listening err:" + err.Error())
