@@ -109,6 +109,9 @@ func (f *Fcm) Push(ctx context.Context, accounts []string, title, detailContent,
 				Token:        token,
 				Notification: notification,
 				APNS:         apns,
+				Android: &messaging.AndroidConfig{
+					Priority: "high",
+				},
 			}
 			messages = append(messages, temp)
 		}
