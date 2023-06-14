@@ -57,7 +57,8 @@ func (s *groupServer) GetJoinedSuperGroupList(ctx context.Context, req *pbGroup.
 		groupInfoFromCache, err := rocksCache.GetGroupInfoFromCache(ctx, groupID)
 		if err != nil {
 			logger.Error("GetGroupInfoByGroupID failed", groupID, err.Error())
-			cancel(err)
+			// cancel(err)
+			return
 		}
 		groupInfo := &commonPb.GroupInfo{}
 		if err := utils.CopyStructFields(groupInfo, groupInfoFromCache); err != nil {
@@ -66,7 +67,8 @@ func (s *groupServer) GetJoinedSuperGroupList(ctx context.Context, req *pbGroup.
 		groupMemberIDList, err := rocksCache.GetGroupMemberIDListFromCache(ctx, groupID)
 		if err != nil {
 			logger.Error("GetSuperGroup failed", groupID, err.Error())
-			cancel(err)
+			// cancel(err)
+			return
 		}
 		groupInfo.MemberCount = uint32(len(groupMemberIDList))
 	}, func(pipe <-chan *commonPb.GroupInfo, writer mr.Writer[[]*commonPb.GroupInfo], cancel func(error)) {
