@@ -26,7 +26,7 @@ func NewGetAllConversationsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	}
 }
 
-func (l *GetAllConversationsLogic) GetAllConversations(req *types.GetAllConversationsRequest) (resp *types.GetAllConversationsResponse, err error) {
+func (l *GetAllConversationsLogic) GetAllConversations(req *types.GetAllConversationsRequest) (*types.GetAllConversationsResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq user.GetAllConversationsReq
@@ -41,6 +41,7 @@ func (l *GetAllConversationsLogic) GetAllConversations(req *types.GetAllConversa
 		return nil, errors.InternalError.WriteMessage("GetAllConversationMsgOpt rpc failed, " + err.Error())
 	}
 
+	resp := new(types.GetAllConversationsResponse)
 	if err := utils.CopyStructFields(&resp.Conversations, rpcResp.Conversations); err != nil {
 		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed, ", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())

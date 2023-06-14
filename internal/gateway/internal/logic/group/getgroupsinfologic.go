@@ -62,6 +62,6 @@ func (l *GetGroupsInfoLogic) GetGroupsInfo(req *types.GetGroupsInfoRequest) (res
 			ErrCode: rpcResp.ErrCode,
 			ErrMsg:  rpcResp.ErrMsg,
 		},
-		Data: internalutils.JsonDataList(rpcReq.GroupIDList),
+		Data: internalutils.JsonDataList(rpcResp.GroupInfoList),
 	}, nil
 }
