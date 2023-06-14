@@ -27,7 +27,7 @@ func NewGetSeqLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetSeqLogi
 	}
 }
 
-func (l *GetSeqLogic) GetSeq(req *types.GetSeqRequest) (resp *types.GetSeqResponse, err error) {
+func (l *GetSeqLogic) GetSeq(req *types.GetSeqRequest) (*types.GetSeqResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

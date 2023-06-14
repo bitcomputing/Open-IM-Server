@@ -128,7 +128,7 @@ func init() {
 	validate = validator.New()
 }
 
-func (l *ManagementSendMsgLogic) ManagementSendMsg(req *types.ManagementSendMsgRequest) (resp *types.ManagementSendMsgResponse, err error) {
+func (l *ManagementSendMsgLogic) ManagementSendMsg(req *types.ManagementSendMsgRequest) (*types.ManagementSendMsgResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var data any
@@ -243,10 +243,10 @@ func (l *ManagementSendMsgLogic) ManagementSendMsg(req *types.ManagementSendMsgR
 
 	respSetSendMsgStatus, err2 := l.svcCtx.MessageClient.SetSendMsgStatus(l.ctx, &message.SetSendMsgStatusReq{OperationID: req.OperationID, Status: status})
 	if err2 != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), err2.Error())
+		logger.Error(err2.Error())
 	}
 	if respSetSendMsgStatus != nil && respSetSendMsgStatus.ErrCode != 0 {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), respSetSendMsgStatus.ErrCode, respSetSendMsgStatus.ErrMsg)
+		logger.Error(respSetSendMsgStatus.ErrCode, respSetSendMsgStatus.ErrMsg)
 	}
 
 	return &types.ManagementSendMsgResponse{

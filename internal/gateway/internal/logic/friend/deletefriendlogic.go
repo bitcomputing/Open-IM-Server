@@ -28,7 +28,7 @@ func NewDeleteFriendLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Dele
 	}
 }
 
-func (l *DeleteFriendLogic) DeleteFriend(req *types.DeleteFriendRequest) (resp *types.DeleteFriendResponse, err error) {
+func (l *DeleteFriendLogic) DeleteFriend(req *types.DeleteFriendRequest) (*types.DeleteFriendResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.DeleteFriendReq{CommID: &friend.CommID{}}

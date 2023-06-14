@@ -28,7 +28,7 @@ func NewInviteUserToGroupsLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *InviteUserToGroupsLogic) InviteUserToGroups(req *types.InviteUserToGroupsRequest) (resp *types.InviteUserToGroupsResponse, err error) {
+func (l *InviteUserToGroupsLogic) InviteUserToGroups(req *types.InviteUserToGroupsRequest) (*types.InviteUserToGroupsResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

@@ -32,8 +32,9 @@ func NewManagementBatchSendMsgLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.ManagementBatchSendMsgRequest) (resp *types.ManagementBatchSendMsgResponse, err error) {
+func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.ManagementBatchSendMsgRequest) (*types.ManagementBatchSendMsgResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
+	resp := new(types.ManagementBatchSendMsgResponse)
 
 	var data any
 	switch req.ContentType {
@@ -118,7 +119,7 @@ func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.Manageme
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 	if respSetSendMsgStatus.ErrCode != 0 {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "rpc failed", respSetSendMsgStatus)
+		logger.Error("rpc failed", respSetSendMsgStatus)
 		return nil, errors.InternalError.WriteMessage(respSetSendMsgStatus.ErrMsg)
 	}
 
@@ -130,7 +131,7 @@ func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.Manageme
 	if req.IsSendAll {
 		recvList, err = im_mysql_model.SelectAllUserID(l.ctx)
 		if err != nil {
-			logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error())
+			logger.Error(err.Error())
 			return nil, errors.InternalError.WriteMessage(err.Error())
 		}
 	} else {
@@ -149,7 +150,7 @@ func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.Manageme
 			continue
 		}
 		if rpcResp.ErrCode != 0 {
-			logger.Error(req.OperationID, utils.GetSelfFuncName(), "rpc failed", pbData, rpcResp)
+			logger.Error("rpc failed", pbData, rpcResp)
 			// resp.Data.FailedIDList = append(resp.Data.FailedIDList, recvID)
 			msgSendFailedFlag = true
 			continue
@@ -170,10 +171,10 @@ func (l *ManagementBatchSendMsgLogic) ManagementBatchSendMsg(req *types.Manageme
 	}
 	respSetSendMsgStatus, err2 := l.svcCtx.MessageClient.SetSendMsgStatus(l.ctx, &message.SetSendMsgStatusReq{OperationID: req.OperationID, Status: status})
 	if err2 != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), err2.Error())
+		logger.Error(err2.Error())
 	}
 	if respSetSendMsgStatus != nil && resp.ErrCode != 0 {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), resp.ErrCode, resp.ErrMsg)
+		logger.Error(resp.ErrCode, resp.ErrMsg)
 	}
 
 	return resp, nil

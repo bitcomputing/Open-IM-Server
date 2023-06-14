@@ -27,7 +27,7 @@ func NewFCMUpdateTokenLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FC
 	}
 }
 
-func (l *FCMUpdateTokenLogic) FCMUpdateToken(req *types.FCMUpdateTokenRequest) (resp *types.FCMUpdateTokenResponse, err error) {
+func (l *FCMUpdateTokenLogic) FCMUpdateToken(req *types.FCMUpdateTokenRequest) (*types.FCMUpdateTokenResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

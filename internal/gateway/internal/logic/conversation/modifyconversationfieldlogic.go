@@ -26,26 +26,27 @@ func NewModifyConversationFieldLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	}
 }
 
-func (l *ModifyConversationFieldLogic) ModifyConversationField(req *types.ModifyConversationFieldRequest) (resp *types.ModifyConversationFieldResponse, err error) {
+func (l *ModifyConversationFieldLogic) ModifyConversationField(req *types.ModifyConversationFieldRequest) (*types.ModifyConversationFieldResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq conversation.ModifyConversationFieldReq
 	rpcReq.Conversation = &conversation.Conversation{}
 	if err := utils.CopyStructFields(&rpcReq, req); err != nil {
-		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
+		logger.Debug("CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
-	if err = utils.CopyStructFields(rpcReq.Conversation, req.Conversation); err != nil {
-		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
+	if err := utils.CopyStructFields(rpcReq.Conversation, req.Conversation); err != nil {
+		logger.Debug("CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
 	rpcResp, err := l.svcCtx.ConversationClient.ModifyConversationField(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", rpcReq.String(), err.Error())
+		logger.Error("SetConversation rpc failed, ", rpcReq.String(), err.Error())
 		return nil, errors.InternalError.WriteMessage("GetAllConversationMsgOpt rpc failed, " + err.Error())
 	}
 
+	resp := new(types.ModifyConversationFieldResponse)
 	resp.ErrMsg = rpcResp.CommonResp.ErrMsg
 	resp.ErrCode = rpcResp.CommonResp.ErrCode
 

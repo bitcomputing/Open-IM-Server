@@ -28,7 +28,7 @@ func NewGetJoinedSuperGroupListLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	}
 }
 
-func (l *GetJoinedSuperGroupListLogic) GetJoinedSuperGroupList(req *types.GetJoinedSuperGroupListRequest) (resp *types.GetJoinedSuperGroupListResponse, err error) {
+func (l *GetJoinedSuperGroupListLogic) GetJoinedSuperGroupList(req *types.GetJoinedSuperGroupListRequest) (*types.GetJoinedSuperGroupListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

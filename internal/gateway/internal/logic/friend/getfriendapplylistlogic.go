@@ -29,7 +29,7 @@ func NewGetFriendApplyListLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *GetFriendApplyListLogic) GetFriendApplyList(req *types.GetFriendApplyListRequest) (resp *types.GetFriendApplyListResponse, err error) {
+func (l *GetFriendApplyListLogic) GetFriendApplyList(req *types.GetFriendApplyListRequest) (*types.GetFriendApplyListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.GetFriendApplyListReq{CommID: &friend.CommID{}}

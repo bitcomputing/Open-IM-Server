@@ -29,7 +29,7 @@ func NewGetJoinedGroupListLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *GetJoinedGroupListLogic) GetJoinedGroupList(req *types.GetJoinedGroupListRequest) (resp *types.GetJoinedGroupListResponse, err error) {
+func (l *GetJoinedGroupListLogic) GetJoinedGroupList(req *types.GetJoinedGroupListRequest) (*types.GetJoinedGroupListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

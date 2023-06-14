@@ -28,7 +28,7 @@ func NewMuteGroupMemberLogic(ctx context.Context, svcCtx *svc.ServiceContext) *M
 	}
 }
 
-func (l *MuteGroupMemberLogic) MuteGroupMember(req *types.MuteGroupMemberRequest) (resp *types.MuteGroupMemberResponse, err error) {
+func (l *MuteGroupMemberLogic) MuteGroupMember(req *types.MuteGroupMemberRequest) (*types.MuteGroupMemberResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -52,7 +52,7 @@ func (l *MuteGroupMemberLogic) MuteGroupMember(req *types.MuteGroupMemberRequest
 
 	rpcResp, err := l.svcCtx.GroupClient.MuteGroupMember(l.ctx, rpcReq)
 	if err != nil {
-		logger.Error(rpcReq.OperationID, utils.GetSelfFuncName(), " failed ", rpcReq.String())
+		logger.Error(err)
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

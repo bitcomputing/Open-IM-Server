@@ -28,7 +28,7 @@ func NewTransferGroupOwnerLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *TransferGroupOwnerLogic) TransferGroupOwner(req *types.TransferGroupOwnerRequest) (resp *types.TransferGroupOwnerResponse, err error) {
+func (l *TransferGroupOwnerLogic) TransferGroupOwner(req *types.TransferGroupOwnerRequest) (*types.TransferGroupOwnerResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

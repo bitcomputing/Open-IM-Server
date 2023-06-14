@@ -28,7 +28,7 @@ func NewQuitGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QuitGro
 	}
 }
 
-func (l *QuitGroupLogic) QuitGroup(req *types.QuitGroupRequest) (resp *types.QuitGroupResponse, err error) {
+func (l *QuitGroupLogic) QuitGroup(req *types.QuitGroupRequest) (*types.QuitGroupResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

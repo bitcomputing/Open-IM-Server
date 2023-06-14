@@ -9,7 +9,6 @@ import (
 	"Open_IM/pkg/common/token_verify"
 	errors "Open_IM/pkg/errors/api"
 	"Open_IM/pkg/proto/group"
-	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -29,7 +28,7 @@ func NewSetGroupMemberInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *SetGroupMemberInfoLogic) SetGroupMemberInfo(req *types.SetGroupMemberInfoRequest) (resp *types.SetGroupMemberInfoResponse, err error) {
+func (l *SetGroupMemberInfoLogic) SetGroupMemberInfo(req *types.SetGroupMemberInfoRequest) (*types.SetGroupMemberInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -65,7 +64,7 @@ func (l *SetGroupMemberInfoLogic) SetGroupMemberInfo(req *types.SetGroupMemberIn
 
 	rpcResp, err := l.svcCtx.GroupClient.SetGroupMemberInfo(l.ctx, rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), " failed ", err.Error())
+		logger.Error(err)
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

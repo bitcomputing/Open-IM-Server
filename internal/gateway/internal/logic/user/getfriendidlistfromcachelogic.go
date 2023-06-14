@@ -9,7 +9,6 @@ import (
 	"Open_IM/pkg/common/token_verify"
 	errors "Open_IM/pkg/errors/api"
 	"Open_IM/pkg/proto/cache"
-	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +27,7 @@ func NewGetFriendIDListFromCacheLogic(ctx context.Context, svcCtx *svc.ServiceCo
 	}
 }
 
-func (l *GetFriendIDListFromCacheLogic) GetFriendIDListFromCache(req *types.GetFriendIDListFromCacheRequest) (resp *types.GetFriendIDListFromCacheResponse, err error) {
+func (l *GetFriendIDListFromCacheLogic) GetFriendIDListFromCache(req *types.GetFriendIDListFromCacheRequest) (*types.GetFriendIDListFromCacheResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq cache.GetFriendIDListFromCacheReq
@@ -50,7 +49,7 @@ func (l *GetFriendIDListFromCacheLogic) GetFriendIDListFromCache(req *types.GetF
 
 	rpcResp, err := l.svcCtx.CacheClient.GetFriendIDListFromCache(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "GetFriendIDListFromCache", err.Error())
+		logger.Error("GetFriendIDListFromCache", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

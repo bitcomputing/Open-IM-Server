@@ -28,7 +28,7 @@ func NewPullMsgBySeqListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *PullMsgBySeqListLogic) PullMsgBySeqList(req *types.PullMsgBySeqListRequest) (resp *types.PullMsgBySeqListResponse, err error) {
+func (l *PullMsgBySeqListLogic) PullMsgBySeqList(req *types.PullMsgBySeqListRequest) (*types.PullMsgBySeqListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -38,7 +38,7 @@ func (l *PullMsgBySeqListLogic) PullMsgBySeqList(req *types.PullMsgBySeqListRequ
 
 	if ok, err := token_verify.VerifyToken(l.ctx, token, req.SendID); !ok {
 		if err != nil {
-			logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error(), token, req.SendID)
+			logger.Error(err.Error(), token, req.SendID)
 		}
 		return nil, errors.BadRequest.WriteMessage(err.Error())
 	}

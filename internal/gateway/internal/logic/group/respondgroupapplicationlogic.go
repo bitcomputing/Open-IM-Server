@@ -28,7 +28,7 @@ func NewRespondGroupApplicationLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	}
 }
 
-func (l *RespondGroupApplicationLogic) RespondGroupApplication(req *types.RespondGroupApplicationRequest) (resp *types.RespondGroupApplicationResponse, err error) {
+func (l *RespondGroupApplicationLogic) RespondGroupApplication(req *types.RespondGroupApplicationRequest) (*types.RespondGroupApplicationResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

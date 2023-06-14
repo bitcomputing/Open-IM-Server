@@ -26,21 +26,22 @@ func NewSetRecvMsgOptLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Set
 	}
 }
 
-func (l *SetRecvMsgOptLogic) SetRecvMsgOpt(req *types.SetRecvMsgOptRequest) (resp *types.SetRecvMsgOptResponse, err error) {
+func (l *SetRecvMsgOptLogic) SetRecvMsgOpt(req *types.SetRecvMsgOptRequest) (*types.SetRecvMsgOptResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq user.SetRecvMsgOptReq
 	if err := utils.CopyStructFields(&rpcReq, req); err != nil {
-		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
+		logger.Debug("CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
 	rpcResp, err := l.svcCtx.UserClient.SetRecvMsgOpt(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "SetRecvMsgOpt rpc failed, ", rpcReq.String(), err.Error())
+		logger.Error("SetRecvMsgOpt rpc failed, ", rpcReq.String(), err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
+	resp := new(types.SetRecvMsgOptResponse)
 	resp.ErrMsg = rpcResp.CommonResp.ErrMsg
 	resp.ErrCode = rpcResp.CommonResp.ErrCode
 

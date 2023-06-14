@@ -31,7 +31,7 @@ func NewGetUsersOnlineStatusLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	}
 }
 
-func (l *GetUsersOnlineStatusLogic) GetUsersOnlineStatus(req *types.GetUsersOnlineStatusRequest) (resp *types.GetUsersOnlineStatusResponse, err error) {
+func (l *GetUsersOnlineStatusLogic) GetUsersOnlineStatus(req *types.GetUsersOnlineStatusRequest) (*types.GetUsersOnlineStatusResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &relay.GetUsersOnlineStatusReq{}

@@ -30,10 +30,10 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 	}
 }
 
-func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.RegisterResponse, err error) {
+func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 	if req.Secret != config.Config.Secret {
-		errMsg := " params.Secret != config.Config.Secret "
+		errMsg := "params.Secret != config.Config.Secret"
 		logger.Error(errMsg, req.Secret, config.Config.Secret)
 		return nil, errors.Unauthorized.WriteMessage(errMsg)
 	}
@@ -46,12 +46,11 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 
 	reply, err := l.svcCtx.AuthClient.UserRegister(l.ctx, userRegisterReq)
 	if err != nil {
-		errMsg := userRegisterReq.OperationID + " " + "UserRegister failed " + err.Error() + userRegisterReq.String()
-		logger.Error(errMsg)
-		return nil, errors.InternalError.WriteMessage(errMsg)
+		logger.Error(err)
+		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 	if reply.CommonResp.ErrCode != 0 {
-		errMsg := userRegisterReq.OperationID + " " + " UserRegister failed " + reply.CommonResp.ErrMsg + userRegisterReq.String()
+		errMsg := reply.CommonResp.ErrMsg
 		logger.Error(errMsg)
 		if reply.CommonResp.ErrCode == constant.RegisterLimit {
 			return nil, errors.Error{
@@ -77,9 +76,8 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 	}
 	replyToken, err := l.svcCtx.AuthClient.UserToken(l.ctx, userTokenReq)
 	if err != nil {
-		errMsg := req.OperationID + " " + " client.UserToken failed " + err.Error() + userTokenReq.String()
-		logger.Error(errMsg)
-		return nil, errors.InternalError.WriteMessage(errMsg)
+		logger.Error(err)
+		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
 	return &types.RegisterResponse{

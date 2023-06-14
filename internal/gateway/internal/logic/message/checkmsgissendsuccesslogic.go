@@ -7,7 +7,6 @@ import (
 	"Open_IM/internal/gateway/internal/types"
 	errors "Open_IM/pkg/errors/api"
 	message "Open_IM/pkg/proto/msg"
-	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -26,12 +25,12 @@ func NewCheckMsgIsSendSuccessLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *CheckMsgIsSendSuccessLogic) CheckMsgIsSendSuccess(req *types.CheckMsgIsSendSuccessRequest) (resp *types.CheckMsgIsSendSuccessResponse, err error) {
+func (l *CheckMsgIsSendSuccessLogic) CheckMsgIsSendSuccess(req *types.CheckMsgIsSendSuccessRequest) (*types.CheckMsgIsSendSuccessResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcResp, err := l.svcCtx.MessageClient.GetSendMsgStatus(l.ctx, &message.GetSendMsgStatusReq{OperationID: req.OperationID})
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error())
+		logger.Error(err.Error())
 		return nil, errors.InternalError.WriteMessage("call GetSendMsgStatus  rpc server failed")
 	}
 

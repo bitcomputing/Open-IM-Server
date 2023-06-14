@@ -29,7 +29,7 @@ func NewGetUserReqGroupApplicationListLogic(ctx context.Context, svcCtx *svc.Ser
 	}
 }
 
-func (l *GetUserReqGroupApplicationListLogic) GetUserReqGroupApplicationList(req *types.GetUserReqGroupApplicationListRequest) (resp *types.GetUserReqGroupApplicationListResponse, err error) {
+func (l *GetUserReqGroupApplicationListLogic) GetUserReqGroupApplicationList(req *types.GetUserReqGroupApplicationListRequest) (*types.GetUserReqGroupApplicationListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

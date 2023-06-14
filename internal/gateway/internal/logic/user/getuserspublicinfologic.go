@@ -31,7 +31,7 @@ func NewGetUsersPublicInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *GetUsersPublicInfoLogic) GetUsersPublicInfo(req *types.GetUsersPublicInfoRequest) (resp *types.GetUsersPublicInfoResponse, err error) {
+func (l *GetUsersPublicInfoLogic) GetUsersPublicInfo(req *types.GetUsersPublicInfoRequest) (*types.GetUsersPublicInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &user.GetUserInfoReq{}

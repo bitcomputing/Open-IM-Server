@@ -28,7 +28,7 @@ func NewImportFriendLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Impo
 	}
 }
 
-func (l *ImportFriendLogic) ImportFriend(req *types.ImportFriendRequest) (resp *types.ImportFriendResponse, err error) {
+func (l *ImportFriendLogic) ImportFriend(req *types.ImportFriendRequest) (*types.ImportFriendResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.ImportFriendReq{}

@@ -28,7 +28,7 @@ func NewSetMsgMinSeqLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SetM
 	}
 }
 
-func (l *SetMsgMinSeqLogic) SetMsgMinSeq(req *types.SetMsgMinSeqRequest) (resp *types.SetMsgMinSeqResponse, err error) {
+func (l *SetMsgMinSeqLogic) SetMsgMinSeq(req *types.SetMsgMinSeqRequest) (*types.SetMsgMinSeqResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &message.SetMsgMinSeqReq{}

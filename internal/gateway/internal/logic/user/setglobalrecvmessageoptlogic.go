@@ -28,7 +28,7 @@ func NewSetGlobalRecvMessageOptLogic(ctx context.Context, svcCtx *svc.ServiceCon
 	}
 }
 
-func (l *SetGlobalRecvMessageOptLogic) SetGlobalRecvMessageOpt(req *types.SetGlobalRecvMessageOptRequest) (resp *types.SetGlobalRecvMessageOptResponse, err error) {
+func (l *SetGlobalRecvMessageOptLogic) SetGlobalRecvMessageOpt(req *types.SetGlobalRecvMessageOptRequest) (*types.SetGlobalRecvMessageOptResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &user.SetGlobalRecvMessageOptReq{}

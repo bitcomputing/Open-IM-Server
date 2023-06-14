@@ -32,7 +32,7 @@ func NewDelSuperGroupMsgLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	}
 }
 
-func (l *DelSuperGroupMsgLogic) DelSuperGroupMsg(req *types.DelSuperGroupMsgRequest) (resp *types.DelSuperGroupMsgResponse, err error) {
+func (l *DelSuperGroupMsgLogic) DelSuperGroupMsg(req *types.DelSuperGroupMsgRequest) (*types.DelSuperGroupMsgResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &message.DelSuperGroupMsgReq{}

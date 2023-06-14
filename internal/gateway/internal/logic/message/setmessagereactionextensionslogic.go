@@ -28,12 +28,12 @@ func NewSetMessageReactionExtensionsLogic(ctx context.Context, svcCtx *svc.Servi
 	}
 }
 
-func (l *SetMessageReactionExtensionsLogic) SetMessageReactionExtensions(req *types.SetMessageReactionExtensionsRequest) (resp *types.SetMessageReactionExtensionsResponse, err error) {
+func (l *SetMessageReactionExtensionsLogic) SetMessageReactionExtensions(req *types.SetMessageReactionExtensionsRequest) (*types.SetMessageReactionExtensionsResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq message.SetMessageReactionExtensionsReq
 	if err := utils.CopyStructFields(&rpcReq, &req); err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields", err.Error())
+		logger.Error("CopyStructFields", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
@@ -53,7 +53,7 @@ func (l *SetMessageReactionExtensionsLogic) SetMessageReactionExtensions(req *ty
 
 	rpcResp, err := l.svcCtx.MessageClient.SetMessageReactionExtensions(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error())
+		logger.Error("DelMsgList failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

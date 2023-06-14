@@ -31,7 +31,7 @@ func NewGetSelfUserInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 	}
 }
 
-func (l *GetSelfUserInfoLogic) GetSelfUserInfo(req *types.GetSelfUserInfoRequest) (resp *types.GetSelfUserInfoResponse, err error) {
+func (l *GetSelfUserInfoLogic) GetSelfUserInfo(req *types.GetSelfUserInfoRequest) (*types.GetSelfUserInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &user.GetUserInfoReq{}

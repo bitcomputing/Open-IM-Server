@@ -28,7 +28,7 @@ func NewCheckFriendLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Check
 	}
 }
 
-func (l *CheckFriendLogic) CheckFriend(req *types.CheckFriendRequest) (resp *types.CheckFriendResponse, err error) {
+func (l *CheckFriendLogic) CheckFriend(req *types.CheckFriendRequest) (*types.CheckFriendResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.IsFriendReq{CommID: &friend.CommID{}}

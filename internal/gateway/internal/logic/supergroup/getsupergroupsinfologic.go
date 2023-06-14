@@ -28,7 +28,7 @@ func NewGetSuperGroupsInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *GetSuperGroupsInfoLogic) GetSuperGroupsInfo(req *types.GetSuperGroupsInfoRequest) (resp *types.GetSuperGroupsInfoResponse, err error) {
+func (l *GetSuperGroupsInfoLogic) GetSuperGroupsInfo(req *types.GetSuperGroupsInfoRequest) (*types.GetSuperGroupsInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

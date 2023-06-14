@@ -28,7 +28,7 @@ func NewJoinGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *JoinGro
 	}
 }
 
-func (l *JoinGroupLogic) JoinGroup(req *types.JoinGroupRequest) (resp *types.JoinGroupResponse, err error) {
+func (l *JoinGroupLogic) JoinGroup(req *types.JoinGroupRequest) (*types.JoinGroupResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

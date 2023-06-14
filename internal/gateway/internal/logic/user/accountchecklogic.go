@@ -28,7 +28,7 @@ func NewAccountCheckLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Acco
 	}
 }
 
-func (l *AccountCheckLogic) AccountCheck(req *types.AccountCheckRequest) (resp *types.AccountCheckResponse, err error) {
+func (l *AccountCheckLogic) AccountCheck(req *types.AccountCheckRequest) (*types.AccountCheckResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &user.AccountCheckReq{}

@@ -29,7 +29,7 @@ func NewGetUsersLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetUsers
 	}
 }
 
-func (l *GetUsersLogic) GetUsers(req *types.GetUsersRequest) (resp *types.GetUsersResponse, err error) {
+func (l *GetUsersLogic) GetUsers(req *types.GetUsersRequest) (*types.GetUsersResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq user.GetUsersReq
@@ -54,7 +54,7 @@ func (l *GetUsersLogic) GetUsers(req *types.GetUsersRequest) (resp *types.GetUse
 
 	rpcResp, err := l.svcCtx.UserClient.GetUsers(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error(), rpcReq.String())
+		logger.Error(err.Error(), rpcReq.String())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

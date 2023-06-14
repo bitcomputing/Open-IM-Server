@@ -29,7 +29,7 @@ func NewGetSelfFriendApplyListLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *GetSelfFriendApplyListLogic) GetSelfFriendApplyList(req *types.GetSelfFriendApplyListRequest) (resp *types.GetSelfFriendApplyListResponse, err error) {
+func (l *GetSelfFriendApplyListLogic) GetSelfFriendApplyList(req *types.GetSelfFriendApplyListRequest) (*types.GetSelfFriendApplyListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.GetSelfApplyListReq{CommID: &friend.CommID{}}

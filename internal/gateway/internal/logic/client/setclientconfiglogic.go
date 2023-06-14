@@ -9,7 +9,6 @@ import (
 	imdb "Open_IM/pkg/common/db/mysql_model/im_mysql_model"
 	"Open_IM/pkg/common/token_verify"
 	errors "Open_IM/pkg/errors/api"
-	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +27,7 @@ func NewSetClientConfigLogic(ctx context.Context, svcCtx *svc.ServiceContext) *S
 	}
 }
 
-func (l *SetClientConfigLogic) SetClientConfig(req *types.SetClientConfigRequest) (resp *types.SetClientConfigResponse, err error) {
+func (l *SetClientConfigLogic) SetClientConfig(req *types.SetClientConfigRequest) (*types.SetClientConfigResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -38,9 +37,8 @@ func (l *SetClientConfigLogic) SetClientConfig(req *types.SetClientConfigRequest
 
 	err, _ = token_verify.ParseTokenGetUserID(l.ctx, token, req.OperationID)
 	if err != nil {
-		errMsg := "ParseTokenGetUserID failed " + err.Error() + token
-		logger.Error(req.OperationID, errMsg)
-		return nil, errors.InternalError.WriteMessage(errMsg)
+		logger.Error(err)
+		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
 	m := make(map[string]any)
@@ -51,7 +49,7 @@ func (l *SetClientConfigLogic) SetClientConfig(req *types.SetClientConfigRequest
 	if len(m) > 0 {
 		err := imdb.SetClientInitConfig(m)
 		if err != nil {
-			logger.Error(req.OperationID, utils.GetSelfFuncName(), err.Error())
+			logger.Error(err.Error())
 			return nil, errors.InternalError.WriteMessage(err.Error())
 		}
 	}

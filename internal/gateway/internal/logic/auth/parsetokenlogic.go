@@ -28,7 +28,7 @@ func NewParseTokenLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ParseT
 	}
 }
 
-func (l *ParseTokenLogic) ParseToken(req *types.ParseTokenRequest) (resp *types.ParseTokenResponse, err error) {
+func (l *ParseTokenLogic) ParseToken(req *types.ParseTokenRequest) (*types.ParseTokenResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -38,12 +38,11 @@ func (l *ParseTokenLogic) ParseToken(req *types.ParseTokenRequest) (resp *types.
 
 	ok, _, errInfo, expireTime := token_verify.GetUserIDFromTokenExpireTime(l.ctx, token, req.OperationID)
 	if !ok {
-		errMsg := req.OperationID + " " + "GetUserIDFromTokenExpireTime failed " + errInfo
-		logger.Error(errMsg)
+		logger.Error(errInfo)
 		return nil, errors.Error{
 			HttpStatusCode: http.StatusOK,
 			Code:           1001,
-			Message:        errMsg,
+			Message:        errInfo,
 		}
 	}
 

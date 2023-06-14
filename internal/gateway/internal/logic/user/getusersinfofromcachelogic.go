@@ -30,7 +30,7 @@ func NewGetUsersInfoFromCacheLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *GetUsersInfoFromCacheLogic) GetUsersInfoFromCache(req *types.GetUsersInfoFromCacheRequest) (resp *types.GetUsersInfoFromCacheResponse, err error) {
+func (l *GetUsersInfoFromCacheLogic) GetUsersInfoFromCache(req *types.GetUsersInfoFromCacheRequest) (*types.GetUsersInfoFromCacheResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &user.GetUserInfoReq{}

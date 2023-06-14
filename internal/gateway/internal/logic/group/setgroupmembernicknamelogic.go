@@ -28,7 +28,7 @@ func NewSetGroupMemberNicknameLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	}
 }
 
-func (l *SetGroupMemberNicknameLogic) SetGroupMemberNickname(req *types.SetGroupMemberNicknameRequest) (resp *types.SetGroupMemberNicknameResponse, err error) {
+func (l *SetGroupMemberNicknameLogic) SetGroupMemberNickname(req *types.SetGroupMemberNicknameRequest) (*types.SetGroupMemberNicknameResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -52,7 +52,7 @@ func (l *SetGroupMemberNicknameLogic) SetGroupMemberNickname(req *types.SetGroup
 
 	rpcResp, err := l.svcCtx.GroupClient.SetGroupMemberNickname(l.ctx, rpcReq)
 	if err != nil {
-		logger.Error(rpcReq.OperationID, utils.GetSelfFuncName(), " failed ", rpcReq.String())
+		logger.Error(err)
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

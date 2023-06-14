@@ -27,7 +27,7 @@ func NewSendMsgLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendMsgLo
 	}
 }
 
-func (l *SendMsgLogic) SendMsg(req *types.SendMsgRequest) (resp *types.SendMsgResponse, err error) {
+func (l *SendMsgLogic) SendMsg(req *types.SendMsgRequest) (*types.SendMsgResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

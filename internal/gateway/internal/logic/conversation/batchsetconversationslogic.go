@@ -27,23 +27,24 @@ func NewBatchSetConversationsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *BatchSetConversationsLogic) BatchSetConversations(req *types.BatchSetConversationsRequest) (resp *types.BatchSetConversationsResponse, err error) {
+func (l *BatchSetConversationsLogic) BatchSetConversations(req *types.BatchSetConversationsRequest) (*types.BatchSetConversationsResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq user.BatchSetConversationsReq
 	if err := utils.CopyStructFields(&rpcReq, req); err != nil {
-		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
+		logger.Debug("CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
 	rpcResp, err := l.svcCtx.UserClient.BatchSetConversations(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", rpcReq.String(), err.Error())
+		logger.Error("SetConversation rpc failed, ", rpcReq.String(), err.Error())
 		return nil, errors.InternalError.WriteMessage("GetAllConversationMsgOpt rpc failed, " + err.Error())
 	}
 
+	resp := new(types.BatchSetConversationsResponse)
 	if err := utils.CopyStructFields(&resp.Data, rpcResp); err != nil {
-		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
+		log.NewDebug("CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

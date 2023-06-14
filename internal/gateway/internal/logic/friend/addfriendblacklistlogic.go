@@ -28,7 +28,7 @@ func NewAddFriendBlacklistLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *AddFriendBlacklistLogic) AddFriendBlacklist(req *types.AddFriendBlacklistRequest) (resp *types.AddFriendBlacklistResponse, err error) {
+func (l *AddFriendBlacklistLogic) AddFriendBlacklist(req *types.AddFriendBlacklistRequest) (*types.AddFriendBlacklistResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.AddBlacklistReq{CommID: &friend.CommID{}}

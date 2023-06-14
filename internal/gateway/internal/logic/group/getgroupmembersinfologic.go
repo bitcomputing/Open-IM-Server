@@ -29,7 +29,7 @@ func NewGetGroupMembersInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext
 	}
 }
 
-func (l *GetGroupMembersInfoLogic) GetGroupMembersInfo(req *types.GetGroupMembersInfoRequest) (resp *types.GetGroupMembersInfoResponse, err error) {
+func (l *GetGroupMembersInfoLogic) GetGroupMembersInfo(req *types.GetGroupMembersInfoRequest) (*types.GetGroupMembersInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

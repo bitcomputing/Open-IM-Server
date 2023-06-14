@@ -30,12 +30,12 @@ func NewDelMsgLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DelMsgLogi
 	}
 }
 
-func (l *DelMsgLogic) DelMsg(req *types.DelMsgRequest) (resp *types.DelMsgResponse, err error) {
+func (l *DelMsgLogic) DelMsg(req *types.DelMsgRequest) (*types.DelMsgResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	var rpcReq sdk.DelMsgListReq
 	if err := utils.CopyStructFields(&rpcReq, &req); err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields", err.Error())
+		logger.Error("CopyStructFields", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
@@ -54,7 +54,7 @@ func (l *DelMsgLogic) DelMsg(req *types.DelMsgRequest) (resp *types.DelMsgRespon
 
 	rpcResp, err := l.svcCtx.MessageClient.DelMsgList(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "DelMsgList failed", err.Error(), rpcReq.String())
+		logger.Error("DelMsgList failed", err.Error(), rpcReq.String())
 		return nil, errors.Error{
 			HttpStatusCode: http.StatusOK,
 			Code:           constant.ErrServer.ErrCode,

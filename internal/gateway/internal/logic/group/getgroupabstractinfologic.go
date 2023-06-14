@@ -9,7 +9,6 @@ import (
 	"Open_IM/pkg/common/token_verify"
 	errors "Open_IM/pkg/errors/api"
 	"Open_IM/pkg/proto/group"
-	"Open_IM/pkg/utils"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -28,7 +27,7 @@ func NewGetGroupAbstractInfoLogic(ctx context.Context, svcCtx *svc.ServiceContex
 	}
 }
 
-func (l *GetGroupAbstractInfoLogic) GetGroupAbstractInfo(req *types.GetGroupAbstractInfoRequest) (resp *types.GetGroupAbstractInfoResponse, err error) {
+func (l *GetGroupAbstractInfoLogic) GetGroupAbstractInfo(req *types.GetGroupAbstractInfoRequest) (*types.GetGroupAbstractInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -49,7 +48,7 @@ func (l *GetGroupAbstractInfoLogic) GetGroupAbstractInfo(req *types.GetGroupAbst
 		OperationID: req.OperationID,
 	})
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), " failed ", err.Error())
+		logger.Error(err)
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

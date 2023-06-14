@@ -28,7 +28,7 @@ func NewSetFriendRemarkLogic(ctx context.Context, svcCtx *svc.ServiceContext) *S
 	}
 }
 
-func (l *SetFriendRemarkLogic) SetFriendRemark(req *types.SetFriendRemarkRequest) (resp *types.SetFriendRemarkResponse, err error) {
+func (l *SetFriendRemarkLogic) SetFriendRemark(req *types.SetFriendRemarkRequest) (*types.SetFriendRemarkResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.SetFriendRemarkReq{CommID: &friend.CommID{}}

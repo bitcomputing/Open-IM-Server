@@ -28,7 +28,7 @@ func NewCancelMuteGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *C
 	}
 }
 
-func (l *CancelMuteGroupLogic) CancelMuteGroup(req *types.CancelMuteGroupRequest) (resp *types.CancelMuteGroupResponse, err error) {
+func (l *CancelMuteGroupLogic) CancelMuteGroup(req *types.CancelMuteGroupRequest) (*types.CancelMuteGroupResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -52,7 +52,7 @@ func (l *CancelMuteGroupLogic) CancelMuteGroup(req *types.CancelMuteGroupRequest
 
 	rpcResp, err := l.svcCtx.GroupClient.CancelMuteGroup(l.ctx, rpcReq)
 	if err != nil {
-		logger.Error(rpcReq.OperationID, utils.GetSelfFuncName(), " failed ", rpcReq.String())
+		logger.Error(" failed ", rpcReq.String())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

@@ -28,7 +28,7 @@ func NewRespondFriendApplyLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 	}
 }
 
-func (l *RespondFriendApplyLogic) RespondFriendApply(req *types.RespondFriendApplyRequest) (resp *types.RespondFriendApplyResponse, err error) {
+func (l *RespondFriendApplyLogic) RespondFriendApply(req *types.RespondFriendApplyRequest) (*types.RespondFriendApplyResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.AddFriendResponseReq{CommID: &friend.CommID{}}

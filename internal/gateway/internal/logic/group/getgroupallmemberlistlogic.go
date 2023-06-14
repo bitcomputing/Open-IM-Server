@@ -31,7 +31,7 @@ func NewGetGroupAllMemberListLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *GetGroupAllMemberListLogic) GetGroupAllMemberList(req *types.GetGroupAllMemberListRequest) (resp *types.GetGroupAllMemberListResponse, err error) {
+func (l *GetGroupAllMemberListLogic) GetGroupAllMemberList(req *types.GetGroupAllMemberListRequest) (*types.GetGroupAllMemberListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

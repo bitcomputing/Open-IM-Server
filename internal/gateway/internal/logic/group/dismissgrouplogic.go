@@ -28,7 +28,7 @@ func NewDismissGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Dism
 	}
 }
 
-func (l *DismissGroupLogic) DismissGroup(req *types.DismissGroupRequest) (resp *types.DismissGroupResponse, err error) {
+func (l *DismissGroupLogic) DismissGroup(req *types.DismissGroupRequest) (*types.DismissGroupResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
@@ -52,7 +52,7 @@ func (l *DismissGroupLogic) DismissGroup(req *types.DismissGroupRequest) (resp *
 
 	rpcResp, err := l.svcCtx.GroupClient.DismissGroup(l.ctx, rpcReq)
 	if err != nil {
-		logger.Error(rpcReq.OperationID, utils.GetSelfFuncName(), " failed ", rpcReq.String())
+		logger.Error(err)
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

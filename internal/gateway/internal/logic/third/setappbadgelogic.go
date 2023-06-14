@@ -27,7 +27,7 @@ func NewSetAppBadgeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SetAp
 	}
 }
 
-func (l *SetAppBadgeLogic) SetAppBadge(req *types.SetAppBadgeRequest) (resp *types.SetAppBadgeResponse, err error) {
+func (l *SetAppBadgeLogic) SetAppBadge(req *types.SetAppBadgeRequest) (*types.SetAppBadgeResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

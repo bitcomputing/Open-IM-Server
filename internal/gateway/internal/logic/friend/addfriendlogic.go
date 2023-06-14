@@ -28,7 +28,7 @@ func NewAddFriendLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddFrie
 	}
 }
 
-func (l *AddFriendLogic) AddFriend(req *types.AddFriendRequest) (resp *types.AddFriendResponse, err error) {
+func (l *AddFriendLogic) AddFriend(req *types.AddFriendRequest) (*types.AddFriendResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.AddFriendReq{CommID: &friend.CommID{}}

@@ -29,7 +29,7 @@ func NewClearMsgLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ClearMsg
 	}
 }
 
-func (l *ClearMsgLogic) ClearMsg(req *types.ClearMsgRequest) (resp *types.ClearMsgResponse, err error) {
+func (l *ClearMsgLogic) ClearMsg(req *types.ClearMsgRequest) (*types.ClearMsgResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &message.ClearMsgReq{}

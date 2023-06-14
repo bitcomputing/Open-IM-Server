@@ -28,7 +28,7 @@ func NewRemoveFriendBlacklistLogic(ctx context.Context, svcCtx *svc.ServiceConte
 	}
 }
 
-func (l *RemoveFriendBlacklistLogic) RemoveFriendBlacklist(req *types.RemoveFriendBlacklistRequest) (resp *types.RemoveFriendBlacklistResponse, err error) {
+func (l *RemoveFriendBlacklistLogic) RemoveFriendBlacklist(req *types.RemoveFriendBlacklistRequest) (*types.RemoveFriendBlacklistResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &friend.RemoveBlacklistReq{CommID: &friend.CommID{}}

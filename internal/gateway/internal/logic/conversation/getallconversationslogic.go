@@ -31,19 +31,19 @@ func (l *GetAllConversationsLogic) GetAllConversations(req *types.GetAllConversa
 
 	var rpcReq user.GetAllConversationsReq
 	if err := utils.CopyStructFields(&rpcReq, req); err != nil {
-		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
+		logger.Debug("CopyStructFields failed", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 
 	rpcResp, err := l.svcCtx.UserClient.GetAllConversations(l.ctx, &rpcReq)
 	if err != nil {
-		logger.Error(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", rpcReq.String(), err.Error())
+		logger.Error("SetConversation rpc failed, ", rpcReq.String(), err.Error())
 		return nil, errors.InternalError.WriteMessage("GetAllConversationMsgOpt rpc failed, " + err.Error())
 	}
 
 	resp := new(types.GetAllConversationsResponse)
 	if err := utils.CopyStructFields(&resp.Conversations, rpcResp.Conversations); err != nil {
-		logger.Debug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed, ", err.Error())
+		logger.Debug("CopyStructFields failed, ", err.Error())
 		return nil, errors.InternalError.WriteMessage(err.Error())
 	}
 

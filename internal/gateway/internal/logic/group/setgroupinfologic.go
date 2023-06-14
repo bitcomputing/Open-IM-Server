@@ -30,7 +30,7 @@ func NewSetGroupInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SetG
 	}
 }
 
-func (l *SetGroupInfoLogic) SetGroupInfo(req *types.SetGroupInfoRequest) (resp *types.SetGroupInfoResponse, err error) {
+func (l *SetGroupInfoLogic) SetGroupInfo(req *types.SetGroupInfoRequest) (*types.SetGroupInfoResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

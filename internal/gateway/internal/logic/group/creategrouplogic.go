@@ -32,7 +32,7 @@ func NewCreateGroupLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Creat
 	}
 }
 
-func (l *CreateGroupLogic) CreateGroup(req *types.CreateGroupRequest) (resp *types.CreateGroupResponse, err error) {
+func (l *CreateGroupLogic) CreateGroup(req *types.CreateGroupRequest) (*types.CreateGroupResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	if len(req.MemberList) > constant.MaxNotificationNum {

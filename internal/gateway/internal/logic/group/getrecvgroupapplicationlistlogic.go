@@ -29,7 +29,7 @@ func NewGetRecvGroupApplicationListLogic(ctx context.Context, svcCtx *svc.Servic
 	}
 }
 
-func (l *GetRecvGroupApplicationListLogic) GetRecvGroupApplicationList(req *types.GetRecvGroupApplicationListRequest) (resp *types.GetRecvGroupApplicationListResponse, err error) {
+func (l *GetRecvGroupApplicationListLogic) GetRecvGroupApplicationList(req *types.GetRecvGroupApplicationListRequest) (*types.GetRecvGroupApplicationListResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)

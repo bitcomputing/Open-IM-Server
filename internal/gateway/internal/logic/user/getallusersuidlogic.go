@@ -28,7 +28,7 @@ func NewGetAllUsersUidLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 	}
 }
 
-func (l *GetAllUsersUidLogic) GetAllUsersUid(req *types.GetAllUsersUidRequest) (resp *types.GetAllUsersUidResponse, err error) {
+func (l *GetAllUsersUidLogic) GetAllUsersUid(req *types.GetAllUsersUidRequest) (*types.GetAllUsersUidResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	rpcReq := &user.GetAllUserIDReq{}

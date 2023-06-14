@@ -30,7 +30,7 @@ func NewKickGroupMemberLogic(ctx context.Context, svcCtx *svc.ServiceContext) *K
 	}
 }
 
-func (l *KickGroupMemberLogic) KickGroupMember(req *types.KickGroupMemberRequest) (resp *types.KickGroupMemberResponse, err error) {
+func (l *KickGroupMemberLogic) KickGroupMember(req *types.KickGroupMemberRequest) (*types.KickGroupMemberResponse, error) {
 	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
 
 	token, err := apiutils.GetTokenByContext(l.ctx, logger, req.OperationID)
