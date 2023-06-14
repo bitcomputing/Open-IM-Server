@@ -33,6 +33,7 @@ func NewClient(cfg zrpc.RpcClientConf) (*Client, error) {
 	c.buildInterceptors(cfg)
 
 	c.subscriber.AddListener(c.Update)
+	c.Update()
 
 	return c, nil
 }
