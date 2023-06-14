@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	logger "Open_IM/pkg/common/db/logger/mysql"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type mysqlDB struct {
@@ -42,17 +43,8 @@ func initMysqlDB() {
 	// }
 	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=true&loc=Local",
 		config.Config.Mysql.DBUserName, config.Config.Mysql.DBPassword, config.Config.Mysql.DBAddress[0], config.Config.Mysql.DBDatabaseName)
-	newLogger := logger.New(
-		Writer{},
-		logger.Config{
-			SlowThreshold:             time.Duration(config.Config.Mysql.SlowThreshold) * time.Millisecond, // Slow SQL threshold
-			LogLevel:                  logger.LogLevel(config.Config.Mysql.LogLevel),                       // Log level
-			IgnoreRecordNotFoundError: true,                                                                // Ignore ErrRecordNotFound error for logger
-			Colorful:                  true,                                                                // Disable color
-		},
-	)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: newLogger,
+		Logger: logger.DefaultLogger,
 	})
 	if err != nil {
 		panic(err.Error() + " Open failed " + dsn)

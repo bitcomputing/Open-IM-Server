@@ -7,7 +7,6 @@ import (
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbRelay "Open_IM/pkg/proto/relay"
-	sdk_ws "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"bytes"
 	"context"
@@ -185,7 +184,7 @@ func (r *RPCServer) GetUsersOnlineStatus(ctx context.Context, req *pbRelay.GetUs
 	logger := logx.WithContext(ctx)
 
 	if !token_verify.IsManagerUserID(req.OpUserID) {
-		logger.Error(fmt.Errorf("no permission, user_id: %d", req.OpUserID))
+		logger.Error(fmt.Errorf("no permission, user_id: %s", req.OpUserID))
 		return &pbRelay.GetUsersOnlineStatusResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
 	var resp pbRelay.GetUsersOnlineStatusResp
@@ -406,31 +405,31 @@ func (r *RPCServer) OnlineBatchPushOneMsg(_ context.Context, req *pbRelay.Online
 	return nil, nil
 }
 
-func (r *RPCServer) encodeWsData(ctx context.Context, wsData *sdk_ws.MsgData, operationID string) (bytes.Buffer, error) {
-	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
-	logger := logx.WithContext(ctx)
+// func (r *RPCServer) encodeWsData(ctx context.Context, wsData *sdk_ws.MsgData, operationID string) (bytes.Buffer, error) {
+// 	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
+// 	logger := logx.WithContext(ctx)
 
-	logger.Debugf("encodeWsData begin: %v", wsData.String())
-	msgBytes, err := proto.Marshal(wsData)
-	if err != nil {
-		logger.Error(err)
-		return bytes.Buffer{}, utils.Wrap(err, "")
-	}
-	logger.Debugf("encodeWsData begin: %v", wsData.String())
-	mReply := Resp{
-		ReqIdentifier: constant.WSPushMsg,
-		OperationID:   operationID,
-		Data:          msgBytes,
-	}
-	var replyBytes bytes.Buffer
-	enc := gob.NewEncoder(&replyBytes)
-	err = enc.Encode(mReply)
-	if err != nil {
-		logger.Error(err)
-		return bytes.Buffer{}, utils.Wrap(err, "")
-	}
-	return replyBytes, nil
-}
+// 	logger.Debugf("encodeWsData begin: %v", wsData.String())
+// 	msgBytes, err := proto.Marshal(wsData)
+// 	if err != nil {
+// 		logger.Error(err)
+// 		return bytes.Buffer{}, utils.Wrap(err, "")
+// 	}
+// 	logger.Debugf("encodeWsData begin: %v", wsData.String())
+// 	mReply := Resp{
+// 		ReqIdentifier: constant.WSPushMsg,
+// 		OperationID:   operationID,
+// 		Data:          msgBytes,
+// 	}
+// 	var replyBytes bytes.Buffer
+// 	enc := gob.NewEncoder(&replyBytes)
+// 	err = enc.Encode(mReply)
+// 	if err != nil {
+// 		logger.Error(err)
+// 		return bytes.Buffer{}, utils.Wrap(err, "")
+// 	}
+// 	return replyBytes, nil
+// }
 
 func (r *RPCServer) KickUserOffline(ctx context.Context, req *pbRelay.KickUserOfflineReq) (*pbRelay.KickUserOfflineResp, error) {
 	ctx = logx.ContextWithFields(ctx, logx.Field("op", req.OperationID))
@@ -455,23 +454,24 @@ func (r *RPCServer) MultiTerminalLoginCheck(ctx context.Context, req *pbRelay.Mu
 	return &pbRelay.MultiTerminalLoginCheckResp{}, nil
 }
 
-func sendMsgToUser(ctx context.Context, conn *UserConn, bMsg []byte, in *pbRelay.OnlinePushMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
-	ctx = logx.ContextWithFields(ctx, logx.Field("op", in.OperationID))
-	logger := logx.WithContext(ctx)
+// func sendMsgToUser(ctx context.Context, conn *UserConn, bMsg []byte, in *pbRelay.OnlinePushMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
+// 	ctx = logx.ContextWithFields(ctx, logx.Field("op", in.OperationID))
+// 	logger := logx.WithContext(ctx)
 
-	err := ws.writeMsg(conn, websocket.BinaryMessage, bMsg)
-	if err != nil {
-		logger.Error("PushMsgToUser is failed By Ws: ", "Addr: ", conn.RemoteAddr().String(),
-			" error: ", err, " senderPlatform: ", constant.PlatformIDToName(int(in.MsgData.SenderPlatformID)), " recvPlatform: ", RecvPlatForm, " args: ", in.String(), " recvID: ", RecvID)
-		ResultCode = -2
-		return ResultCode
-	} else {
-		logger.Debug("PushMsgToUser is success By Ws: ", "args: ", in.String(), " recvPlatForm: ", RecvPlatForm, " recvID: ", RecvID)
-		ResultCode = 0
-		return ResultCode
-	}
+// 	err := ws.writeMsg(conn, websocket.BinaryMessage, bMsg)
+// 	if err != nil {
+// 		logger.Error("PushMsgToUser is failed By Ws: ", "Addr: ", conn.RemoteAddr().String(),
+// 			" error: ", err, " senderPlatform: ", constant.PlatformIDToName(int(in.MsgData.SenderPlatformID)), " recvPlatform: ", RecvPlatForm, " args: ", in.String(), " recvID: ", RecvID)
+// 		ResultCode = -2
+// 		return ResultCode
+// 	} else {
+// 		logger.Debug("PushMsgToUser is success By Ws: ", "args: ", in.String(), " recvPlatForm: ", RecvPlatForm, " recvID: ", RecvID)
+// 		ResultCode = 0
+// 		return ResultCode
+// 	}
 
-}
+// }
+
 func sendMsgBatchToUser(ctx context.Context, conn *UserConn, bMsg []byte, in *pbRelay.OnlineBatchPushOneMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
 	ctx = logx.ContextWithFields(ctx, logx.Field("op", in.OperationID))
 	logger := logx.WithContext(ctx)
