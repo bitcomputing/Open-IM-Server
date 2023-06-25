@@ -1,0 +1,59 @@
+Name: open-im-api
+Host: 0.0.0.0
+Port: 3000
+AuthClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-auth.rpc
+  Timeout: 3000
+  NonBlock: true
+UserClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-user.rpc
+  Timeout: 3000
+  NonBlock: true
+ConversationClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-conversation.rpc
+  Timeout: 3000
+  NonBlock: true
+FriendClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-friend.rpc
+  Timeout: 3000
+  NonBlock: true
+GroupClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-group.rpc
+  Timeout: 3000
+  NonBlock: true
+MessageClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-msg.rpc
+  Timeout: 3000
+  NonBlock: true
+RelayClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-msg-gateway.rpc
+  Timeout: 3000
+  NonBlock: true
+CacheClient:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: open-im-cache.rpc
+  Timeout: 3000
+  NonBlock: true

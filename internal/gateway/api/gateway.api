@@ -1,0 +1,389 @@
+syntax = "v1"
+
+import "types.api"
+
+service gateway {
+	@doc "Health checker handler"
+	@handler index
+	get /
+}
+
+@server(
+	group: auth
+	prefix: /auth
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "User registration"
+	@handler Register
+	post /user_register (RegisterRequest) returns (RegisterResponse)
+	
+	@doc "User login to obtain token"
+	@handler Login
+	post /user_token (LoginRequest) returns (LoginResponse)
+	
+	@doc "Parse the token"
+	@handler ParseToken
+	post /parse_token (ParseTokenRequest) returns (ParseTokenResponse)
+	
+	@doc "Force logout"
+	@handler ForceLogout
+	post /force_logout (ForceLogoutRequest) returns (ForceLogoutResponse)
+}
+
+@server(
+	group: client
+	prefix: /init
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Set client config"
+	@handler SetClientConfig
+	post /set_client_config (SetClientConfigRequest) returns (SetClientConfigResponse)
+	
+	@doc "Get client config"
+	@handler GetClientConfig
+	post /get_client_config (GetClientConfigRequest) returns (GetClientConfigResponse)
+}
+
+@server(
+	group: conversation
+	prefix: /conversation
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Get user's all conversations"
+	@handler GetAllConversations
+	post /get_all_conversations (GetAllConversationsRequest) returns (GetAllConversationsResponse)
+	
+	@doc "Get conversation by id"
+	@handler GetConversation
+	post /get_conversation (GetConversationRequest) returns (GetConversationResponse)
+	
+	@doc "Get conversations by ids"
+	@handler GetConversations
+	post /get_conversations (GetConversationsRequest) returns (GetConversationsResponse)
+	
+	@doc "Set conversation"
+	@handler SetConversation
+	post /set_conversation (SetConversationRequest) returns (SetConversationResponse)
+	
+	@doc "Batch set conversations"
+	@handler BatchSetConversations
+	post /batch_set_conversation (BatchSetConversationsRequest) returns (BatchSetConversationsResponse)
+	
+	@doc "Set recv msg opt"
+	@handler SetRecvMsgOpt
+	post /set_recv_msg_opt (SetRecvMsgOptRequest) returns (SetRecvMsgOptResponse)
+	
+	@doc "Modify conversation field"
+	@handler ModifyConversationField
+	post /modify_conversation_field (ModifyConversationFieldRequest) returns (ModifyConversationFieldResponse)
+}
+
+@server(
+	group: friend
+	prefix: /friend
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Add a friend"
+	@handler AddFriend
+	post /add_friend (AddFriendRequest) returns (AddFriendResponse)
+	
+	@doc "Delete a friend"
+	@handler DeleteFriend
+	post /delete_friend (DeleteFriendRequest) returns (DeleteFriendResponse)
+	
+	@doc "Get friend apply list"
+	@handler GetFriendApplyList
+	post /get_friend_apply_list (GetFriendApplyListRequest) returns (GetFriendApplyListResponse)
+	
+	@doc "Get self friend apply list"
+	@handler GetSelfFriendApplyList
+	post /get_self_friend_apply_list (GetSelfFriendApplyListRequest) returns (GetSelfFriendApplyListResponse)
+	
+	@doc "Get friend list"
+	@handler GetFriendList
+	post /get_friend_list (GetFriendListRequest) returns (GetFriendListResponse)
+	
+	@doc "Respond to a friend request"
+	@handler RespondFriendApply
+	post /add_friend_response (RespondFriendApplyRequest) returns (RespondFriendApplyResponse)
+	
+	@doc "Set friend remark"
+	@handler SetFriendRemark
+	post /set_friend_remark (SetFriendRemarkRequest) returns (SetFriendRemarkResponse)
+	
+	@doc "Add friend blacklist"
+	@handler AddFriendBlacklist
+	post /add_black (AddFriendBlacklistRequest) returns (AddFriendBlacklistResponse)
+	
+	@doc "Get friend blacklist"
+	@handler GetFriendBlacklist
+	post /get_black_list (GetFriendBlacklistRequest) returns (GetFriendBlacklistResponse)
+	
+	@doc "Remove friend blacklist"
+	@handler RemoveFriendBlacklist
+	post /remove_black (RemoveFriendBlacklistRequest) returns (RemoveFriendBlacklistResponse)
+	
+	@doc "Import friend"
+	@handler ImportFriend
+	post /import_friend (ImportFriendRequest) returns (ImportFriendResponse)
+	
+	@doc "Check friend"
+	@handler CheckFriend
+	post /is_friend (CheckFriendRequest) returns (CheckFriendResponse)
+}
+
+@server(
+	group: group
+	prefix: /group
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Create group"
+	@handler CreateGroup
+	post /create_group (CreateGroupRequest) returns (CreateGroupResponse)
+	
+	@doc "Set group info"
+	@handler SetGroupInfo
+	post /set_group_info (SetGroupInfoRequest) returns (SetGroupInfoResponse)
+	
+	@doc "Join group"
+	@handler JoinGroup
+	post /join_group (JoinGroupRequest) returns (JoinGroupResponse)
+	
+	@doc "Quit group"
+	@handler QuitGroup
+	post /quit_group (QuitGroupRequest) returns (QuitGroupResponse)
+	
+	@doc "Respond group application"
+	@handler RespondGroupApplication
+	post /group_application_response (RespondGroupApplicationRequest) returns (RespondGroupApplicationResponse)
+	
+	@doc "Transfer group owner"
+	@handler TransferGroupOwner
+	post /transfer_group (TransferGroupOwnerRequest) returns (TransferGroupOwnerResponse)
+	
+	@doc "Get recv group application list"
+	@handler GetRecvGroupApplicationList
+	post /get_recv_group_applicationList (GetRecvGroupApplicationListRequest) returns (GetRecvGroupApplicationListResponse)
+	
+	@doc "Get user req group application list"
+	@handler GetUserReqGroupApplicationList
+	post /get_user_req_group_applicationList (GetUserReqGroupApplicationListRequest) returns (GetUserReqGroupApplicationListResponse)
+	
+	@doc "Get groups info"
+	@handler GetGroupsInfo
+	post /get_groups_info (GetGroupsInfoRequest) returns (GetGroupsInfoResponse)
+	
+	@doc "Kick group member"
+	@handler KickGroupMember
+	post /kick_group (KickGroupMemberRequest) returns (KickGroupMemberResponse)
+	
+	@doc "Get group all member list"
+	@handler GetGroupAllMemberList
+	post /get_group_all_member_list (GetGroupAllMemberListRequest) returns (GetGroupAllMemberListResponse)
+	
+	@doc "Get group members info"
+	@handler GetGroupMembersInfo
+	post /get_group_members_info (GetGroupMembersInfoRequest) returns (GetGroupMembersInfoResponse)
+	
+	@doc "Invite user to group"
+	@handler InviteUserToGroup
+	post /invite_user_to_group (InviteUserToGroupRequest) returns (InviteUserToGroupResponse)
+	
+	@doc "Invite user to groups"
+	@handler InviteUserToGroups
+	post /invite_user_to_groups (InviteUserToGroupsRequest) returns (InviteUserToGroupsResponse)
+	
+	@doc "Get joined group list"
+	@handler GetJoinedGroupList
+	post /get_joined_group_list (GetJoinedGroupListRequest) returns (GetJoinedGroupListResponse)
+	
+	@doc "Dismiss group"
+	@handler DismissGroup
+	post /dismiss_group (DismissGroupRequest) returns (DismissGroupResponse)
+	
+	@doc "Mute group member"
+	@handler MuteGroupMember
+	post /mute_group_member (MuteGroupMemberRequest) returns (MuteGroupMemberResponse)
+	
+	@doc "Cancel mute group member"
+	@handler CancelMuteGroupMember
+	post /cancel_mute_group_member (CancelMuteGroupMemberRequest) returns (CancelMuteGroupMemberResponse)
+	
+	@doc "Mute group"
+	@handler MuteGroup
+	post /mute_group (MuteGroupRequest) returns (MuteGroupResponse)
+	
+	@doc "Cancel mute group"
+	@handler CancelMuteGroup
+	post /cancel_mute_group (CancelMuteGroupRequest) returns (CancelMuteGroupResponse)
+	
+	@doc "Set group member nickname"
+	@handler SetGroupMemberNickname
+	post /set_group_member_nickname (SetGroupMemberNicknameRequest) returns (SetGroupMemberNicknameResponse)
+	
+	@doc "Set group member info"
+	@handler SetGroupMemberInfo
+	post /set_group_member_info (SetGroupMemberInfoRequest) returns (SetGroupMemberInfoResponse)
+	
+	@doc "Get group abstract info"
+	@handler GetGroupAbstractInfo
+	post /get_group_abstract_info (GetGroupAbstractInfoRequest) returns (GetGroupAbstractInfoResponse)
+}
+
+@server(
+	group: supergroup
+	prefix: /super_group
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Get joined super group list"
+	@handler GetJoinedSuperGroupList
+	post /get_joined_group_list (GetJoinedSuperGroupListRequest) returns (GetJoinedSuperGroupListResponse)
+	
+	@doc "Get super groups info"
+	@handler GetSuperGroupsInfo
+	post /get_groups_info (GetSuperGroupsInfoRequest) returns (GetSuperGroupsInfoResponse)
+}
+
+@server(
+	group: message
+	prefix: /msg
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Get seq"
+	@handler GetSeq
+	post /newest_seq (GetSeqRequest) returns (GetSeqResponse)
+	
+	@doc "Send msg"
+	@handler SendMsg
+	post /send_msg (SendMsgRequest) returns (SendMsgResponse)
+	
+	@doc "Pull msg by seq list"
+	@handler PullMsgBySeqList
+	post /pull_msg_by_seq (PullMsgBySeqListRequest) returns (PullMsgBySeqListResponse)
+	
+	@doc "Del msg"
+	@handler DelMsg
+	post /del_msg (DelMsgRequest) returns (DelMsgResponse)
+	
+	@doc "Del super group msg"
+	@handler DelSuperGroupMsg
+	post /del_super_group_msg (DelSuperGroupMsgRequest) returns (DelSuperGroupMsgResponse)
+	
+	@doc "Clear msg"
+	@handler ClearMsg
+	post /clear_msg (ClearMsgRequest) returns (ClearMsgResponse)
+	
+	@doc "Management send msg"
+	@handler ManagementSendMsg
+	post /manage_send_msg (ManagementSendMsgRequest) returns (ManagementSendMsgResponse)
+	
+	@doc "Management batch send msg"
+	@handler ManagementBatchSendMsg
+	post /batch_send_msg (ManagementBatchSendMsgRequest) returns (ManagementBatchSendMsgResponse)
+	
+	@doc "Check msg is send success"
+	@handler CheckMsgIsSendSuccess
+	post /check_msg_is_send_success (CheckMsgIsSendSuccessRequest) returns (CheckMsgIsSendSuccessResponse)
+	
+	@doc "Set msg min seq"
+	@handler SetMsgMinSeq
+	post /set_msg_min_seq (SetMsgMinSeqRequest) returns (SetMsgMinSeqResponse)
+	
+	@doc "Set message reaction extensions"
+	@handler SetMessageReactionExtensions
+	post /set_message_reaction_extensions (SetMessageReactionExtensionsRequest) returns (SetMessageReactionExtensionsResponse)
+	
+	@doc "Get message list reaction extensions"
+	@handler GetMessageListReactionExtensions
+	post /get_message_list_reaction_extensions (GetMessageListReactionExtensionsRequest) returns (GetMessageListReactionExtensionsResponse)
+	
+	@doc "Add message reaction extensions"
+	@handler AddMessageReactionExtensions
+	post /add_message_reaction_extensions (AddMessageReactionExtensionsRequest) returns (AddMessageReactionExtensionsResponse)
+	
+	@doc "Delete message reaction extensions"
+	@handler DeleteMessageReactionExtensions
+	post /delete_message_reaction_extensions (DeleteMessageReactionExtensionsRequest) returns (DeleteMessageReactionExtensionsResponse)
+}
+
+@server(
+	group: third
+	prefix: /third
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "FCM update token"
+	@handler FCMUpdateToken
+	post /fcm_update_token (FCMUpdateTokenRequest) returns (FCMUpdateTokenResponse)
+	
+	@doc "Set App badge"
+	@handler SetAppBadge
+	post /set_app_badge (SetAppBadgeRequest) returns (SetAppBadgeResponse)
+}
+
+@server(
+	group: user
+	prefix: /user
+	middleware: CorsMiddleware,BodyLoggerMiddleware
+)
+
+service gateway {
+	@doc "Update user info"
+	@handler UpdateUserInfo
+	post /update_user_info (UpdateUserInfoRequest) returns (UpdateUserInfoResponse)
+	
+	@doc "Set global recv message opt"
+	@handler SetGlobalRecvMessageOpt
+	post /set_global_msg_recv_opt (SetGlobalRecvMessageOptRequest) returns (SetGlobalRecvMessageOptResponse)
+	
+	@doc "Get users public info"
+	@handler GetUsersPublicInfo
+	post /get_users_info (GetUsersPublicInfoRequest) returns (GetUsersPublicInfoResponse)
+	
+	@doc "Get self user info"
+	@handler GetSelfUserInfo
+	post /get_self_user_info (GetSelfUserInfoRequest) returns (GetSelfUserInfoResponse)
+	
+	@doc "Get users online status"
+	@handler GetUsersOnlineStatus
+	post /get_users_online_status (GetUsersOnlineStatusRequest) returns (GetUsersOnlineStatusResponse)
+	
+	@doc "Get users info from cache"
+	@handler GetUsersInfoFromCache
+	post /get_users_info_from_cache (GetUsersInfoFromCacheRequest) returns (GetUsersInfoFromCacheResponse)
+	
+	@doc "Get friend id list from cache"
+	@handler GetFriendIDListFromCache
+	post /get_user_friend_from_cache (GetFriendIDListFromCacheRequest) returns (GetFriendIDListFromCacheResponse)
+	
+	@doc "Get black id list from cache"
+	@handler GetBlackIDListFromCache
+	post /get_black_list_from_cache (GetBlackIDListFromCacheRequest) returns (GetBlackIDListFromCacheResponse)
+	
+	@doc "Get all users uid"
+	@handler GetAllUsersUid
+	post /get_all_users_uid (GetAllUsersUidRequest) returns (GetAllUsersUidResponse)
+	
+	@doc "Account check"
+	@handler AccountCheck
+	post /account_check (AccountCheckRequest) returns (AccountCheckResponse)
+	
+	@doc "Get users"
+	@handler GetUsers
+	post /get_users (GetUsersRequest) returns (GetUsersResponse)
+}
