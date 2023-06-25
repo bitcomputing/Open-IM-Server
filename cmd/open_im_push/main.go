@@ -1,25 +1,33 @@
 package main
 
 import (
-	"Open_IM/internal/push/logic"
+	"Open_IM/internal/push"
 	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
+	"Open_IM/pkg/common/interceptors"
+	pbPush "Open_IM/pkg/proto/push"
 	"flag"
-	"fmt"
-	"sync"
+
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	defaultPorts := config.Config.RpcPort.OpenImPushPort
-	rpcPort := flag.Int("port", defaultPorts[0], "rpc listening port")
-	prometheusPort := flag.Int("prometheus_port", config.Config.Prometheus.MessageTransferPrometheusPort[0], "PushrometheusPort default listen port")
+	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.Push)
+	rpcPort := flag.Int("port", config.Config.ServerConfigs.Push.Port, "rpc listening port")
 	flag.Parse()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	log.NewPrivateLog(constant.LogFileName)
-	fmt.Println("start push rpc server, port: ", *rpcPort, ", OpenIM version: ", constant.CurrentVersion, "\n")
-	logic.Init(*rpcPort)
-	logic.Run(*prometheusPort)
-	wg.Wait()
+
+	server := push.NewPushServer(*rpcPort)
+	s := zrpc.MustNewServer(cfg, func(s *grpc.Server) {
+		pbPush.RegisterPushMsgServiceServer(s, server)
+	})
+	defer s.Stop()
+
+	server.RegisterLegacyDiscovery()
+
+	s.AddUnaryInterceptors(interceptors.ResponseLogger)
+
+	push.Init(server.CacheClient)
+	push.Run()
+
+	s.Start()
 }

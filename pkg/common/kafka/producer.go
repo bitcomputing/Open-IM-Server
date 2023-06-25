@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/Shopify/sarama"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	promePkg "Open_IM/pkg/common/prometheus"
 )
@@ -37,14 +37,13 @@ func NewKafkaProducer(addr []string, topic string) *Producer {
 	producer, err := sarama.NewSyncProducer(p.addr, p.config) //Initialize the client
 	if err != nil {
 		panic(err.Error())
-		return nil
 	}
 	p.producer = producer
 	return &p
 }
 
 func (p *Producer) SendMessage(m proto.Message, key string, operationID string) (int32, int64, error) {
-	log.Info(operationID, "SendMessage", "key ", key, m.String(), p.producer)
+	log.Info(operationID, "SendMessage", "key ", key, m, p.producer)
 	kMsg := &sarama.ProducerMessage{}
 	kMsg.Topic = p.topic
 	kMsg.Key = sarama.StringEncoder(key)

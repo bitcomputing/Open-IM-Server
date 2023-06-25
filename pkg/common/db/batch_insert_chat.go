@@ -3,19 +3,21 @@ package db
 import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
 	promePkg "Open_IM/pkg/common/prometheus"
 	pbMsg "Open_IM/pkg/proto/msg"
 	"Open_IM/pkg/utils"
 	"context"
 	"errors"
+
 	go_redis "github.com/go-redis/redis/v8"
-	"github.com/golang/protobuf/proto"
+	"github.com/zeromicro/go-zero/core/logx"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"google.golang.org/protobuf/proto"
 )
 
 func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataToMQ, operationID string, currentMaxSeq uint64) error {
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	newTime := getCurrentTimestampByMill()
 	if len(msgList) > GetSingleGocMsgNum() {
 		return errors.New("too large")
@@ -37,33 +39,33 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 	msgListToMongoNext := make([]MsgInfo, 0)
 	seqUid := ""
 	seqUidNext := ""
-	log.Debug(operationID, "remain ", remain, "insertCounter ", insertCounter, "currentMaxSeq ", currentMaxSeq, userID, len(msgList))
+	logger.Debug("remain ", remain, "insertCounter ", insertCounter, "currentMaxSeq ", currentMaxSeq, userID, len(msgList))
 	var err error
 	for _, m := range msgList {
-		log.Debug(operationID, "msg node ", m.String(), m.MsgData.ClientMsgID)
+		logger.Debug("msg node ", m.String(), m.MsgData.ClientMsgID)
 		currentMaxSeq++
 		sMsg := MsgInfo{}
 		sMsg.SendTime = m.MsgData.SendTime
 		m.MsgData.Seq = uint32(currentMaxSeq)
-		log.Debug(operationID, "mongo msg node ", m.String(), m.MsgData.ClientMsgID, "userID: ", userID, "seq: ", currentMaxSeq)
+		logger.Debug("mongo msg node ", m.String(), m.MsgData.ClientMsgID, "userID: ", userID, "seq: ", currentMaxSeq)
 		if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
 			return utils.Wrap(err, "")
 		}
 		if isInit {
 			msgListToMongoNext = append(msgListToMongoNext, sMsg)
 			seqUidNext = getSeqUid(userID, uint32(currentMaxSeq))
-			log.Debug(operationID, "msgListToMongoNext ", seqUidNext, m.MsgData.Seq, m.MsgData.ClientMsgID, insertCounter, remain)
+			logger.Debug("msgListToMongoNext ", seqUidNext, m.MsgData.Seq, m.MsgData.ClientMsgID, insertCounter, remain)
 			continue
 		}
 		if insertCounter < remain {
 			msgListToMongo = append(msgListToMongo, sMsg)
 			insertCounter++
 			seqUid = getSeqUid(userID, uint32(currentMaxSeq))
-			log.Debug(operationID, "msgListToMongo ", seqUid, m.MsgData.Seq, m.MsgData.ClientMsgID, insertCounter, remain, "userID: ", userID)
+			logger.Debug("msgListToMongo ", seqUid, m.MsgData.Seq, m.MsgData.ClientMsgID, insertCounter, remain, "userID: ", userID)
 		} else {
 			msgListToMongoNext = append(msgListToMongoNext, sMsg)
 			seqUidNext = getSeqUid(userID, uint32(currentMaxSeq))
-			log.Debug(operationID, "msgListToMongoNext ", seqUidNext, m.MsgData.Seq, m.MsgData.ClientMsgID, insertCounter, remain, "userID: ", userID)
+			logger.Debug("msgListToMongoNext ", seqUidNext, m.MsgData.Seq, m.MsgData.ClientMsgID, insertCounter, remain, "userID: ", userID)
 		}
 	}
 
@@ -72,7 +74,7 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 
 	if seqUid != "" {
 		filter := bson.M{"uid": seqUid}
-		log.NewDebug(operationID, "filter ", seqUid, "list ", msgListToMongo, "userID: ", userID)
+		logger.Debug("filter ", seqUid, "list ", msgListToMongo, "userID: ", userID)
 		err := c.FindOneAndUpdate(ctx, filter, bson.M{"$push": bson.M{"msg": bson.M{"$each": msgListToMongo}}}).Err()
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
@@ -80,16 +82,16 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 				sChat := UserChat{}
 				sChat.UID = seqUid
 				sChat.Msg = msgListToMongo
-				log.NewDebug(operationID, "filter ", seqUid, "list ", msgListToMongo)
+				logger.Debug("filter ", seqUid, "list ", msgListToMongo)
 				if _, err = c.InsertOne(ctx, &sChat); err != nil {
 					promePkg.PromeInc(promePkg.MsgInsertMongoFailedCounter)
-					log.NewError(operationID, "InsertOne failed", filter, err.Error(), sChat)
+					logger.Error("InsertOne failed", filter, err.Error(), sChat)
 					return utils.Wrap(err, "")
 				}
 				promePkg.PromeInc(promePkg.MsgInsertMongoSuccessCounter)
 			} else {
 				promePkg.PromeInc(promePkg.MsgInsertMongoFailedCounter)
-				log.Error(operationID, "FindOneAndUpdate failed ", err.Error(), filter)
+				logger.Error("FindOneAndUpdate failed ", err.Error(), filter)
 				return utils.Wrap(err, "")
 			}
 		} else {
@@ -101,72 +103,73 @@ func (d *DataBases) BatchInsertChat2DB(userID string, msgList []*pbMsg.MsgDataTo
 		sChat := UserChat{}
 		sChat.UID = seqUidNext
 		sChat.Msg = msgListToMongoNext
-		log.NewDebug(operationID, "filter ", seqUidNext, "list ", msgListToMongoNext, "userID: ", userID)
+		logger.Debug("filter ", seqUidNext, "list ", msgListToMongoNext, "userID: ", userID)
 		if _, err = c.InsertOne(ctx, &sChat); err != nil {
 			promePkg.PromeInc(promePkg.MsgInsertMongoFailedCounter)
-			log.NewError(operationID, "InsertOne failed", filter, err.Error(), sChat)
+			logger.Error("InsertOne failed", filter, err.Error(), sChat)
 			return utils.Wrap(err, "")
 		}
 		promePkg.PromeInc(promePkg.MsgInsertMongoSuccessCounter)
 	}
-	log.Debug(operationID, "batch mgo  cost time ", getCurrentTimestampByMill()-newTime, userID, len(msgList))
+	logger.Debug("batch mgo  cost time ", getCurrentTimestampByMill()-newTime, userID, len(msgList))
 	return nil
 }
 
-func (d *DataBases) BatchInsertChat2Cache(insertID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (error, uint64) {
+func (d *DataBases) BatchInsertChat2Cache(ctx context.Context, insertID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (uint64, error) {
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	newTime := getCurrentTimestampByMill()
 	lenList := len(msgList)
 	if lenList > GetSingleGocMsgNum() {
-		return errors.New("too large"), 0
+		return 0, errors.New("too large")
 	}
 	if lenList < 1 {
-		return errors.New("too short as 0"), 0
+		return 0, errors.New("too short as 0")
 	}
 	// judge sessionType to get seq
 	var currentMaxSeq uint64
 	var err error
 	if msgList[0].MsgData.SessionType == constant.SuperGroupChatType {
-		currentMaxSeq, err = d.GetGroupMaxSeq(insertID)
-		log.Debug(operationID, "constant.SuperGroupChatType  lastMaxSeq before add ", currentMaxSeq, "userID ", insertID, err)
+		currentMaxSeq, err = d.GetGroupMaxSeq(ctx, insertID)
+		logger.Debug("constant.SuperGroupChatType  lastMaxSeq before add ", currentMaxSeq, "userID ", insertID, err)
 	} else {
-		currentMaxSeq, err = d.GetUserMaxSeq(insertID)
-		log.Debug(operationID, "constant.SingleChatType  lastMaxSeq before add ", currentMaxSeq, "userID ", insertID, err)
+		currentMaxSeq, err = d.GetUserMaxSeq(ctx, insertID)
+		logger.Debug("constant.SingleChatType  lastMaxSeq before add ", currentMaxSeq, "userID ", insertID, err)
 	}
 	if err != nil && err != go_redis.Nil {
 		promePkg.PromeInc(promePkg.SeqGetFailedCounter)
-		return utils.Wrap(err, ""), 0
+		return 0, utils.Wrap(err, "")
 	}
 	promePkg.PromeInc(promePkg.SeqGetSuccessCounter)
 
 	lastMaxSeq := currentMaxSeq
 	for _, m := range msgList {
-
 		currentMaxSeq++
 		sMsg := MsgInfo{}
 		sMsg.SendTime = m.MsgData.SendTime
 		m.MsgData.Seq = uint32(currentMaxSeq)
-		log.Debug(operationID, "cache msg node ", m.String(), m.MsgData.ClientMsgID, "userID: ", insertID, "seq: ", currentMaxSeq)
+		logger.Debug("cache msg node ", m.String(), m.MsgData.ClientMsgID, "userID: ", insertID, "seq: ", currentMaxSeq)
 	}
-	log.Debug(operationID, "SetMessageToCache ", insertID, len(msgList))
-	err, failedNum := d.SetMessageToCache(msgList, insertID, operationID)
+
+	logger.Debug("SetMessageToCache ", insertID, len(msgList))
+	err, failedNum := d.SetMessageToCache(ctx, msgList, insertID, operationID)
 	if err != nil {
 		promePkg.PromeAdd(promePkg.MsgInsertRedisFailedCounter, failedNum)
-		log.Error(operationID, "setMessageToCache failed, continue ", err.Error(), len(msgList), insertID)
+		logger.Error("setMessageToCache failed, continue ", err.Error(), len(msgList), insertID)
 	} else {
 		promePkg.PromeInc(promePkg.MsgInsertRedisSuccessCounter)
 	}
-	log.Debug(operationID, "batch to redis  cost time ", getCurrentTimestampByMill()-newTime, insertID, len(msgList))
+	logger.Debug("batch to redis  cost time ", getCurrentTimestampByMill()-newTime, insertID, len(msgList))
 	if msgList[0].MsgData.SessionType == constant.SuperGroupChatType {
-		err = d.SetGroupMaxSeq(insertID, currentMaxSeq)
+		err = d.SetGroupMaxSeq(ctx, insertID, currentMaxSeq)
 	} else {
-		err = d.SetUserMaxSeq(insertID, currentMaxSeq)
+		err = d.SetUserMaxSeq(ctx, insertID, currentMaxSeq)
 	}
 	if err != nil {
 		promePkg.PromeInc(promePkg.SeqSetFailedCounter)
 	} else {
 		promePkg.PromeInc(promePkg.SeqSetSuccessCounter)
 	}
-	return utils.Wrap(err, ""), lastMaxSeq
+	return lastMaxSeq, utils.Wrap(err, "")
 }
 
 //func (d *DataBases) BatchInsertChatBoth(userID string, msgList []*pbMsg.MsgDataToMQ, operationID string) (error, uint64) {

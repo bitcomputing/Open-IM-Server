@@ -1,27 +1,23 @@
 package gate
 
 import (
+	msgclient "Open_IM/internal/rpc/msg/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
-	promePkg "Open_IM/pkg/common/prometheus"
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbRelay "Open_IM/pkg/proto/relay"
-	sdk_ws "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"bytes"
 	"context"
 	"encoding/gob"
-	"net"
-	"strconv"
+	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/gorilla/websocket"
-	"google.golang.org/grpc"
 )
 
 type RPCServer struct {
@@ -32,74 +28,113 @@ type RPCServer struct {
 	platformList    []int
 	pushTerminal    []int
 	target          string
+	pbRelay.UnimplementedRelayServer
+	msgClient msgclient.MsgClient
 }
 
-func initPrometheus() {
-	promePkg.NewMsgRecvTotalCounter()
-	promePkg.NewGetNewestSeqTotalCounter()
-	promePkg.NewPullMsgBySeqListTotalCounter()
-	promePkg.NewMsgOnlinePushSuccessCounter()
-	promePkg.NewOnlineUserGauges()
-	//promePkg.NewSingleChatMsgRecvSuccessCounter()
-	//promePkg.NewGroupChatMsgRecvSuccessCounter()
-	//promePkg.NewWorkSuperGroupChatMsgRecvSuccessCounter()
+// func initPrometheus() {
+// 	promePkg.NewMsgRecvTotalCounter()
+// 	promePkg.NewGetNewestSeqTotalCounter()
+// 	promePkg.NewPullMsgBySeqListTotalCounter()
+// 	promePkg.NewMsgOnlinePushSuccessCounter()
+// 	promePkg.NewOnlineUserGauges()
+// 	//promePkg.NewSingleChatMsgRecvSuccessCounter()
+// 	//promePkg.NewGroupChatMsgRecvSuccessCounter()
+// 	//promePkg.NewWorkSuperGroupChatMsgRecvSuccessCounter()
+// }
+
+// func (r *RPCServer) onInit(rpcPort int) {
+// 	r.rpcPort = rpcPort
+// 	r.rpcRegisterName = config.Config.RpcRegisterName.OpenImRelayName
+// 	r.etcdSchema = config.Config.Etcd.EtcdSchema
+// 	r.etcdAddr = config.Config.Etcd.EtcdAddr
+// 	r.platformList = genPlatformArray()
+// 	r.pushTerminal = []int{constant.IOSPlatformID, constant.AndroidPlatformID}
+// 	r.msgClient = msgclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message))
+// }
+
+func NewRPCServer(rpcPort int) *RPCServer {
+	serviceIP, err := utils.GetLocalIP()
+	if err != nil {
+		panic(err)
+	}
+	server = &RPCServer{
+		rpcPort:         rpcPort,
+		rpcRegisterName: config.Config.RpcRegisterName.OpenImRelayName,
+		etcdSchema:      config.Config.Etcd.EtcdSchema,
+		etcdAddr:        config.Config.Etcd.EtcdAddr,
+		platformList:    genPlatformArray(),
+		pushTerminal:    []int{constant.IOSPlatformID, constant.AndroidPlatformID},
+		msgClient:       msgclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message)),
+		target:          fmt.Sprintf("%s:%d", serviceIP, config.Config.ServerConfigs.Gateway.Port),
+	}
+
+	return server
 }
 
-func (r *RPCServer) onInit(rpcPort int) {
-	r.rpcPort = rpcPort
-	r.rpcRegisterName = config.Config.RpcRegisterName.OpenImRelayName
-	r.etcdSchema = config.Config.Etcd.EtcdSchema
-	r.etcdAddr = config.Config.Etcd.EtcdAddr
-	r.platformList = genPlatformArray()
-	r.pushTerminal = []int{constant.IOSPlatformID, constant.AndroidPlatformID}
-}
-func (r *RPCServer) run() {
-	listenIP := ""
-	if config.Config.ListenIP == "" {
-		listenIP = "0.0.0.0"
-	} else {
-		listenIP = config.Config.ListenIP
-	}
-	address := listenIP + ":" + strconv.Itoa(r.rpcPort)
-	listener, err := net.Listen("tcp", address)
+func (rpc *RPCServer) RegisterLegacyDiscovery() {
+	rpcRegisterIP, err := utils.GetLocalIP()
 	if err != nil {
-		panic("listening err:" + err.Error() + r.rpcRegisterName)
+		panic(fmt.Errorf("GetLocalIP failed: %w", err))
 	}
-	defer listener.Close()
-	var grpcOpts []grpc.ServerOption
-	if config.Config.Prometheus.Enable {
-		promePkg.NewGrpcRequestCounter()
-		promePkg.NewGrpcRequestFailedCounter()
-		promePkg.NewGrpcRequestSuccessCounter()
-		grpcOpts = append(grpcOpts, []grpc.ServerOption{
-			// grpc.UnaryInterceptor(promePkg.UnaryServerInterceptorProme),
-			grpc.StreamInterceptor(grpcPrometheus.StreamServerInterceptor),
-			grpc.UnaryInterceptor(grpcPrometheus.UnaryServerInterceptor),
-		}...)
-	}
-	srv := grpc.NewServer(grpcOpts...)
-	defer srv.GracefulStop()
-	pbRelay.RegisterRelayServer(srv, r)
 
-	rpcRegisterIP := config.Config.RpcRegisterIP
-	if config.Config.RpcRegisterIP == "" {
-		rpcRegisterIP, err = utils.GetLocalIP()
-		if err != nil {
-			log.Error("", "GetLocalIP failed ", err.Error())
-		}
-	}
-	err = getcdv3.RegisterEtcd4Unique(r.etcdSchema, strings.Join(r.etcdAddr, ","), rpcRegisterIP, r.rpcPort, r.rpcRegisterName, 10)
+	err = getcdv3.RegisterEtcd(rpc.etcdSchema, strings.Join(rpc.etcdAddr, ","), rpcRegisterIP, rpc.rpcPort, rpc.rpcRegisterName, 10)
 	if err != nil {
-		log.Error("", "register push message rpc to etcd err", "", "err", err.Error(), r.etcdSchema, strings.Join(r.etcdAddr, ","), rpcRegisterIP, r.rpcPort, r.rpcRegisterName)
-		panic(utils.Wrap(err, "register msg_gataway module  rpc to etcd err"))
-	}
-	r.target = getcdv3.GetTarget(r.etcdSchema, rpcRegisterIP, r.rpcPort, r.rpcRegisterName)
-	err = srv.Serve(listener)
-	if err != nil {
-		log.Error("", "push message rpc listening err", "", "err", err.Error())
-		return
+		logx.Error("RegisterEtcd failed ", err.Error(),
+			rpc.etcdSchema, strings.Join(rpc.etcdAddr, ","), rpcRegisterIP, rpc.rpcPort, rpc.rpcRegisterName)
+		panic(utils.Wrap(err, "register auth module  rpc to etcd err"))
+
 	}
 }
+
+// func (r *RPCServer) run() {
+// 	listenIP := ""
+// 	if config.Config.ListenIP == "" {
+// 		listenIP = "0.0.0.0"
+// 	} else {
+// 		listenIP = config.Config.ListenIP
+// 	}
+// 	address := listenIP + ":" + strconv.Itoa(r.rpcPort)
+// 	listener, err := net.Listen("tcp", address)
+// 	if err != nil {
+// 		panic("listening err:" + err.Error() + r.rpcRegisterName)
+// 	}
+// 	defer listener.Close()
+// 	var grpcOpts []grpc.ServerOption
+// 	if config.Config.Prometheus.Enable {
+// 		promePkg.NewGrpcRequestCounter()
+// 		promePkg.NewGrpcRequestFailedCounter()
+// 		promePkg.NewGrpcRequestSuccessCounter()
+// 		grpcOpts = append(grpcOpts, []grpc.ServerOption{
+// 			// grpc.UnaryInterceptor(promePkg.UnaryServerInterceptorProme),
+// 			grpc.StreamInterceptor(grpcPrometheus.StreamServerInterceptor),
+// 			grpc.UnaryInterceptor(grpcPrometheus.UnaryServerInterceptor),
+// 		}...)
+// 	}
+// 	srv := grpc.NewServer(grpcOpts...)
+// 	defer srv.GracefulStop()
+// 	pbRelay.RegisterRelayServer(srv, r)
+
+// 	rpcRegisterIP := config.Config.RpcRegisterIP
+// 	if config.Config.RpcRegisterIP == "" {
+// 		rpcRegisterIP, err = utils.GetLocalIP()
+// 		if err != nil {
+// 			log.Error("", "GetLocalIP failed ", err.Error())
+// 		}
+// 	}
+// 	err = getcdv3.RegisterEtcd4Unique(r.etcdSchema, strings.Join(r.etcdAddr, ","), rpcRegisterIP, r.rpcPort, r.rpcRegisterName, 10)
+// 	if err != nil {
+// 		log.Error("", "register push message rpc to etcd err", "", "err", err.Error(), r.etcdSchema, strings.Join(r.etcdAddr, ","), rpcRegisterIP, r.rpcPort, r.rpcRegisterName)
+// 		panic(utils.Wrap(err, "register msg_gataway module  rpc to etcd err"))
+// 	}
+// 	r.target = getcdv3.GetTarget(r.etcdSchema, rpcRegisterIP, r.rpcPort, r.rpcRegisterName)
+// 	err = srv.Serve(listener)
+// 	if err != nil {
+// 		log.Error("", "push message rpc listening err", "", "err", err.Error())
+// 		return
+// 	}
+// }
+
 func (r *RPCServer) OnlinePushMsg(_ context.Context, in *pbRelay.OnlinePushMsgReq) (*pbRelay.OnlinePushMsgResp, error) {
 	//log.NewInfo(in.OperationID, "PushMsgToUser is arriving", in.String())
 	//var resp []*pbRelay.SingleMsgToUserPlatform
@@ -144,10 +179,12 @@ func (r *RPCServer) OnlinePushMsg(_ context.Context, in *pbRelay.OnlinePushMsgRe
 	//}, nil
 	return nil, nil
 }
-func (r *RPCServer) GetUsersOnlineStatus(_ context.Context, req *pbRelay.GetUsersOnlineStatusReq) (*pbRelay.GetUsersOnlineStatusResp, error) {
-	log.NewInfo(req.OperationID, "rpc GetUsersOnlineStatus arrived server", req.String())
+func (r *RPCServer) GetUsersOnlineStatus(ctx context.Context, req *pbRelay.GetUsersOnlineStatusReq) (*pbRelay.GetUsersOnlineStatusResp, error) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", req.OperationID))
+	logger := logx.WithContext(ctx)
+
 	if !token_verify.IsManagerUserID(req.OpUserID) {
-		log.NewError(req.OperationID, "no permission GetUsersOnlineStatus ", req.OpUserID)
+		logger.Error(fmt.Errorf("no permission, user_id: %s", req.OpUserID))
 		return &pbRelay.GetUsersOnlineStatusResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
 	var resp pbRelay.GetUsersOnlineStatusResp
@@ -171,12 +208,14 @@ func (r *RPCServer) GetUsersOnlineStatus(_ context.Context, req *pbRelay.GetUser
 			resp.SuccessResult = append(resp.SuccessResult, temp)
 		}
 	}
-	log.NewInfo(req.OperationID, "GetUsersOnlineStatus rpc return ", resp.String())
+
 	return &resp, nil
 }
 
-func (r *RPCServer) SuperGroupOnlineBatchPushOneMsg(_ context.Context, req *pbRelay.OnlineBatchPushOneMsgReq) (*pbRelay.OnlineBatchPushOneMsgResp, error) {
-	log.NewInfo(req.OperationID, "BatchPushMsgToUser is arriving", req.String())
+func (r *RPCServer) SuperGroupOnlineBatchPushOneMsg(ctx context.Context, req *pbRelay.OnlineBatchPushOneMsgReq) (*pbRelay.OnlineBatchPushOneMsgResp, error) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", req.OperationID))
+	logger := logx.WithContext(ctx)
+
 	var singleUserResult []*pbRelay.SingelMsgToUserResultList
 	//r.GetBatchMsgForPush(req.OperationID,req.MsgData,req.PushToUserIDList,)
 	msgBytes, _ := proto.Marshal(req.MsgData)
@@ -189,7 +228,7 @@ func (r *RPCServer) SuperGroupOnlineBatchPushOneMsg(_ context.Context, req *pbRe
 	enc := gob.NewEncoder(&replyBytes)
 	err := enc.Encode(mReply)
 	if err != nil {
-		log.NewError(req.OperationID, "data encode err", err.Error())
+		logger.Error(err)
 	}
 	for _, v := range req.PushToUserIDList {
 		var resp []*pbRelay.SingleMsgToUserPlatform
@@ -197,23 +236,25 @@ func (r *RPCServer) SuperGroupOnlineBatchPushOneMsg(_ context.Context, req *pbRe
 			UserID: v,
 		}
 		userConnMap := ws.getUserAllCons(v)
+		logger.Debugv(userConnMap)
 		for platform, userConns := range userConnMap {
 			if len(userConns) != 0 {
-				log.NewWarn(req.OperationID, "conns is ", len(userConns), platform, userConns)
+				logger.Infof("count: %v, platform: %d, conns: %v", len(userConns), platform, userConns)
 				for _, userConn := range userConns {
 					temp := &pbRelay.SingleMsgToUserPlatform{
 						RecvID:         v,
 						RecvPlatFormID: int32(platform),
 					}
 					if !userConn.IsBackground || req.MsgData.ContentType == constant.SuperGroupUpdateNotification || req.MsgData.ContentType == constant.SignalingNotification || req.MsgData.ContentType == constant.ConversationUnreadNotification {
-						resultCode := sendMsgBatchToUser(userConn, replyBytes.Bytes(), req, platform, v)
+						resultCode := sendMsgBatchToUser(ctx, userConn, replyBytes.Bytes(), req, platform, v)
 						if resultCode == 0 && utils.IsContainInt(platform, r.pushTerminal) {
 							tempT.OnlinePush = true
-							promePkg.PromeInc(promePkg.MsgOnlinePushSuccessCounter)
-							log.Info(req.OperationID, "PushSuperMsgToUser is success By Ws", "args", req.String(), "recvPlatForm", constant.PlatformIDToName(platform), "recvID", v, "background status", userConn.IsBackground, userConn.userID)
+							// promePkg.PromeInc(promePkg.MsgOnlinePushSuccessCounter)
+							ws.msgOnlinePushSuccess.Inc()
+							logger.Infof("PushSuperMsgToUser is success By Ws: args: %v, platform: %s, recv_id: %s, background_status: %d, user_id: %s", req, constant.PlatformIDToName(platform), v, userConn.IsBackground, userConn.userID)
 							temp.ResultCode = resultCode
 							if req.MsgData.ContentType == constant.SignalingNotification && userConn.IsBackground {
-								log.Info(req.OperationID, "recv signalingNotification backgroud", req.MsgData.String())
+								logger.Infof("recv signalingNotification backgroud: %v", req.MsgData)
 								temp.ResultCode = -2
 								tempT.OnlinePush = false
 							}
@@ -235,8 +276,11 @@ func (r *RPCServer) SuperGroupOnlineBatchPushOneMsg(_ context.Context, req *pbRe
 		SinglePushResult: singleUserResult,
 	}, nil
 }
-func (r *RPCServer) SuperGroupBackgroundOnlinePush(_ context.Context, req *pbRelay.OnlineBatchPushOneMsgReq) (*pbRelay.OnlineBatchPushOneMsgResp, error) {
-	log.NewInfo(req.OperationID, "BatchPushMsgToUser is arriving", req.String())
+
+func (r *RPCServer) SuperGroupBackgroundOnlinePush(ctx context.Context, req *pbRelay.OnlineBatchPushOneMsgReq) (*pbRelay.OnlineBatchPushOneMsgResp, error) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", req.OperationID))
+	logger := logx.WithContext(ctx)
+
 	var singleUserResult []*pbRelay.SingelMsgToUserResultList
 	//r.GetBatchMsgForPush(req.OperationID,req.MsgData,req.PushToUserIDList,)
 	msgBytes, _ := proto.Marshal(req.MsgData)
@@ -249,7 +293,7 @@ func (r *RPCServer) SuperGroupBackgroundOnlinePush(_ context.Context, req *pbRel
 	enc := gob.NewEncoder(&replyBytes)
 	err := enc.Encode(mReply)
 	if err != nil {
-		log.NewError(req.OperationID, "data encode err", err.Error())
+		logger.Error(err)
 	}
 	for _, v := range req.PushToUserIDList {
 		var resp []*pbRelay.SingleMsgToUserPlatform
@@ -257,6 +301,7 @@ func (r *RPCServer) SuperGroupBackgroundOnlinePush(_ context.Context, req *pbRel
 			UserID: v,
 		}
 		userConnMap := ws.getUserAllCons(v)
+		logger.Debugv(userConnMap)
 		for platform, userConns := range userConnMap {
 			if len(userConns) != 0 {
 				for _, userConn := range userConns {
@@ -264,11 +309,12 @@ func (r *RPCServer) SuperGroupBackgroundOnlinePush(_ context.Context, req *pbRel
 						RecvID:         v,
 						RecvPlatFormID: int32(platform),
 					}
-					resultCode := sendMsgBatchToUser(userConn, replyBytes.Bytes(), req, platform, v)
+					resultCode := sendMsgBatchToUser(ctx, userConn, replyBytes.Bytes(), req, platform, v)
 					if resultCode == 0 && utils.IsContainInt(platform, r.pushTerminal) {
 						tempT.OnlinePush = true
-						promePkg.PromeInc(promePkg.MsgOnlinePushSuccessCounter)
-						log.Info(req.OperationID, "PushSuperMsgToUser is success By Ws", "args", req.String(), "recvPlatForm", constant.PlatformIDToName(platform), "recvID", v)
+						// promePkg.PromeInc(promePkg.MsgOnlinePushSuccessCounter)
+						ws.msgOnlinePushSuccess.Inc()
+						logger.Infof(req.OperationID, "PushSuperMsgToUser is success By Ws: args: %v, platform: %s, recv_id: %s", req, constant.PlatformIDToName(platform), v)
 						temp.ResultCode = resultCode
 						resp = append(resp, temp)
 					}
@@ -284,6 +330,7 @@ func (r *RPCServer) SuperGroupBackgroundOnlinePush(_ context.Context, req *pbRel
 		SinglePushResult: singleUserResult,
 	}, nil
 }
+
 func (r *RPCServer) OnlineBatchPushOneMsg(_ context.Context, req *pbRelay.OnlineBatchPushOneMsgReq) (*pbRelay.OnlineBatchPushOneMsgResp, error) {
 	//log.NewInfo(req.OperationID, "BatchPushMsgToUser is arriving", req.String())
 	//var singleUserResult []*pbRelay.SingelMsgToUserResultList
@@ -357,37 +404,43 @@ func (r *RPCServer) OnlineBatchPushOneMsg(_ context.Context, req *pbRelay.Online
 	//}, nil
 	return nil, nil
 }
-func (r *RPCServer) encodeWsData(wsData *sdk_ws.MsgData, operationID string) (bytes.Buffer, error) {
-	log.Debug(operationID, "encodeWsData begin", wsData.String())
-	msgBytes, err := proto.Marshal(wsData)
-	if err != nil {
-		log.NewError(operationID, "Marshal", err.Error())
-		return bytes.Buffer{}, utils.Wrap(err, "")
-	}
-	log.Debug(operationID, "encodeWsData begin", wsData.String())
-	mReply := Resp{
-		ReqIdentifier: constant.WSPushMsg,
-		OperationID:   operationID,
-		Data:          msgBytes,
-	}
-	var replyBytes bytes.Buffer
-	enc := gob.NewEncoder(&replyBytes)
-	err = enc.Encode(mReply)
-	if err != nil {
-		log.NewError(operationID, "data encode err", err.Error())
-		return bytes.Buffer{}, utils.Wrap(err, "")
-	}
-	return replyBytes, nil
-}
 
-func (r *RPCServer) KickUserOffline(_ context.Context, req *pbRelay.KickUserOfflineReq) (*pbRelay.KickUserOfflineResp, error) {
-	log.NewInfo(req.OperationID, "KickUserOffline is arriving", req.String())
+// func (r *RPCServer) encodeWsData(ctx context.Context, wsData *sdk_ws.MsgData, operationID string) (bytes.Buffer, error) {
+// 	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
+// 	logger := logx.WithContext(ctx)
+
+// 	logger.Debugf("encodeWsData begin: %v", wsData.String())
+// 	msgBytes, err := proto.Marshal(wsData)
+// 	if err != nil {
+// 		logger.Error(err)
+// 		return bytes.Buffer{}, utils.Wrap(err, "")
+// 	}
+// 	logger.Debugf("encodeWsData begin: %v", wsData.String())
+// 	mReply := Resp{
+// 		ReqIdentifier: constant.WSPushMsg,
+// 		OperationID:   operationID,
+// 		Data:          msgBytes,
+// 	}
+// 	var replyBytes bytes.Buffer
+// 	enc := gob.NewEncoder(&replyBytes)
+// 	err = enc.Encode(mReply)
+// 	if err != nil {
+// 		logger.Error(err)
+// 		return bytes.Buffer{}, utils.Wrap(err, "")
+// 	}
+// 	return replyBytes, nil
+// }
+
+func (r *RPCServer) KickUserOffline(ctx context.Context, req *pbRelay.KickUserOfflineReq) (*pbRelay.KickUserOfflineResp, error) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", req.OperationID))
+	logger := logx.WithContext(ctx)
+
 	for _, v := range req.KickUserIDList {
-		log.NewWarn(req.OperationID, "SetTokenKicked ", v, req.PlatformID, req.OperationID)
+		logger.Infof("SetTokenKicked: user_id: %s, platform: %d", v, req.PlatformID)
 		SetTokenKicked(v, int(req.PlatformID), req.OperationID)
 		oldConnMap := ws.getUserAllCons(v)
 		if conns, ok := oldConnMap[int(req.PlatformID)]; ok { // user->map[platform->conn]
-			log.NewWarn(req.OperationID, "send kick msg, close connection ", req.PlatformID, v)
+			logger.Infof("send kick msg, close connection: user_id: %s, platform: %d", v, req.PlatformID)
 			for _, conn := range conns {
 				ws.sendKickMsg(conn, req.OperationID)
 			}
@@ -397,34 +450,40 @@ func (r *RPCServer) KickUserOffline(_ context.Context, req *pbRelay.KickUserOffl
 }
 
 func (r *RPCServer) MultiTerminalLoginCheck(ctx context.Context, req *pbRelay.MultiTerminalLoginCheckReq) (*pbRelay.MultiTerminalLoginCheckResp, error) {
-
 	ws.MultiTerminalLoginCheckerWithLock(req.UserID, int(req.PlatformID), req.Token, req.OperationID)
 	return &pbRelay.MultiTerminalLoginCheckResp{}, nil
 }
 
-func sendMsgToUser(conn *UserConn, bMsg []byte, in *pbRelay.OnlinePushMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
-	err := ws.writeMsg(conn, websocket.BinaryMessage, bMsg)
-	if err != nil {
-		log.NewError(in.OperationID, "PushMsgToUser is failed By Ws", "Addr", conn.RemoteAddr().String(),
-			"error", err, "senderPlatform", constant.PlatformIDToName(int(in.MsgData.SenderPlatformID)), "recvPlatform", RecvPlatForm, "args", in.String(), "recvID", RecvID)
-		ResultCode = -2
-		return ResultCode
-	} else {
-		log.NewDebug(in.OperationID, "PushMsgToUser is success By Ws", "args", in.String(), "recvPlatForm", RecvPlatForm, "recvID", RecvID)
-		ResultCode = 0
-		return ResultCode
-	}
+// func sendMsgToUser(ctx context.Context, conn *UserConn, bMsg []byte, in *pbRelay.OnlinePushMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
+// 	ctx = logx.ContextWithFields(ctx, logx.Field("op", in.OperationID))
+// 	logger := logx.WithContext(ctx)
 
-}
-func sendMsgBatchToUser(conn *UserConn, bMsg []byte, in *pbRelay.OnlineBatchPushOneMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
+// 	err := ws.writeMsg(conn, websocket.BinaryMessage, bMsg)
+// 	if err != nil {
+// 		logger.Error("PushMsgToUser is failed By Ws: ", "Addr: ", conn.RemoteAddr().String(),
+// 			" error: ", err, " senderPlatform: ", constant.PlatformIDToName(int(in.MsgData.SenderPlatformID)), " recvPlatform: ", RecvPlatForm, " args: ", in.String(), " recvID: ", RecvID)
+// 		ResultCode = -2
+// 		return ResultCode
+// 	} else {
+// 		logger.Debug("PushMsgToUser is success By Ws: ", "args: ", in.String(), " recvPlatForm: ", RecvPlatForm, " recvID: ", RecvID)
+// 		ResultCode = 0
+// 		return ResultCode
+// 	}
+
+// }
+
+func sendMsgBatchToUser(ctx context.Context, conn *UserConn, bMsg []byte, in *pbRelay.OnlineBatchPushOneMsgReq, RecvPlatForm int, RecvID string) (ResultCode int64) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", in.OperationID))
+	logger := logx.WithContext(ctx)
+
 	err := ws.writeMsg(conn, websocket.BinaryMessage, bMsg)
 	if err != nil {
-		log.NewError(in.OperationID, "PushMsgToUser is failed By Ws", "Addr", conn.RemoteAddr().String(),
-			"error", err, "senderPlatform", constant.PlatformIDToName(int(in.MsgData.SenderPlatformID)), "recv Platform", RecvPlatForm, "args", in.String(), "recvID", RecvID)
+		logger.Error("PushMsgToUser is failed By Ws: ", "Addr: ", conn.RemoteAddr().String(),
+			" error: ", err, " senderPlatform: ", constant.PlatformIDToName(int(in.MsgData.SenderPlatformID)), " recv Platform: ", RecvPlatForm, " args: ", in.String(), " recvID: ", RecvID)
 		ResultCode = -2
 		return ResultCode
 	} else {
-		log.NewDebug(in.OperationID, "PushMsgToUser is success By Ws", "args", in.String(), "recv PlatForm", RecvPlatForm, "recvID", RecvID)
+		logger.Debug("PushMsgToUser is success By Ws: ", "args: ", in.String(), " recv PlatForm: ", RecvPlatForm, " recvID: ", RecvID)
 		ResultCode = 0
 		return ResultCode
 	}

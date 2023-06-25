@@ -3,24 +3,29 @@ package main
 import (
 	"Open_IM/internal/rpc/user"
 	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-	promePkg "Open_IM/pkg/common/prometheus"
+	"Open_IM/pkg/common/interceptors"
+	pbuser "Open_IM/pkg/proto/user"
 	"flag"
-	"fmt"
+
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	defaultPorts := config.Config.RpcPort.OpenImUserPort
-	rpcPort := flag.Int("port", defaultPorts[0], "rpc listening port")
-	prometheusPort := flag.Int("prometheus_port", config.Config.Prometheus.UserPrometheusPort[0], "userPrometheusPort default listen port")
+	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.User)
+
+	rpcPort := flag.Int("port", config.Config.ServerConfigs.User.Port, "rpc listening port")
 	flag.Parse()
-	fmt.Println("start user rpc server, port: ", *rpcPort, ", OpenIM version: ", constant.CurrentVersion, "\n")
-	rpcServer := user.NewUserServer(*rpcPort)
-	go func() {
-		err := promePkg.StartPromeSrv(*prometheusPort)
-		if err != nil {
-			panic(err)
-		}
-	}()
-	rpcServer.Run()
+
+	server := user.NewUserServer(*rpcPort)
+	s := zrpc.MustNewServer(cfg, func(s *grpc.Server) {
+		pbuser.RegisterUserServer(s, server)
+	})
+	defer s.Stop()
+
+	server.RegisterLegacyDiscovery()
+
+	s.AddUnaryInterceptors(interceptors.ResponseLogger)
+
+	s.Start()
 }

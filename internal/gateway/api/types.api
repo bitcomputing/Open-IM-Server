@@ -1,0 +1,1081 @@
+syntax = "v1"
+
+type RegisterRequest {
+	Secret   string `json:"secret" validate:"required,max=32"`
+	Platform int32  `json:"platform" validate:"required,min=1,max=12"`
+	ApiUserInfo
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type ApiUserInfo {
+	UserID      string `json:"userID" validate:"required,min=1,max=64"`
+	Nickname    string `json:"nickname,optional" validate:"omitempty,min=1,max=64"`
+	FaceURL     string `json:"faceURL,optional" validate:"omitempty,max=1024"`
+	Gender      int32  `json:"gender,optional" validate:"omitempty,oneof=0 1 2"`
+	PhoneNumber string `json:"phoneNumber,optional" validate:"omitempty,max=32"`
+	Birth       uint32 `json:"birth,optional" validate:"omitempty"`
+	Email       string `json:"email,optional" validate:"omitempty,max=64"`
+	CreateTime  int64  `json:"createTime"`
+	LoginLimit  int32  `json:"loginLimit,optional" validate:"omitempty"`
+	Ex          string `json:"ex,optional" validate:"omitempty,max=1024"`
+	BirthStr    string `json:"birthStr,optional" validate:"omitempty"`
+}
+
+type RegisterResponse {
+	CommResp
+	UserToken UserTokenInfo `json:"data"`
+}
+
+type CommResp {
+	ErrCode int32  `json:"errCode"`
+	ErrMsg  string `json:"errMsg"`
+}
+
+type UserTokenInfo {
+	UserID      string `json:"userID"`
+	Token       string `json:"token"`
+	ExpiredTime int64  `json:"expiredTime"`
+}
+
+type LoginRequest {
+	Secret      string `json:"secret" validate:"required,max=32"`
+	Platform    int32  `json:"platform" validate:"required,min=1,max=12"`
+	UserID      string `json:"userID" validate:"required,min=1,max=64"`
+	LoginIp     string `json:"loginIp"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type LoginResponse {
+	CommResp
+	UserToken UserTokenInfo `json:"data"`
+}
+
+type ParseTokenRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type ParseTokenResponse {
+	CommResp
+	Data       map[string]interface{} `json:"data"`
+	ExpireTime ExpireTime             `json:"-"`
+}
+
+type ExpireTime {
+	ExpireTimeSeconds uint32 `json:"expireTimeSeconds"`
+}
+
+type ForceLogoutRequest {
+	Platform    int32  `json:"platform" validate:"required,min=1,max=12"`
+	FromUserID  string `json:"fromUserID" validate:"required,min=1,max=64"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type ForceLogoutResponse {
+	CommResp
+}
+
+type SetClientConfigRequest {
+	OperationID     string  `json:"operationID"  validate:"required"`
+	DiscoverPageURL *string `json:"discoverPageURL"`
+}
+
+type SetClientConfigResponse {
+	CommResp
+}
+
+type GetClientConfigRequest {
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type GetClientConfigResponse {
+	CommResp
+	Data DiscoverPageURL `json:"data"`
+}
+
+type DiscoverPageURL {
+	DiscoverPageURL string `json:"discoverPageURL"`
+}
+
+type GetAllConversationsRequest {
+	OwnerUserID string `json:"ownerUserID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetAllConversationsResponse {
+	CommResp
+	Conversations []Conversation `json:"data"`
+}
+
+type Conversation {
+	OwnerUserID           string `json:"ownerUserID" validate:"required"`
+	ConversationID        string `json:"conversationID" validate:"required"`
+	ConversationType      int32  `json:"conversationType" validate:"required"`
+	UserID                string `json:"userID"`
+	GroupID               string `json:"groupID"`
+	RecvMsgOpt            int32  `json:"recvMsgOpt,optional"  validate:"omitempty,oneof=0 1 2"`
+	UnreadCount           int32  `json:"unreadCount,optional"  validate:"omitempty"`
+	DraftTextTime         int64  `json:"draftTextTime"`
+	IsPinned              bool   `json:"isPinned,optional" validate:"omitempty"`
+	IsPrivateChat         bool   `json:"isPrivateChat"`
+	BurnDuration          int32  `json:"burnDuration"`
+	GroupAtType           int32  `json:"groupAtType"`
+	IsNotInGroup          bool   `json:"isNotInGroup"`
+	UpdateUnreadCountTime int64  `json:"updateUnreadCountTime"`
+	AttachedInfo          string `json:"attachedInfo"`
+	Ex                    string `json:"ex"`
+}
+
+type GetConversationRequest {
+	ConversationID string `json:"conversationID" validate:"required"`
+	OwnerUserID    string `json:"ownerUserID" validate:"required"`
+	OperationID    string `json:"operationID" validate:"required"`
+}
+
+type GetConversationResponse {
+	CommResp
+	Conversation Conversation `json:"data"`
+}
+
+type GetConversationsRequest {
+	ConversationIDs []string `json:"conversationIDs" validate:"required"`
+	OwnerUserID     string   `json:"ownerUserID" validate:"required"`
+	OperationID     string   `json:"operationID" validate:"required"`
+}
+
+type GetConversationsResponse {
+	CommResp
+	Conversations []Conversation `json:"data"`
+}
+
+type SetConversationRequest {
+	Conversation
+	NotificationType int32  `json:"notificationType"`
+	OperationID      string `json:"operationID" validate:"required"`
+}
+
+type SetConversationResponse {
+	CommResp
+}
+
+type BatchSetConversationsRequest {
+	Conversations    []Conversation `json:"conversations" validate:"required"`
+	NotificationType int32          `json:"notificationType"`
+	OwnerUserID      string         `json:"ownerUserID" validate:"required"`
+	OperationID      string         `json:"operationID" validate:"required"`
+}
+
+type BatchSetConversationsResponse {
+	CommResp
+	Data SuccessAndFailed `json:"data"`
+}
+
+type SuccessAndFailed {
+	Success []string `json:"success"`
+	Failed  []string `json:"failed"`
+}
+
+type SetRecvMsgOptRequest {
+	OwnerUserID      string `json:"ownerUserID" validate:"required"`
+	ConversationID   string `json:"conversationID"`
+	RecvMsgOpt       int32  `json:"recvMsgOpt,optional"  validate:"omitempty,oneof=0 1 2"`
+	OperationID      string `json:"operationID" validate:"required"`
+	NotificationType int32  `json:"notificationType"`
+}
+
+type SetRecvMsgOptResponse {
+	CommResp
+}
+
+type ModifyConversationFieldRequest {
+	Conversation
+	FieldType   int32    `json:"fieldType" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type ModifyConversationFieldResponse {
+	CommResp
+}
+
+type AddFriendRequest {
+	ParamsCommFriend
+	ReqMsg string `json:"reqMsg"`
+}
+
+type ParamsCommFriend {
+	OperationID string `json:"operationID" validate:"required"`
+	ToUserID    string `json:"toUserID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type AddFriendResponse {
+	CommResp
+}
+
+type DeleteFriendRequest {
+	ParamsCommFriend
+}
+
+type DeleteFriendResponse {
+	CommResp
+}
+
+type GetFriendApplyListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendApplyListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSelfFriendApplyListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetSelfFriendApplyListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetFriendListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RespondFriendApplyRequest {
+	ParamsCommFriend
+	Flag      int32  `json:"flag" validate:"required,oneof=-1 0 1"`
+	HandleMsg string `json:"handleMsg"`
+}
+
+type RespondFriendApplyResponse {
+	CommResp
+}
+
+type SetFriendRemarkRequest {
+	ParamsCommFriend
+	Remark string `json:"remark"`
+}
+
+type SetFriendRemarkResponse {
+	CommResp
+}
+
+type AddFriendBlacklistRequest {
+	ParamsCommFriend
+}
+
+type AddFriendBlacklistResponse {
+	CommResp
+}
+
+type GetFriendBlacklistRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetFriendBlacklistResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type RemoveFriendBlacklistRequest {
+	ParamsCommFriend
+}
+
+type RemoveFriendBlacklistResponse {
+	CommResp
+}
+
+type ImportFriendRequest {
+	FriendUserIDList []string `json:"friendUserIDList" validate:"required"`
+	OperationID      string   `json:"operationID" validate:"required"`
+	FromUserID       string   `json:"fromUserID" validate:"required"`
+}
+
+type ImportFriendResponse {
+	CommResp
+	UserIDResultList []UserIDResult `json:"data"`
+}
+
+type UserIDResult {
+	UserID string `json:"userID"`
+	Result int32  `json:"result"`
+}
+
+type CheckFriendRequest {
+	ParamsCommFriend
+}
+
+type CheckFriendResponse {
+	CommResp
+	Response IsFriend `json:"data"`
+}
+
+type IsFriend {
+	Friend bool `json:"isFriend"`
+}
+
+type CreateGroupRequest {
+	MemberList   []*GroupAddMemberInfo `json:"memberList"`
+	OwnerUserID  string                `json:"ownerUserID"`
+	GroupType    int32                 `json:"groupType"`
+	GroupName    string                `json:"groupName"`
+	Notification string                `json:"notification"`
+	Introduction string                `json:"introduction"`
+	FaceURL      string                `json:"faceURL"`
+	Ex           string                `json:"ex"`
+	OperationID  string                `json:"operationID" validate:"required"`
+	GroupID      string                `json:"groupID"`
+}
+
+type GroupAddMemberInfo {
+	UserID    string `json:"userID" validate:"required"`
+	RoleLevel int32  `json:"roleLevel" validate:"required,oneof= 1 3"`
+}
+
+type CreateGroupResponse {
+	CommResp
+	Data map[string]interface{} `json:"data"`
+}
+
+type SetGroupInfoRequest {
+	GroupID           string `json:"groupID" validate:"required"`
+	GroupName         string `json:"groupName"`
+	Notification      string `json:"notification"`
+	Introduction      string `json:"introduction"`
+	FaceURL           string `json:"faceURL"`
+	Ex                string `json:"ex"`
+	OperationID       string `json:"operationID" validate:"required"`
+	NeedVerification  *int32 `json:"needVerification"`
+	LookMemberInfo    *int32 `json:"lookMemberInfo"`
+	ApplyMemberFriend *int32 `json:"applyMemberFriend"`
+}
+
+type SetGroupInfoResponse {
+	CommResp
+}
+
+type JoinGroupRequest {
+	GroupID       string `json:"groupID" validate:"required"`
+	ReqMessage    string `json:"reqMessage"`
+	OperationID   string `json:"operationID" validate:"required"`
+	JoinSource    int32  `json:"joinSource"`
+	InviterUserID string `json:"inviterUserID"`
+}
+
+type JoinGroupResponse {
+	CommResp
+}
+
+type QuitGroupRequest {
+	GroupID     string `json:"groupID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type QuitGroupResponse {
+	CommResp
+}
+
+type RespondGroupApplicationRequest {
+	OperationID  string `json:"operationID" validate:"required"`
+	GroupID      string `json:"groupID" validate:"required"`
+	FromUserID   string `json:"fromUserID" validate:"required"` // application from FromUserID
+	HandledMsg   string `json:"handledMsg"`
+	HandleResult int32  `json:"handleResult" validate:"required,oneof=-1 1"`
+}
+
+type RespondGroupApplicationResponse {
+	CommResp
+}
+
+type TransferGroupOwnerRequest {
+	GroupID        string `json:"groupID" validate:"required"`
+	OldOwnerUserID string `json:"oldOwnerUserID" validate:"required"`
+	NewOwnerUserID string `json:"newOwnerUserID" validate:"required"`
+	OperationID    string `json:"operationID" validate:"required"`
+}
+
+type TransferGroupOwnerResponse {
+	CommResp
+}
+
+type GetRecvGroupApplicationListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetRecvGroupApplicationListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetUserReqGroupApplicationListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type GetUserReqGroupApplicationListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetGroupsInfoRequest {
+	GroupIDList []string `json:"groupIDList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type GetGroupsInfoResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type KickGroupMemberRequest {
+	GroupID          string   `json:"groupID" validate:"required"`
+	KickedUserIDList []string `json:"kickedUserIDList" validate:"required"`
+	Reason           string   `json:"reason"`
+	OperationID      string   `json:"operationID" validate:"required"`
+}
+
+type KickGroupMemberResponse {
+	CommResp
+	UserIDResultList []*UserIDResult `json:"data"`
+}
+
+type GetGroupAllMemberListRequest {
+	GroupID     string `json:"groupID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+	Offset      int32  `json:"offset"`
+	Count       int32  `json:"count"`
+}
+
+type GetGroupAllMemberListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetGroupMembersInfoRequest {
+	GroupID     string   `json:"groupID" validate:"required"`
+	MemberList  []string `json:"memberList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+	NoCache     bool     `json:"noCache"`
+}
+
+type GetGroupMembersInfoResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type InviteUserToGroupRequest {
+	GroupID           string   `json:"groupID" validate:"required"`
+	InvitedUserIDList []string `json:"invitedUserIDList" validate:"required"`
+	Reason            string   `json:"reason"`
+	OperationID       string   `json:"operationID" validate:"required"`
+}
+
+type InviteUserToGroupResponse {
+	CommResp
+	UserIDResultList []*UserIDResult `json:"data"`
+}
+
+type InviteUserToGroupsRequest {
+	GroupIDList   string `json:"groupIDList" validate:"required"`
+	InvitedUserID string `json:"invitedUserID" validate:"required"`
+	Reason        string `json:"reason"`
+	OperationID   string `json:"operationID" validate:"required"`
+}
+
+type InviteUserToGroupsResponse {
+	CommResp
+}
+
+type GetJoinedGroupListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetJoinedGroupListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type DismissGroupRequest {
+	GroupID     string `json:"groupID" validate:"required"`
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type DismissGroupResponse {
+	CommResp
+}
+
+type MuteGroupMemberRequest {
+	OperationID  string `json:"operationID" validate:"required"`
+	GroupID      string `json:"groupID" validate:"required"`
+	UserID       string `json:"userID" validate:"required"`
+	MutedSeconds uint32 `json:"mutedSeconds" validate:"required"`
+}
+
+type MuteGroupMemberResponse {
+	CommResp
+}
+
+type CancelMuteGroupMemberRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type CancelMuteGroupMemberResponse {
+	CommResp
+}
+
+type MuteGroupRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+}
+
+type MuteGroupResponse {
+	CommResp
+}
+
+type CancelMuteGroupRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+}
+
+type CancelMuteGroupResponse {
+	CommResp
+}
+
+type SetGroupMemberNicknameRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	GroupID     string `json:"groupID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+	Nickname    string `json:"nickname"`
+}
+
+type SetGroupMemberNicknameResponse {
+	CommResp
+}
+
+type SetGroupMemberInfoRequest {
+	OperationID string  `json:"operationID" validate:"required"`
+	GroupID     string  `json:"groupID" validate:"required"`
+	UserID      string  `json:"userID" validate:"required"`
+	Nickname    *string `json:"nickname"`
+	FaceURL     *string `json:"userGroupFaceUrl"`
+	RoleLevel   *int32  `json:"roleLevel" validate:"gte=1,lte=3"`
+	Ex          *string `json:"ex"`
+}
+
+type SetGroupMemberInfoResponse {
+	CommResp
+}
+
+type GetGroupAbstractInfoRequest {
+	OperationID string `json:"operationID"`
+	GroupID     string `json:"groupID"`
+}
+
+type GetGroupAbstractInfoResponse {
+	CommResp
+	GroupMemberNumber   int32  `json:"groupMemberNumber"`
+	GroupMemberListHash uint64 `json:"groupMemberListHash"`
+}
+
+type GetJoinedSuperGroupListRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	FromUserID  string `json:"fromUserID" validate:"required"`
+}
+
+type GetJoinedSuperGroupListResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSuperGroupsInfoRequest {
+	GroupIDList []string `json:"groupIDList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type GetSuperGroupsInfoResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSeqRequest {
+	ReqIdentifier int    `json:"reqIdentifier" validate:"required"`
+	SendID        string `json:"sendID" validate:"required"`
+	OperationID   string `json:"operationID" validate:"required"`
+	MsgIncr       int    `json:"msgIncr" validate:"required"`
+}
+
+type GetSeqResponse {
+	CommResp
+	MsgIncr       int        `json:"msgIncr"`
+	ReqIdentifier int        `json:"reqIdentifier"`
+	Data          GetSeqData `json:"data"`
+}
+
+type GetSeqData {
+	MaxSeq uint32 `json:"maxSeq"`
+	MinSeq uint32 `json:"minSeq"`
+}
+
+type SendMsgRequest {
+	SenderPlatformID int32           `json:"senderPlatformID" validate:"required"`
+	SendID           string          `json:"sendID" validate:"required"`
+	SenderNickName   string          `json:"senderNickName"`
+	SenderFaceURL    string          `json:"senderFaceUrl"`
+	OperationID      string          `json:"operationID" validate:"required"`
+	SessionType      int32           `json:"sessionType" validate:"required"`
+	MsgFrom          int32           `json:"msgFrom" validate:"required"`
+	ContentType      int32           `json:"contentType" validate:"required"`
+	RecvID           string          `json:"recvID"`
+	GroupID          string          `json:"groupID"`
+	ForceList        []string        `json:"forceList"`
+	Content          []byte          `json:"content" validate:"required"`
+	Options          map[string]bool `json:"options"`
+	ClientMsgID      string          `json:"clientMsgID" validate:"required"`
+	CreateTime       int64           `json:"createTime" validate:"required"`
+	OfflineInfo      OfflinePushInfo `json:"offlineInfo"`
+}
+
+type OfflinePushInfo {
+	Title         string `json:"title,omitempty"`
+	Desc          string `json:"desc,omitempty"`
+	Ex            string `json:"ex,omitempty"`
+	IOSPushSound  string `json:"iOSPushSound,omitempty"`
+	IOSBadgeCount bool   `json:"iOSBadgeCount,omitempty"`
+}
+
+type SendMsgResponse {
+	CommResp
+	Data SendMsgData `json:"data"`
+}
+
+type SendMsgData {
+	ClientMsgID string `json:"clientMsgID"`
+	ServerMsgID string `json:"serverMsgID"`
+	SendTime    int64  `json:"sendTime"`
+}
+
+type PullMsgBySeqListRequest {
+	ReqIdentifier int      `json:"reqIdentifier" validate:"required"`
+	SendID        string   `json:"sendID" validate:"required"`
+	OperationID   string   `json:"operationID" validate:"required"`
+	SeqList       []uint32 `json:"seqList"`
+}
+
+type PullMsgBySeqListResponse {
+	CommResp
+	ReqIdentifier int       `json:"reqIdentifier"`
+	Data          []MsgData `json:"data"`
+}
+
+type MsgData {
+	SendID               string           `json:"sendID,omitempty"`
+	RecvID               string           `json:"recvID,omitempty"`
+	GroupID              string           `json:"groupID,omitempty"`
+	ClientMsgID          string           `json:"clientMsgID,omitempty"`
+	ServerMsgID          string           `json:"serverMsgID,omitempty"`
+	SenderPlatformID     int32            `json:"senderPlatformID,omitempty"`
+	SenderNickname       string           `json:"senderNickname,omitempty"`
+	SenderFaceURL        string           `json:"senderFaceURL,omitempty"`
+	SessionType          int32            `json:"sessionType,omitempty"`
+	MsgFrom              int32            `json:"msgFrom,omitempty"`
+	ContentType          int32            `json:"contentType,omitempty"`
+	Content              []byte           `json:"content,omitempty"`
+	Seq                  uint32           `json:"seq,omitempty"`
+	SendTime             int64            `json:"sendTime,omitempty"`
+	CreateTime           int64            `json:"createTime,omitempty"`
+	Status               int32            `json:"status,omitempty"`
+	Options              map[string]bool  `json:"options,omitempty"`
+	OfflinePushInfo      *OfflinePushInfo `json:"offlinePushInfo,omitempty"`
+	AtUserIDList         []string         `json:"atUserIDList,omitempty"`
+	MsgDataList          []byte           `json:"msgDataList,omitempty"`
+	AttachedInfo         string           `json:"attachedInfo,omitempty"`
+	Ex                   string           `json:"ex,omitempty"`
+	IsReact              bool             `json:"isReact,omitempty"`
+	IsExternalExtensions bool             `json:"isExternalExtensions,omitempty"`
+	MsgFirstModifyTime   int64            `json:"msgFirstModifyTime,omitempty"`
+}
+
+type DelMsgRequest {
+	UserID      string   `json:"userID" validate:"required"`
+	SeqList     []uint32 `json:"seqList" validate:"required"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type DelMsgResponse {
+	CommResp
+}
+
+type DelSuperGroupMsgRequest {
+	UserID      string   `json:"userID" validate:"required"`
+	GroupID     string   `json:"groupID" validate:"required"`
+	SeqList     []uint32 `json:"seqList"`
+	IsAllDelete bool     `json:"isAllDelete"`
+	OperationID string   `json:"operationID" validate:"required"`
+}
+
+type DelSuperGroupMsgResponse {
+	CommResp
+}
+
+type ClearMsgRequest {
+	UserID      string `json:"userID"  validate:"required"`
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type ClearMsgResponse {
+	CommResp
+}
+
+type ManagementSendMsgRequest {
+	ManagementSendMsg
+	RecvID string `json:"recvID"`
+}
+
+type ManagementSendMsg {
+	OperationID         string                 `json:"operationID" validate:"required"`
+	BusinessOperationID string                 `json:"businessOperationID"`
+	SendID              string                 `json:"sendID" validate:"required"`
+	GroupID             string                 `json:"groupID"`
+	SenderNickname      string                 `json:"senderNickname"`
+	SenderFaceURL       string                 `json:"senderFaceURL"`
+	SenderPlatformID    int32                  `json:"senderPlatformID"`
+	Content             map[string]interface{} `json:"content" validate:"required"`
+	ContentType         int32                  `json:"contentType" validate:"required"`
+	SessionType         int32                  `json:"sessionType" validate:"required"`
+	IsOnlineOnly        bool                   `json:"isOnlineOnly"`
+	NotOfflinePush      bool                   `json:"notOfflinePush"`
+	OfflinePushInfo     OfflinePushInfo        `json:"offlinePushInfo"`
+}
+
+type ManagementSendMsgResponse {
+	CommResp
+	ResultList UserSendMsgResp `json:"data"`
+}
+
+type UserSendMsgResp {
+	ServerMsgID string `json:"serverMsgID,omitempty"`
+	ClientMsgID string `json:"clientMsgID,omitempty"`
+	SendTime    int64  `json:"sendTime,omitempty"`
+	Ex          string `json:"ex,omitempty"`
+}
+
+type ManagementBatchSendMsgRequest {
+	ManagementSendMsg
+	IsSendAll  bool     `json:"isSendAll"`
+	RecvIDList []string `json:"recvIDList"`
+}
+
+type ManagementBatchSendMsgResponse {
+	CommResp
+	Data ManagementBatchSendMsgData `json:"data"`
+}
+
+type ManagementBatchSendMsgData {
+	ResultList []*SingleReturnResult `json:"resultList"`
+	// FailedIDList []string
+}
+
+type SingleReturnResult {
+	ServerMsgID string `json:"serverMsgID"`
+	ClientMsgID string `json:"clientMsgID"`
+	SendTime    int64  `json:"sendTime"`
+	RecvID      string `json:"recvID"`
+}
+
+type CheckMsgIsSendSuccessRequest {
+	OperationID string `json:"operationID"`
+}
+
+type CheckMsgIsSendSuccessResponse {
+	CommResp
+	Status int32 `json:"status"`
+}
+
+type SetMsgMinSeqRequest {
+	UserID      string `json:"userID"  validate:"required"`
+	GroupID     string `json:"groupID"`
+	MinSeq      uint32 `json:"minSeq"  validate:"required"`
+	OperationID string `json:"operationID"  validate:"required"`
+}
+
+type SetMsgMinSeqResponse {
+	CommResp
+}
+
+type SetMessageReactionExtensionsRequest {
+	OperationID           string               `json:"operationID" validate:"required"`
+	SourceID              string               `json:"sourceID"  validate:"required"`
+	SessionType           int32                `json:"sessionType" validate:"required"`
+	ReactionExtensionList map[string]*KeyValue `json:"reactionExtensionList,omitempty" validate:"required"`
+	ClientMsgID           string               `json:"clientMsgID" validate:"required"`
+	Ex                    *string              `json:"ex"`
+	AttachedInfo          *string              `json:"attachedInfo"`
+	IsReact               bool                 `json:"isReact"`
+	IsExternalExtensions  bool                 `json:"isExternalExtensions"`
+	MsgFirstModifyTime    int64                `json:"msgFirstModifyTime"`
+	Seq                   uint32               `json:"seq"`
+}
+
+type KeyValue {
+	TypeKey          string `json:"typeKey,omitempty"`
+	Value            string `json:"value,omitempty"`
+	LatestUpdateTime int64  `json:"latestUpdateTime,omitempty"`
+}
+
+type SetMessageReactionExtensionsResponse {
+	CommResp
+	Data SetMessageReactionExtensionsData `json:"data"`
+}
+
+type SetMessageReactionExtensionsData {
+	ResultKeyValue     []*KeyValueResp `json:"result"`
+	MsgFirstModifyTime int64           `json:"msgFirstModifyTime"`
+	IsReact            bool            `json:"isReact"`
+}
+
+type KeyValueResp {
+	KeyValue *KeyValue `json:"keyValue,omitempty"`
+	ErrCode  int32     `json:"errCode,omitempty"`
+	ErrMsg   string    `json:"errMsg,omitempty"`
+}
+
+type GetMessageListReactionExtensionsRequest {
+	OperationID            string                                                    `json:"operationID" validate:"required"`
+	SourceID               string                                                    `json:"sourceID"  validate:"required"`
+	SessionType            int32                                                     `json:"sessionType" validate:"required"`
+	IsExternalExtensions   bool                                                      `json:"isExternalExtensions"`
+	TypeKeyList            []string                                                  `json:"typeKeyList"`
+	MessageReactionKeyList []*GetMessageListReactionExtensionsReq_MessageReactionKey `json:"messageReactionKeyList" validate:"required"`
+}
+
+type GetMessageListReactionExtensionsReq_MessageReactionKey {
+	ClientMsgID        string `json:"clientMsgID,omitempty"`
+	MsgFirstModifyTime int64  `json:"msgFirstModifyTime,omitempty"`
+}
+
+type GetMessageListReactionExtensionsResponse {
+	CommResp
+	Data []*SingleMessageExtensionResult `json:"data"`
+}
+
+type SingleMessageExtensionResult {
+	ErrCode               int32                `json:"errCode,omitempty"`
+	ErrMsg                string               `json:"errMsg,omitempty"`
+	ReactionExtensionList map[string]*KeyValue `json:"reactionExtensionList,omitempty"`
+	ClientMsgID           string               `json:"clientMsgID,omitempty"`
+}
+
+type AddMessageReactionExtensionsRequest {
+	SetMessageReactionExtensionsRequest
+}
+
+type AddMessageReactionExtensionsResponse {
+	SetMessageReactionExtensionsResponse
+}
+
+type DeleteMessageReactionExtensionsRequest {
+	OperationID           string      `json:"operationID" validate:"required"`
+	SourceID              string      `json:"sourceID" validate:"required"`
+	SessionType           int32       `json:"sessionType" validate:"required"`
+	ClientMsgID           string      `json:"clientMsgID" validate:"required"`
+	IsExternalExtensions  bool        `json:"isExternalExtensions"`
+	MsgFirstModifyTime    int64       `json:"msgFirstModifyTime" validate:"required"`
+	ReactionExtensionList []*KeyValue `json:"reactionExtensionList" validate:"required"`
+}
+
+type DeleteMessageReactionExtensionsResponse {
+	CommResp
+	// Data []*KeyValueResp
+}
+
+type MsgDeleteNotificationElem {
+	GroupID     string   `json:"groupID"`
+	IsAllDelete bool     `json:"isAllDelete"`
+	SeqList     []uint32 `json:"seqList"`
+}
+
+type FCMUpdateTokenRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	Platform    int    `json:"platform" validate:"required,min=1,max=2"` // only for ios + android
+	FcmToken    string `json:"fcmToken" validate:"required"`
+}
+
+type FCMUpdateTokenResponse {
+	CommResp
+}
+
+type SetAppBadgeRequest {
+	OperationID    string `json:"operationID" validate:"required"`
+	FromUserID     string `json:"fromUserID" validate:"required"`
+	AppUnreadCount int32  `json:"appUnreadCount"`
+}
+
+type SetAppBadgeResponse {
+	CommResp
+}
+
+type UpdateUserInfoRequest {
+	ApiUserInfo
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type UpdateUserInfoResponse {
+	CommResp
+}
+
+type SetGlobalRecvMessageOptRequest {
+	OperationID      string `json:"operationID" validate:"required"`
+	GlobalRecvMsgOpt *int32 `json:"globalRecvMsgOpt,optional" validate:"omitempty,oneof=0 1 2"`
+}
+
+type SetGlobalRecvMessageOptResponse {
+	CommResp
+}
+
+type GetUsersPublicInfoRequest {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+}
+
+type GetUsersPublicInfoResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetSelfUserInfoRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	UserID      string `json:"userID" validate:"required"`
+}
+
+type GetSelfUserInfoResponse {
+	CommResp
+	Data map[string]interface{} `json:"data"`
+}
+
+type GetUsersOnlineStatusRequest {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required,lte=200"`
+}
+
+type GetUsersOnlineStatusResponse {
+	CommResp
+	SuccessResult []*GetUsersOnlineStatusResp_SuccessResult `json:"data"`
+}
+
+type GetUsersOnlineStatusResp_SuccessResult {
+	UserID               string                                    `json:"userID,omitempty"`
+	Status               string                                    `json:"status,omitempty"`
+	DetailPlatformStatus []*GetUsersOnlineStatusResp_SuccessDetail `json:"detailPlatformStatus,omitempty"`
+}
+
+type GetUsersOnlineStatusResp_SuccessDetail {
+	Platform     string `json:"platform,omitempty"`
+	Status       string `json:"status,omitempty"`
+	ConnID       string `json:"connID,omitempty"`
+	IsBackground bool   `json:"isBackground,omitempty"`
+}
+
+type GetUsersInfoFromCacheRequest {
+	OperationID string   `json:"operationID" validate:"required"`
+	UserIDList  []string `json:"userIDList" validate:"required"`
+}
+
+type GetUsersInfoFromCacheResponse {
+	CommResp
+	Data []map[string]interface{} `json:"data"`
+}
+
+type GetFriendIDListFromCacheRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetFriendIDListFromCacheResponse {
+	CommResp
+	UserIDList []string `json:"userIDList"`
+}
+
+type GetBlackIDListFromCacheRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetBlackIDListFromCacheResponse {
+	CommResp
+	UserIDList []string `json:"userIDList"`
+}
+
+type GetAllUsersUidRequest {
+	OperationID string `json:"operationID" validate:"required"`
+}
+
+type GetAllUsersUidResponse {
+	CommResp
+	UserIDList []string `json:"data"`
+}
+
+type AccountCheckRequest {
+	OperationID     string   `json:"operationID" validate:"required"`
+	CheckUserIDList []string `json:"checkUserIDList" validate:"required,lte=100"`
+}
+
+type AccountCheckResponse {
+	CommResp
+	ResultList []*AccountCheckResp_SingleUserStatus `json:"data"`
+}
+
+type AccountCheckResp_SingleUserStatus {
+	UserID        string `json:"userID,omitempty"`
+	AccountStatus string `json:"accountStatus,omitempty"`
+}
+
+type GetUsersRequest {
+	OperationID string `json:"operationID" validate:"required"`
+	UserName    string `json:"userName"`
+	UserID      string `json:"userID"`
+	Content     string `json:"content"`
+	PageNumber  int32  `json:"pageNumber" validate:"required"`
+	ShowNumber  int32  `json:"showNumber" validate:"required"`
+}
+
+type GetUsersResponse {
+	CommResp
+	Data GetUsersData `json:"data"`
+}
+
+type GetUsersData {
+	UserList    []*CMSUser `json:"userList"`
+	TotalNum    int32      `json:"totalNum"`
+	CurrentPage int32      `json:"currentPage"`
+	ShowNumber  int32      `json:"showNumber"`
+}
+
+type CMSUser {
+	UserID           string `json:"userID"`
+	Nickname         string `json:"nickname"`
+	FaceURL          string `json:"faceURL"`
+	Gender           int32  `json:"gender"`
+	PhoneNumber      string `json:"phoneNumber"`
+	Birth            uint32 `json:"birth"`
+	Email            string `json:"email"`
+	Ex               string `json:"ex"`
+	CreateIp         string `json:"createIp"`
+	CreateTime       uint32 `json:"createTime"`
+	LastLoginIp      string `json:"LastLoginIp"`
+	LastLoginTime    uint32 `json:"LastLoginTime"`
+	AppMangerLevel   int32  `json:"appMangerLevel"`
+	GlobalRecvMsgOpt int32  `json:"globalRecvMsgOpt"`
+	IsBlock          bool   `json:"isBlock"`
+}

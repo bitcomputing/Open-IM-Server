@@ -11,14 +11,15 @@ import (
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	pbMsg "Open_IM/pkg/proto/msg"
-	"Open_IM/pkg/proto/sdk_ws"
+	server_api_params "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
+
 	"github.com/jinzhu/copier"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
-func InsertMessageToChatLog(msg pbMsg.MsgDataToMQ) error {
+func InsertMessageToChatLog(msg *pbMsg.MsgDataToMQ) error {
 	chatLog := new(db.ChatLog)
 	copier.Copy(chatLog, msg.MsgData)
 	switch msg.MsgData.SessionType {
@@ -30,12 +31,13 @@ func InsertMessageToChatLog(msg pbMsg.MsgDataToMQ) error {
 	if msg.MsgData.ContentType >= constant.NotificationBegin && msg.MsgData.ContentType <= constant.NotificationEnd {
 		var tips server_api_params.TipsComm
 		_ = proto.Unmarshal(msg.MsgData.Content, &tips)
-		marshaler := jsonpb.Marshaler{
-			OrigName:     true,
-			EnumsAsInts:  false,
-			EmitDefaults: false,
+		marshaler := protojson.MarshalOptions{
+			UseProtoNames:   true,
+			UseEnumNumbers:  false,
+			EmitUnpopulated: false,
 		}
-		chatLog.Content, _ = marshaler.MarshalToString(&tips)
+		buffer, _ := marshaler.Marshal(&tips)
+		chatLog.Content = string(buffer)
 
 	} else {
 		chatLog.Content = string(msg.MsgData.Content)

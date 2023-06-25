@@ -5,19 +5,23 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/http"
-	"Open_IM/pkg/common/log"
 	pbFriend "Open_IM/pkg/proto/friend"
+	"context"
+
 	//"Open_IM/pkg/proto/msg"
-	"Open_IM/pkg/utils"
+
 	http2 "net/http"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func callbackBeforeAddFriend(req *pbFriend.AddFriendReq) cbApi.CommonCallbackResp {
+func callbackBeforeAddFriend(ctx context.Context, req *pbFriend.AddFriendReq) cbApi.CommonCallbackResp {
+	logger := logx.WithContext(ctx)
 	callbackResp := cbApi.CommonCallbackResp{OperationID: req.CommID.OperationID}
 	if !config.Config.Callback.CallbackBeforeAddFriend.Enable {
 		return callbackResp
 	}
-	log.NewDebug(req.CommID.OperationID, utils.GetSelfFuncName(), req.String())
+	logger.Debugv(req)
 	commonCallbackReq := &cbApi.CallbackBeforeAddFriendReq{
 		CallbackCommand: constant.CallbackBeforeAddFriendCommand,
 		FromUserID:      req.CommID.FromUserID,
@@ -29,8 +33,8 @@ func callbackBeforeAddFriend(req *pbFriend.AddFriendReq) cbApi.CommonCallbackRes
 		CommonCallbackResp: &callbackResp,
 	}
 	//utils.CopyStructFields(req, msg.MsgData)
-	defer log.NewDebug(req.CommID.OperationID, utils.GetSelfFuncName(), commonCallbackReq, *resp)
-	if err := http.CallBackPostReturn(config.Config.Callback.CallbackUrl, constant.CallbackBeforeAddFriendCommand, commonCallbackReq, resp, config.Config.Callback.CallbackBeforeAddFriend.CallbackTimeOut); err != nil {
+	defer logger.Debugv(commonCallbackReq)
+	if err := http.CallBackPostReturnCtx(ctx, config.Config.Callback.CallbackUrl, constant.CallbackBeforeAddFriendCommand, commonCallbackReq, resp, config.Config.Callback.CallbackBeforeAddFriend.CallbackTimeOut); err != nil {
 		callbackResp.ErrCode = http2.StatusInternalServerError
 		callbackResp.ErrMsg = err.Error()
 		if !config.Config.Callback.CallbackBeforeAddFriend.CallbackFailedContinue {

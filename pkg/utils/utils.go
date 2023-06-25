@@ -1,17 +1,17 @@
 package utils
 
 import (
-	"bytes"
 	"encoding/json"
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
-	"github.com/jinzhu/copier"
-	"github.com/pkg/errors"
 	"math/rand"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/copier"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // copy a by b  b->a
@@ -44,7 +44,7 @@ func cleanUpFuncName(funcName string) string {
 	return funcName[end+1:]
 }
 
-//Get the intersection of two slices
+// Get the intersection of two slices
 func Intersect(slice1, slice2 []uint32) []uint32 {
 	m := make(map[uint32]bool)
 	n := make([]uint32, 0)
@@ -60,7 +60,7 @@ func Intersect(slice1, slice2 []uint32) []uint32 {
 	return n
 }
 
-//Get the diff of two slices
+// Get the diff of two slices
 func Difference(slice1, slice2 []uint32) []uint32 {
 	m := make(map[uint32]bool)
 	n := make([]uint32, 0)
@@ -82,7 +82,7 @@ func Difference(slice1, slice2 []uint32) []uint32 {
 	return n
 }
 
-//Get the intersection of two slices
+// Get the intersection of two slices
 func IntersectString(slice1, slice2 []string) []string {
 	m := make(map[string]bool)
 	n := make([]string, 0)
@@ -98,7 +98,7 @@ func IntersectString(slice1, slice2 []string) []string {
 	return n
 }
 
-//Get the diff of two slices
+// Get the diff of two slices
 func DifferenceString(slice1, slice2 []string) []string {
 	m := make(map[string]bool)
 	n := make([]string, 0)
@@ -153,17 +153,18 @@ func RemoveRepeatedStringInList(slc []string) []string {
 }
 
 func Pb2String(pb proto.Message) (string, error) {
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
-	return marshaler.MarshalToString(pb)
+	buffer, err := marshaler.Marshal(pb)
+	return string(buffer), err
 }
 
 func String2Pb(s string, pb proto.Message) error {
-	err := jsonpb.UnmarshalString(s, pb)
-	return err
+	return protojson.Unmarshal([]byte(s), pb)
+
 }
 
 func Map2Pb(m map[string]string) (pb proto.Message, err error) {
@@ -178,15 +179,20 @@ func Map2Pb(m map[string]string) (pb proto.Message, err error) {
 	return pb, nil
 }
 func Pb2Map(pb proto.Message) (map[string]interface{}, error) {
-	_buffer := bytes.Buffer{}
-	jsonbMarshaller := &jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  true,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  true,
+		EmitUnpopulated: false,
 	}
-	_ = jsonbMarshaller.Marshal(&_buffer, pb)
-	jsonCnt := _buffer.Bytes()
-	var out map[string]interface{}
-	err := json.Unmarshal(jsonCnt, &out)
-	return out, err
+	ret := make(map[string]interface{})
+	buffer, err := marshaler.Marshal(pb)
+	if err != nil {
+		return ret, err
+	}
+
+	if err := json.Unmarshal(buffer, &ret); err != nil {
+		return ret, err
+	}
+
+	return ret, nil
 }

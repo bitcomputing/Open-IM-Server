@@ -6,6 +6,7 @@ import (
 	commonDB "Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/utils"
+	"context"
 	"time"
 
 	go_redis "github.com/go-redis/redis/v8"
@@ -39,8 +40,8 @@ func BuildClaims(uid, platform string, ttl int64) Claims {
 		}}
 }
 
-func DeleteToken(userID string, platformID int) error {
-	m, err := commonDB.DB.GetTokenMapByUidPid(userID, constant.PlatformIDToName(platformID))
+func DeleteToken(ctx context.Context, userID string, platformID int) error {
+	m, err := commonDB.DB.GetTokenMapByUidPid(ctx, userID, constant.PlatformIDToName(platformID))
 	if err != nil && err != go_redis.Nil {
 		return utils.Wrap(err, "")
 	}
@@ -58,7 +59,7 @@ func DeleteToken(userID string, platformID int) error {
 	return nil
 }
 
-func CreateToken(userID string, platformID int) (string, int64, error) {
+func CreateToken(ctx context.Context, userID string, platformID int) (string, int64, error) {
 	claims := BuildClaims(userID, constant.PlatformIDToName(platformID), config.Config.TokenPolicy.AccessExpire)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(config.Config.TokenPolicy.AccessSecret))
@@ -66,7 +67,7 @@ func CreateToken(userID string, platformID int) (string, int64, error) {
 		return "", 0, err
 	}
 	//remove Invalid token
-	m, err := commonDB.DB.GetTokenMapByUidPid(userID, constant.PlatformIDToName(platformID))
+	m, err := commonDB.DB.GetTokenMapByUidPid(ctx, userID, constant.PlatformIDToName(platformID))
 	if err != nil && err != go_redis.Nil {
 		return "", 0, err
 	}
@@ -83,7 +84,7 @@ func CreateToken(userID string, platformID int) (string, int64, error) {
 			return "", 0, err
 		}
 	}
-	err = commonDB.DB.AddTokenFlag(userID, platformID, tokenString, constant.NormalToken)
+	err = commonDB.DB.AddTokenFlag(ctx, userID, platformID, tokenString, constant.NormalToken)
 	if err != nil {
 		return "", 0, err
 	}
@@ -120,8 +121,8 @@ func GetClaimFromToken(tokensString string) (*Claims, error) {
 	}
 }
 
-func IsAppManagerAccess(token string, OpUserID string) bool {
-	claims, err := ParseToken(token, "")
+func IsAppManagerAccess(ctx context.Context, token string, OpUserID string) bool {
+	claims, err := ParseToken(ctx, token, "")
 	if err != nil {
 		return false
 	}
@@ -149,8 +150,8 @@ func CheckAccess(OpUserID string, OwnerUserID string) bool {
 	return false
 }
 
-func GetUserIDFromToken(token string, operationID string) (bool, string, string) {
-	claims, err := ParseToken(token, operationID)
+func GetUserIDFromToken(ctx context.Context, token string, operationID string) (bool, string, string) {
+	claims, err := ParseToken(ctx, token, operationID)
 	if err != nil {
 		log.Error(operationID, "ParseToken failed, ", err.Error(), token)
 		return false, "", err.Error()
@@ -159,8 +160,8 @@ func GetUserIDFromToken(token string, operationID string) (bool, string, string)
 	return true, claims.UID, ""
 }
 
-func GetUserIDAndPlatformIDFromToken(token string, operationID string) (bool, string, string, int32) {
-	claims, err := ParseToken(token, operationID)
+func GetUserIDAndPlatformIDFromToken(ctx context.Context, token string, operationID string) (bool, string, string, int32) {
+	claims, err := ParseToken(ctx, token, operationID)
 	if err != nil {
 		log.Error(operationID, "ParseToken failed, ", err.Error(), token)
 		return false, "", err.Error(), 0
@@ -169,8 +170,8 @@ func GetUserIDAndPlatformIDFromToken(token string, operationID string) (bool, st
 	return true, claims.UID, "", int32(constant.PlatformNameToID(claims.Platform))
 }
 
-func GetUserIDFromTokenExpireTime(token string, operationID string) (bool, string, string, int64) {
-	claims, err := ParseToken(token, operationID)
+func GetUserIDFromTokenExpireTime(ctx context.Context, token string, operationID string) (bool, string, string, int64) {
+	claims, err := ParseToken(ctx, token, operationID)
 	if err != nil {
 		log.Error(operationID, "ParseToken failed, ", err.Error(), token)
 		return false, "", err.Error(), 0
@@ -178,21 +179,21 @@ func GetUserIDFromTokenExpireTime(token string, operationID string) (bool, strin
 	return true, claims.UID, "", claims.ExpiresAt.Unix()
 }
 
-func ParseTokenGetUserID(token string, operationID string) (error, string) {
-	claims, err := ParseToken(token, operationID)
+func ParseTokenGetUserID(ctx context.Context, token string, operationID string) (error, string) {
+	claims, err := ParseToken(ctx, token, operationID)
 	if err != nil {
 		return utils.Wrap(err, ""), ""
 	}
 	return nil, claims.UID
 }
 
-func ParseToken(tokensString, operationID string) (claims *Claims, err error) {
+func ParseToken(ctx context.Context, tokensString, operationID string) (claims *Claims, err error) {
 	claims, err = GetClaimFromToken(tokensString)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
 	}
 
-	m, err := commonDB.DB.GetTokenMapByUidPid(claims.UID, claims.Platform)
+	m, err := commonDB.DB.GetTokenMapByUidPid(ctx, claims.UID, claims.Platform)
 	if err != nil {
 		log.NewError(operationID, "get token from redis err", err.Error(), tokensString)
 		return nil, utils.Wrap(constant.ErrTokenInvalid, "get token from redis err")
@@ -237,9 +238,9 @@ func ParseRedisInterfaceToken(redisToken interface{}) (*Claims, error) {
 	return GetClaimFromToken(string(redisToken.([]uint8)))
 }
 
-//Validation token, false means failure, true means successful verification
-func VerifyToken(token, uid string) (bool, error) {
-	claims, err := ParseToken(token, "")
+// Validation token, false means failure, true means successful verification
+func VerifyToken(ctx context.Context, token, uid string) (bool, error) {
+	claims, err := ParseToken(ctx, token, "")
 	if err != nil {
 		return false, utils.Wrap(err, "ParseToken failed")
 	}
@@ -251,9 +252,9 @@ func VerifyToken(token, uid string) (bool, error) {
 	return true, nil
 }
 
-func WsVerifyToken(token, uid string, platformID string, operationID string) (bool, error, string) {
+func WsVerifyToken(ctx context.Context, token, uid string, platformID string, operationID string) (bool, error, string) {
 	argMsg := "args: token: " + token + " operationID: " + operationID + " userID: " + uid + " platformID: " + constant.PlatformIDToName(utils.StringToInt(platformID))
-	claims, err := ParseToken(token, operationID)
+	claims, err := ParseToken(ctx, token, operationID)
 	if err != nil {
 		//if errors.Is(err, constant.ErrTokenUnknown) {
 		//	errMsg := "ParseToken failed ErrTokenUnknown " + err.Error()

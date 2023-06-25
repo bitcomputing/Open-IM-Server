@@ -3,6 +3,7 @@ package im_mysql_model
 import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
+	"context"
 	"time"
 )
 
@@ -18,9 +19,9 @@ func GetIncreaseUserNum(from, to time.Time) (int32, error) {
 	return int32(num), err
 }
 
-func GetTotalUserNum() (int32, error) {
+func GetTotalUserNum(ctx context.Context) (int32, error) {
 	var num int64
-	err := db.DB.MysqlDB.DefaultGormDB().Table("users").Count(&num).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("users").Count(&num).Error
 	return int32(num), err
 }
 

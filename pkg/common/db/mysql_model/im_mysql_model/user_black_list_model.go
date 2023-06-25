@@ -3,12 +3,13 @@ package im_mysql_model
 import (
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
+	"context"
 	"time"
 )
 
-func InsertInToUserBlackList(black db.Black) error {
+func InsertInToUserBlackList(ctx context.Context, black db.Black) error {
 	black.CreateTime = time.Now()
-	return db.DB.MysqlDB.DefaultGormDB().Table("blacks").Create(black).Error
+	return db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("blacks").Create(black).Error
 }
 
 // type Black struct {
@@ -25,8 +26,8 @@ func CheckBlack(ownerUserID, blockUserID string) error {
 	return db.DB.MysqlDB.DefaultGormDB().Table("blacks").Where("owner_user_id=? and block_user_id=?", ownerUserID, blockUserID).Find(&black).Error
 }
 
-func RemoveBlackList(ownerUserID, blockUserID string) error {
-	err := db.DB.MysqlDB.DefaultGormDB().Table("blacks").Where("owner_user_id=? and block_user_id=?", ownerUserID, blockUserID).Delete(db.Black{}).Error
+func RemoveBlackList(ctx context.Context, ownerUserID, blockUserID string) error {
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("blacks").Where("owner_user_id=? and block_user_id=?", ownerUserID, blockUserID).Delete(db.Black{}).Error
 	return utils.Wrap(err, "RemoveBlackList failed")
 }
 
@@ -39,9 +40,9 @@ func GetBlackListByUserID(ownerUserID string) ([]db.Black, error) {
 	return blackListUsersInfo, nil
 }
 
-func GetBlackIDListByUserID(ownerUserID string) ([]string, error) {
+func GetBlackIDListByUserID(ctx context.Context, ownerUserID string) ([]string, error) {
 	var blackIDList []string
-	err := db.DB.MysqlDB.DefaultGormDB().Table("blacks").Where("owner_user_id=?", ownerUserID).Pluck("block_user_id", &blackIDList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().Table("blacks").WithContext(ctx).Where("owner_user_id=?", ownerUserID).Pluck("block_user_id", &blackIDList).Error
 	if err != nil {
 		return nil, err
 	}

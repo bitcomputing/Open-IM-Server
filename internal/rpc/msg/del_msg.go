@@ -3,17 +3,16 @@ package msg
 import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
 	"Open_IM/pkg/common/token_verify"
 	"Open_IM/pkg/proto/msg"
 	commonPb "Open_IM/pkg/proto/sdk_ws"
-	"Open_IM/pkg/utils"
 	"context"
 	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
-func (rpc *rpcChat) DelMsgList(_ context.Context, req *commonPb.DelMsgListReq) (*commonPb.DelMsgListResp, error) {
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req.String())
+func (rpc *rpcChat) DelMsgList(ctx context.Context, req *commonPb.DelMsgListReq) (*commonPb.DelMsgListResp, error) {
 	resp := &commonPb.DelMsgListResp{}
 	select {
 	case rpc.delMsgCh <- deleteMsg{
@@ -27,30 +26,33 @@ func (rpc *rpcChat) DelMsgList(_ context.Context, req *commonPb.DelMsgListReq) (
 		resp.ErrMsg = constant.ErrSendLimit.ErrMsg
 		return resp, nil
 	}
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp.String())
+
 	return resp, nil
 }
-func (rpc *rpcChat) DelSuperGroupMsg(_ context.Context, req *msg.DelSuperGroupMsgReq) (*msg.DelSuperGroupMsgResp, error) {
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "req: ", req.String())
+
+func (rpc *rpcChat) DelSuperGroupMsg(ctx context.Context, req *msg.DelSuperGroupMsgReq) (*msg.DelSuperGroupMsgResp, error) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", req.OperationID))
+	logger := logx.WithContext(ctx)
+
 	if !token_verify.CheckAccess(req.OpUserID, req.UserID) {
-		log.NewError(req.OperationID, "CheckAccess false ", req.OpUserID, req.UserID)
+		logger.Error("CheckAccess false: ", req.OpUserID, req.UserID)
 		return &msg.DelSuperGroupMsgResp{ErrCode: constant.ErrAccess.ErrCode, ErrMsg: constant.ErrAccess.ErrMsg}, nil
 	}
 	resp := &msg.DelSuperGroupMsgResp{}
-	groupMaxSeq, err := db.DB.GetGroupMaxSeq(req.GroupID)
+	groupMaxSeq, err := db.DB.GetGroupMaxSeq(ctx, req.GroupID)
 	if err != nil {
-		log.NewError(req.OperationID, "GetGroupMaxSeq false ", req.OpUserID, req.UserID, req.GroupID)
+		logger.Error("GetGroupMaxSeq false: ", req.OpUserID, req.UserID, req.GroupID)
 		resp.ErrCode = constant.ErrDB.ErrCode
 		resp.ErrMsg = err.Error()
 		return resp, nil
 	}
-	err = db.DB.SetGroupUserMinSeq(req.GroupID, req.UserID, groupMaxSeq)
+	err = db.DB.SetGroupUserMinSeq(ctx, req.GroupID, req.UserID, groupMaxSeq)
 	if err != nil {
-		log.NewError(req.OperationID, "SetGroupUserMinSeq false ", req.OpUserID, req.UserID, req.GroupID)
+		logger.Error("SetGroupUserMinSeq false ", req.OpUserID, req.UserID, req.GroupID)
 		resp.ErrCode = constant.ErrDB.ErrCode
 		resp.ErrMsg = err.Error()
 		return resp, nil
 	}
-	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp.String())
+
 	return resp, nil
 }

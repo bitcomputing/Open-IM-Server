@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -114,11 +116,14 @@ func (d *DataBases) GetExtendMsgSet(ctx context.Context, sourceID string, sessio
 }
 
 // first modify msg
-func (d *DataBases) InsertExtendMsg(sourceID string, sessionType int32, msg *ExtendMsg) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) InsertExtendMsg(sourceID string, sessionType int32, msg *ExtendMsg, operationID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cExtendMsgSet)
 	set, err := d.GetExtendMsgSet(ctx, sourceID, sessionType, 0, c)
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	if set == nil || set.ExtendMsgNum >= GetExtendMsgMaxNum() {
@@ -141,8 +146,8 @@ func (d *DataBases) InsertExtendMsg(sourceID string, sessionType int32, msg *Ext
 }
 
 // insert or update
-func (d *DataBases) InsertOrUpdateReactionExtendMsgSet(sourceID string, sessionType int32, clientMsgID string, msgFirstModifyTime int64, reactionExtensionList map[string]*server_api_params.KeyValue) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) InsertOrUpdateReactionExtendMsgSet(ctx context.Context, sourceID string, sessionType int32, clientMsgID string, msgFirstModifyTime int64, reactionExtensionList map[string]*server_api_params.KeyValue, operationID string) error {
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cExtendMsgSet)
 	var updateBson = bson.M{}
 	for _, v := range reactionExtensionList {
@@ -154,18 +159,19 @@ func (d *DataBases) InsertOrUpdateReactionExtendMsgSet(sourceID string, sessionT
 	}
 	set, err := d.GetExtendMsgSet(ctx, sourceID, sessionType, msgFirstModifyTime, c)
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	if set == nil {
-		return errors.New(fmt.Sprintf("sourceID %s has no set", sourceID))
+		return fmt.Errorf("sourceID %s has no set", sourceID)
 	}
 	_, err = c.UpdateOne(ctx, bson.M{"source_id": set.SourceID, "session_type": sessionType}, bson.M{"$set": updateBson}, opt)
 	return utils.Wrap(err, "")
 }
 
 // delete TypeKey
-func (d *DataBases) DeleteReactionExtendMsgSet(sourceID string, sessionType int32, clientMsgID string, msgFirstModifyTime int64, reactionExtensionList map[string]*server_api_params.KeyValue) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) DeleteReactionExtendMsgSet(ctx context.Context, sourceID string, sessionType int32, clientMsgID string, msgFirstModifyTime int64, reactionExtensionList map[string]*server_api_params.KeyValue, operationID string) error {
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cExtendMsgSet)
 	var updateBson = bson.M{}
 	for _, v := range reactionExtensionList {
@@ -173,17 +179,17 @@ func (d *DataBases) DeleteReactionExtendMsgSet(sourceID string, sessionType int3
 	}
 	set, err := d.GetExtendMsgSet(ctx, sourceID, sessionType, msgFirstModifyTime, c)
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	if set == nil {
-		return errors.New(fmt.Sprintf("sourceID %s has no set", sourceID))
+		return fmt.Errorf("sourceID %s has no set", sourceID)
 	}
 	_, err = c.UpdateOne(ctx, bson.M{"source_id": set.SourceID, "session_type": sessionType}, bson.M{"$unset": updateBson})
 	return err
 }
 
-func (d *DataBases) GetExtendMsg(sourceID string, sessionType int32, clientMsgID string, maxMsgUpdateTime int64) (extendMsg *ExtendMsg, err error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) GetExtendMsg(ctx context.Context, sourceID string, sessionType int32, clientMsgID string, maxMsgUpdateTime int64) (extendMsg *ExtendMsg, err error) {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cExtendMsgSet)
 	findOpts := options.Find().SetLimit(1).SetSkip(0).SetSort(bson.M{"source_id": -1}).SetProjection(bson.M{fmt.Sprintf("extend_msgs.%s", clientMsgID): 1})
 	regex := fmt.Sprintf("^%s", sourceID)

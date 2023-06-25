@@ -8,10 +8,12 @@ package gate
 
 import (
 	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
 	pbRtc "Open_IM/pkg/proto/rtc"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
-	"github.com/golang/protobuf/proto"
+	"context"
+
+	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/protobuf/proto"
 )
 
 type Req struct {
@@ -58,15 +60,16 @@ type SeqListData struct {
 }
 
 func (ws *WServer) argsValidate(m *Req, r int32, operationID string) (isPass bool, errCode int32, errMsg string, returnData interface{}) {
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	switch r {
 	case constant.WSGetNewestSeq:
 		data := open_im_sdk.GetMaxAndMinSeqReq{}
 		if err := proto.Unmarshal(m.Data, &data); err != nil {
-			log.Error(operationID, "Decode Data struct  err", err.Error(), r)
+			logger.Errorf("Decode Data struct err: %v, r: %d", err.Error(), r)
 			return false, 203, err.Error(), nil
 		}
 		if err := validate.Struct(data); err != nil {
-			log.Error(operationID, "data args validate  err", err.Error(), r)
+			logger.Errorf("data args validate err: %v, r: %d", err.Error(), r)
 			return false, 204, err.Error(), nil
 
 		}
@@ -74,11 +77,11 @@ func (ws *WServer) argsValidate(m *Req, r int32, operationID string) (isPass boo
 	case constant.WSSendMsg:
 		data := open_im_sdk.MsgData{}
 		if err := proto.Unmarshal(m.Data, &data); err != nil {
-			log.Error(operationID, "Decode Data struct  err", err.Error(), r)
+			logger.Errorf("Decode Data struct err: %v, r: %d", err.Error(), r)
 			return false, 203, err.Error(), nil
 		}
 		if err := validate.Struct(data); err != nil {
-			log.Error(operationID, "data args validate  err", err.Error(), r)
+			logger.Errorf("data args validate err: %v, r: %d", err.Error(), r)
 			return false, 204, err.Error(), nil
 
 		}
@@ -86,11 +89,11 @@ func (ws *WServer) argsValidate(m *Req, r int32, operationID string) (isPass boo
 	case constant.WSSendSignalMsg:
 		data := pbRtc.SignalReq{}
 		if err := proto.Unmarshal(m.Data, &data); err != nil {
-			log.Error(operationID, "Decode Data struct  err", err.Error(), r)
+			logger.Errorf("Decode Data struct err: %v, r: %d", err.Error(), r)
 			return false, 203, err.Error(), nil
 		}
 		if err := validate.Struct(data); err != nil {
-			log.Error(operationID, "data args validate  err", err.Error(), r)
+			logger.Errorf("data args validate err: %v, r: %d", err.Error(), r)
 			return false, 204, err.Error(), nil
 
 		}
@@ -98,11 +101,11 @@ func (ws *WServer) argsValidate(m *Req, r int32, operationID string) (isPass boo
 	case constant.WSPullMsgBySeqList:
 		data := open_im_sdk.PullMessageBySeqListReq{}
 		if err := proto.Unmarshal(m.Data, &data); err != nil {
-			log.Error(operationID, "Decode Data struct  err", err.Error(), r)
+			logger.Errorf("Decode Data struct err: %v, r: %d", err.Error(), r)
 			return false, 203, err.Error(), nil
 		}
 		if err := validate.Struct(data); err != nil {
-			log.Error(operationID, "data args validate  err", err.Error(), r)
+			logger.Errorf("data args validate err: %v, r: %d", err.Error(), r)
 			return false, 204, err.Error(), nil
 
 		}
@@ -110,11 +113,11 @@ func (ws *WServer) argsValidate(m *Req, r int32, operationID string) (isPass boo
 	case constant.WsSetBackgroundStatus:
 		data := open_im_sdk.SetAppBackgroundStatusReq{}
 		if err := proto.Unmarshal(m.Data, &data); err != nil {
-			log.Error(operationID, "Decode Data struct  err", err.Error(), r)
+			logger.Errorf("Decode Data struct err: %v, r: %d", err.Error(), r)
 			return false, 203, err.Error(), nil
 		}
 		if err := validate.Struct(data); err != nil {
-			log.Error(operationID, "data args validate  err", err.Error(), r)
+			logger.Errorf("data args validate err: %v, r: %d", err.Error(), r)
 			return false, 204, err.Error(), nil
 
 		}

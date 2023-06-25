@@ -7,8 +7,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_SetTokenMapByUidPid(t *testing.T) {
@@ -16,21 +17,21 @@ func Test_SetTokenMapByUidPid(t *testing.T) {
 	m["test1"] = 1
 	m["test2"] = 2
 	m["2332"] = 4
-	err := DB.SetTokenMapByUidPid("1234", 2, m)
+	err := DB.SetTokenMapByUidPid(context.Background(), "1234", 2, m)
 	assert.Nil(t, err)
 
 }
 func Test_GetTokenMapByUidPid(t *testing.T) {
-	m, err := DB.GetTokenMapByUidPid("1234", "Android")
+	m, err := DB.GetTokenMapByUidPid(context.Background(), "1234", "Android")
 	assert.Nil(t, err)
 	fmt.Println(m)
 }
 
-//func TestDataBases_GetMultiConversationMsgOpt(t *testing.T) {
-//	m, err := DB.GetMultiConversationMsgOpt("fg", []string{"user", "age", "color"})
-//	assert.Nil(t, err)
-//	fmt.Println(m)
-//}
+//	func TestDataBases_GetMultiConversationMsgOpt(t *testing.T) {
+//		m, err := DB.GetMultiConversationMsgOpt("fg", []string{"user", "age", "color"})
+//		assert.Nil(t, err)
+//		fmt.Println(m)
+//	}
 func Test_GetKeyTTL(t *testing.T) {
 	ctx := context.Background()
 	key := flag.String("key", "key", "key value")
@@ -71,7 +72,7 @@ func Test_NewSetMessageToCache(t *testing.T) {
 	data.AtUserIDList = []string{"1212", "23232"}
 	msg.MsgData = &data
 	messageList := []*pbChat.MsgDataToMQ{&msg}
-	err, _ := DB.SetMessageToCache(messageList, uid, "cacheTest")
+	err, _ := DB.SetMessageToCache(context.Background(), messageList, uid, "cacheTest")
 	assert.Nil(t, err)
 
 }
@@ -83,7 +84,7 @@ func Test_NewGetMessageListBySeq(t *testing.T) {
 	data.ClientMsgID = "23jwhjsdf"
 	msg.MsgData = &data
 
-	seqMsg, failedSeqList, err := DB.GetMessageListBySeq(uid, []uint32{1212}, "cacheTest")
+	seqMsg, failedSeqList, err := DB.GetMessageListBySeq(context.Background(), uid, []uint32{1212}, "cacheTest")
 	assert.Nil(t, err)
 	fmt.Println(seqMsg, failedSeqList)
 
@@ -92,12 +93,12 @@ func Test_SetUserGlobalMsgRecvOpt(t *testing.T) {
 	var opt int32
 	uid := "test_uid"
 	opt = 1
-	err := DB.SetUserGlobalMsgRecvOpt(uid, opt)
+	err := DB.SetUserGlobalMsgRecvOpt(context.TODO(), uid, opt)
 	assert.Nil(t, err)
 }
 func Test_GetUserGlobalMsgRecvOpt(t *testing.T) {
 	uid := "test_uid"
-	opt, err := DB.GetUserGlobalMsgRecvOpt(uid)
+	opt, err := DB.GetUserGlobalMsgRecvOpt(context.Background(), uid)
 	assert.Nil(t, err)
 	fmt.Println("get opt", opt)
 }

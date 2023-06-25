@@ -1,26 +1,34 @@
 package main
 
 import (
-	rpcAuth "Open_IM/internal/rpc/auth"
+	"Open_IM/internal/rpc/auth"
 	"Open_IM/pkg/common/config"
-	"Open_IM/pkg/common/constant"
-	promePkg "Open_IM/pkg/common/prometheus"
+	"Open_IM/pkg/common/interceptors"
+	pbauth "Open_IM/pkg/proto/auth"
 	"flag"
-	"fmt"
+
+	"github.com/zeromicro/go-zero/zrpc"
+	"google.golang.org/grpc"
+)
+
+var (
+	rpcPort = flag.Int("port", config.Config.ServerConfigs.Auth.Port, "RpcToken default listen port 10800")
 )
 
 func main() {
-	defaultPorts := config.Config.RpcPort.OpenImAuthPort
-	rpcPort := flag.Int("port", defaultPorts[0], "RpcToken default listen port 10800")
-	prometheusPort := flag.Int("prometheus_port", config.Config.Prometheus.AuthPrometheusPort[0], "authPrometheusPort default listen port")
+	cfg := config.ConvertServerConfig(config.Config.ServerConfigs.Auth)
+
 	flag.Parse()
-	fmt.Println("start auth rpc server, port: ", *rpcPort, ", OpenIM version: ", constant.CurrentVersion, "\n")
-	rpcServer := rpcAuth.NewRpcAuthServer(*rpcPort)
-	go func() {
-		err := promePkg.StartPromeSrv(*prometheusPort)
-		if err != nil {
-			panic(err)
-		}
-	}()
-	rpcServer.Run()
+
+	server := auth.NewRpcAuthServer(*rpcPort)
+	s := zrpc.MustNewServer(cfg, func(s *grpc.Server) {
+		pbauth.RegisterAuthServer(s, server)
+	})
+	defer s.Stop()
+
+	server.RegisterLegacyDiscovery()
+
+	s.AddUnaryInterceptors(interceptors.ResponseLogger)
+
+	s.Start()
 }

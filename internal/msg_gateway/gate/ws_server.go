@@ -1,22 +1,21 @@
 package gate
 
 import (
+	messageclient "Open_IM/internal/rpc/msg/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
-	promePkg "Open_IM/pkg/common/prometheus"
 	"Open_IM/pkg/common/token_verify"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
+	"Open_IM/pkg/discovery"
 	pbRelay "Open_IM/pkg/proto/relay"
 	"Open_IM/pkg/utils"
 	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/gob"
+	"fmt"
 	"io/ioutil"
 	"strconv"
-	"strings"
 
 	go_redis "github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
@@ -27,6 +26,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/metric"
 )
 
 type UserConn struct {
@@ -42,25 +43,65 @@ type UserConn struct {
 }
 
 type WServer struct {
-	wsAddr       string
-	wsMaxConnNum int
-	wsUpGrader   *websocket.Upgrader
-	wsUserToConn map[string]map[int][]*UserConn
+	wsAddr                string
+	wsMaxConnNum          int
+	wsUpGrader            *websocket.Upgrader
+	wsUserToConn          map[string]map[int][]*UserConn
+	gatewayClient         *discovery.Client
+	messageClient         messageclient.MsgClient
+	msgRecvTotal          metric.CounterVec
+	getNewestSeqTotal     metric.CounterVec
+	pullMsgBySeqListTotal metric.CounterVec
+	msgOnlinePushSuccess  metric.CounterVec
+	onlineUser            metric.GaugeVec
 }
 
-func (ws *WServer) onInit(wsPort int) {
-	ws.wsAddr = ":" + utils.IntToString(wsPort)
-	ws.wsMaxConnNum = config.Config.LongConnSvr.WebsocketMaxConnNum
-	ws.wsUserToConn = make(map[string]map[int][]*UserConn)
-	ws.wsUpGrader = &websocket.Upgrader{
-		HandshakeTimeout: time.Duration(config.Config.LongConnSvr.WebsocketTimeOut) * time.Second,
-		ReadBufferSize:   config.Config.LongConnSvr.WebsocketMaxMsgLen,
-		CheckOrigin:      func(r *http.Request) bool { return true },
+func NewWebsocketServer(wsPort int) *WServer {
+	gc, err := discovery.NewClient(config.ConvertClientConfig(config.Config.ClientConfigs.Gateway))
+	if err != nil {
+		panic(err)
 	}
+	ws = &WServer{
+		wsAddr:       fmt.Sprintf(":%d", wsPort),
+		wsMaxConnNum: config.Config.LongConnSvr.WebsocketMaxConnNum,
+		wsUpGrader: &websocket.Upgrader{
+			HandshakeTimeout: time.Duration(config.Config.LongConnSvr.WebsocketTimeOut) * time.Second,
+			ReadBufferSize:   config.Config.LongConnSvr.WebsocketMaxMsgLen,
+			CheckOrigin:      func(r *http.Request) bool { return true },
+		},
+		wsUserToConn:  make(map[string]map[int][]*UserConn),
+		gatewayClient: gc,
+		messageClient: messageclient.NewMsgClient(config.ConvertClientConfig(config.Config.ClientConfigs.Message)),
+		msgRecvTotal: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "msg_recv_total",
+			Help: "The number of msg received",
+		}),
+		getNewestSeqTotal: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "get_newest_seq_total",
+			Help: "the number of get newest seq",
+		}),
+		pullMsgBySeqListTotal: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "pull_msg_by_seq_list_total",
+			Help: "The number of pull msg by seq list",
+		}),
+		msgOnlinePushSuccess: metric.NewCounterVec(&metric.CounterVecOpts{
+			Name: "msg_online_push_success",
+			Help: "The number of msg successful online pushed",
+		}),
+		onlineUser: metric.NewGaugeVec(&metric.GaugeVecOpts{
+			Name: "online_user_num",
+			Help: "The number of online user num",
+		}),
+	}
+
+	return ws
 }
 
-func (ws *WServer) run() {
-	http.HandleFunc("/", ws.wsHandler)         //Get request from client to handle by wsHandler
+func (ws *WServer) Start() {
+	http.HandleFunc("/", ws.wsHandler) //Get request from client to handle by wsHandler
+	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 	err := http.ListenAndServe(ws.wsAddr, nil) //Start listening
 	if err != nil {
 		panic("Ws listening err:" + err.Error())
@@ -75,11 +116,12 @@ func (ws *WServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		operationID = utils.OperationIDGenerator()
 	}
-	log.Debug(operationID, utils.GetSelfFuncName(), " args: ", query)
+	logger := logx.WithContext(r.Context()).WithFields(logx.Field("op", operationID))
+	logger.Debug("args: ", query)
 	if isPass, compression := ws.headerCheck(w, r, operationID); isPass {
 		conn, err := ws.wsUpGrader.Upgrade(w, r, nil) //Conn is obtained through the upgraded escalator
 		if err != nil {
-			log.Error(operationID, "upgrade http conn err", err.Error(), query)
+			logger.Errorf("upgrade http conn err: %v, query: %s", err, query)
 			return
 		} else {
 			newConn := &UserConn{conn, new(sync.Mutex), utils.StringToInt32(query["platformID"][0]), 0, compression, query["sendID"][0], false, query["token"][0], utils.Md5(conn.RemoteAddr().String() + "_" + strconv.Itoa(int(utils.GetCurrentTimestampByMill())))}
@@ -87,7 +129,7 @@ func (ws *WServer) wsHandler(w http.ResponseWriter, r *http.Request) {
 			go ws.readMsg(newConn)
 		}
 	} else {
-		log.Error(operationID, "headerCheck failed ")
+		logger.Error("headerCheck failed: query: %v", query)
 	}
 }
 
@@ -95,34 +137,34 @@ func (ws *WServer) readMsg(conn *UserConn) {
 	for {
 		messageType, msg, err := conn.ReadMessage()
 		if messageType == websocket.PingMessage {
-			log.NewInfo("", "this is a  pingMessage")
+			logx.Info("this is a  pingMessage")
 		}
 		if err != nil {
-			log.NewWarn("", "WS ReadMsg error ", " userIP", conn.RemoteAddr().String(), "userUid", "platform", "error", err.Error())
+			logx.Error("WS ReadMsg error:", " userIP: ", conn.RemoteAddr().String(), " error: ", err.Error())
 			ws.delUserConn(conn)
 			return
 		}
 		if messageType == websocket.CloseMessage {
-			log.NewWarn("", "WS receive error ", " userIP", conn.RemoteAddr().String(), "userUid", "platform", "error", string(msg))
+			logx.Error("WS receive error: ", " userIP: ", conn.RemoteAddr().String(), " error: ", string(msg))
 			ws.delUserConn(conn)
 			return
 		}
-		log.NewDebug("", "size", utils.ByteSize(uint64(len(msg))))
+
 		if conn.IsCompress {
 			buff := bytes.NewBuffer(msg)
 			reader, err := gzip.NewReader(buff)
 			if err != nil {
-				log.NewWarn("", "un gzip read failed")
+				logx.Error("ungzip read failed: ", err)
 				continue
 			}
 			msg, err = ioutil.ReadAll(reader)
 			if err != nil {
-				log.NewWarn("", "ReadAll failed")
+				logx.Error("ReadAll failed: ", err)
 				continue
 			}
 			err = reader.Close()
 			if err != nil {
-				log.NewWarn("", "reader close failed")
+				logx.Error("reader close failed: ", err)
 			}
 		}
 		ws.msgParse(conn, msg)
@@ -161,34 +203,41 @@ func (ws *WServer) SetWriteTimeoutWriteMsg(conn *UserConn, a int, msg []byte, ti
 }
 
 func (ws *WServer) MultiTerminalLoginRemoteChecker(userID string, platformID int32, token string, operationID string) {
-	grpcCons := getcdv3.GetDefaultGatewayConn4Unique(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), operationID)
-	log.NewInfo(operationID, utils.GetSelfFuncName(), "args  grpcCons: ", userID, platformID, grpcCons)
-	for _, v := range grpcCons {
-		if v.Target() == rpcSvr.target {
-			log.Debug(operationID, "Filter out this node ", rpcSvr.target)
+	ctx := logx.ContextWithFields(context.Background(), logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+	grpcCons := ws.gatewayClient.ClientConns()
+	logger.Info("args  grpcCons: ", userID, platformID, grpcCons)
+
+	for i := 0; i < len(grpcCons); i++ {
+		if grpcCons[i].Target() == server.target {
+			logger.Debug(operationID, "Filter out this node ", server.target)
 			continue
 		}
-		log.Debug(operationID, "call this node ", v.Target(), rpcSvr.target)
-		client := pbRelay.NewRelayClient(v)
+		logger.Debug(operationID, "call this node ", grpcCons[i].Target(), server.target)
+		logger.Info("current target:", grpcCons[i].Target())
+		client := pbRelay.NewRelayClient(grpcCons[i])
 		req := &pbRelay.MultiTerminalLoginCheckReq{OperationID: operationID, PlatformID: platformID, UserID: userID, Token: token}
-		log.NewInfo(operationID, "MultiTerminalLoginCheckReq ", client, req.String())
-		resp, err := client.MultiTerminalLoginCheck(context.Background(), req)
+		logger.Info(operationID, "MultiTerminalLoginCheckReq ", client, req.String())
+		resp, err := client.MultiTerminalLoginCheck(ctx, req)
 		if err != nil {
-			log.Error(operationID, "MultiTerminalLoginCheck failed ", err.Error())
+			logger.Error(operationID, "MultiTerminalLoginCheck failed ", err.Error())
 			continue
 		}
 		if resp.ErrCode != 0 {
-			log.Error(operationID, "MultiTerminalLoginCheck errCode, errMsg: ", resp.ErrCode, resp.ErrMsg)
+			logger.Error(operationID, "MultiTerminalLoginCheck errCode, errMsg: ", resp.ErrCode, resp.ErrMsg)
 			continue
 		}
-		log.Debug(operationID, "MultiTerminalLoginCheck resp ", resp.String())
+		logger.Debug(operationID, "MultiTerminalLoginCheck resp ", resp.String())
 	}
 }
 
 func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int, token string, operationID string) {
+	ctx := logx.ContextWithFields(context.Background(), logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
 	rwLock.Lock()
 	defer rwLock.Unlock()
-	log.NewInfo(operationID, utils.GetSelfFuncName(), " rpc args: ", uid, platformID, token)
+	logger.Infof("user_id: %s, platform: %d, token: %s", uid, platformID, token)
 	switch config.Config.MultiLoginPolicy {
 	case constant.DefalutNotKick:
 	case constant.PCAndOther:
@@ -199,30 +248,30 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 	case constant.AllLoginButSameTermKick:
 		if oldConnMap, ok := ws.wsUserToConn[uid]; ok { // user->map[platform->conn]
 			if oldConns, ok := oldConnMap[platformID]; ok {
-				log.NewDebug(operationID, uid, platformID, "kick old conn")
+				logger.Debugf("kick old conn: user_id: %s, platform: %d", uid, platformID)
 				for _, conn := range oldConns {
 					ws.sendKickMsg(conn, operationID)
 				}
-				m, err := db.DB.GetTokenMapByUidPid(uid, constant.PlatformIDToName(platformID))
+				m, err := db.DB.GetTokenMapByUidPid(context.Background(), uid, constant.PlatformIDToName(platformID))
 				if err != nil && err != go_redis.Nil {
-					log.NewError(operationID, "get token from redis err", err.Error(), uid, constant.PlatformIDToName(platformID))
+					logger.Error("get token from redis err: %v, user_id: %s, platform: %s", err, uid, constant.PlatformIDToName(platformID))
 					return
 				}
 				if m == nil {
-					log.NewError(operationID, "get token from redis err", "m is nil", uid, constant.PlatformIDToName(platformID))
+					logger.Errorf("get token from redis err: %v, user_id: %s, platform: %s, m is nil", uid, constant.PlatformIDToName(platformID))
 					return
 				}
-				log.NewDebug(operationID, "get token map is ", m, uid, constant.PlatformIDToName(platformID))
+				logger.Debugf("get token map is %v, user_id: %s, platform: %s", m, uid, constant.PlatformIDToName(platformID))
 
 				for k := range m {
 					if k != token {
 						m[k] = constant.KickedToken
 					}
 				}
-				log.NewDebug(operationID, "set token map is ", m, uid, constant.PlatformIDToName(platformID))
-				err = db.DB.SetTokenMapByUidPid(uid, platformID, m)
+				logger.Debugf("set token map is %v, user_id: %s, platform: %s", m, uid, constant.PlatformIDToName(platformID))
+				err = db.DB.SetTokenMapByUidPid(context.Background(), uid, platformID, m)
 				if err != nil {
-					log.NewError(operationID, "SetTokenMapByUidPid err", err.Error(), uid, platformID, m)
+					logger.Errorf("SetTokenMapByUidPid err: %v, user_id: %s, platform: %d, m: %v", err, uid, platformID, m)
 					return
 				}
 
@@ -232,11 +281,11 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 					delete(ws.wsUserToConn, uid)
 				}
 			} else {
-				log.NewWarn(operationID, "abnormal uid-conn  ", uid, platformID, oldConnMap[platformID])
+				logger.Error("abnormal uid-conn: user_id: %s, platform: %s, conn_map: %v", uid, platformID, oldConnMap[platformID])
 			}
 
 		} else {
-			log.NewDebug(operationID, "no other conn", ws.wsUserToConn, uid, platformID)
+			logger.Debug("no other conn: user_to_conn: %v, user_id: %s, platform: %d", ws.wsUserToConn, uid, platformID)
 		}
 	case constant.SingleTerminalLogin:
 	case constant.WebAndOther:
@@ -244,6 +293,9 @@ func (ws *WServer) MultiTerminalLoginCheckerWithLock(uid string, platformID int,
 }
 
 func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn *UserConn, token string, operationID string) {
+	ctx := logx.ContextWithFields(context.Background(), logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
 	switch config.Config.MultiLoginPolicy {
 	case constant.DefalutNotKick:
 	case constant.PCAndOther:
@@ -254,30 +306,30 @@ func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn
 	case constant.AllLoginButSameTermKick:
 		if oldConnMap, ok := ws.wsUserToConn[uid]; ok { // user->map[platform->conn]
 			if oldConns, ok := oldConnMap[platformID]; ok {
-				log.NewDebug(operationID, uid, platformID, "kick old conn")
+				logger.Debugf("kick old conn: user_id: %s, platform: %d", uid, platformID)
 				for _, conn := range oldConns {
 					ws.sendKickMsg(conn, operationID)
 				}
-				m, err := db.DB.GetTokenMapByUidPid(uid, constant.PlatformIDToName(platformID))
+				m, err := db.DB.GetTokenMapByUidPid(context.Background(), uid, constant.PlatformIDToName(platformID))
 				if err != nil && err != go_redis.Nil {
-					log.NewError(operationID, "get token from redis err", err.Error(), uid, constant.PlatformIDToName(platformID))
+					logger.Errorf("get token from redis err: %v, user_id: %s, platform: %s", err.Error(), uid, constant.PlatformIDToName(platformID))
 					return
 				}
 				if m == nil {
-					log.NewError(operationID, "get token from redis err", "m is nil", uid, constant.PlatformIDToName(platformID))
+					logger.Errorf("get token from redis err: %v, user_id: %s, platform: %s, m is nil", uid, constant.PlatformIDToName(platformID))
 					return
 				}
-				log.NewDebug(operationID, "get token map is ", m, uid, constant.PlatformIDToName(platformID))
+				logger.Debugf("get token map is %v, user_id: %s, platform: %s", m, uid, constant.PlatformIDToName(platformID))
 
 				for k := range m {
 					if k != token {
 						m[k] = constant.KickedToken
 					}
 				}
-				log.NewDebug(operationID, "set token map is ", m, uid, constant.PlatformIDToName(platformID))
-				err = db.DB.SetTokenMapByUidPid(uid, platformID, m)
+				logger.Debugf("set token map is %v, user_id: %s, platform: %s", m, uid, constant.PlatformIDToName(platformID))
+				err = db.DB.SetTokenMapByUidPid(context.Background(), uid, platformID, m)
 				if err != nil {
-					log.NewError(operationID, "SetTokenMapByUidPid err", err.Error(), uid, platformID, m)
+					logger.Errorf("SetTokenMapByUidPid err: %v, user_id: %s, platform: %d, m: %v", err.Error(), uid, platformID, m)
 					return
 				}
 				delete(oldConnMap, platformID)
@@ -287,21 +339,25 @@ func (ws *WServer) MultiTerminalLoginChecker(uid string, platformID int, newConn
 				}
 				callbackResp := callbackUserKickOff(operationID, uid, platformID)
 				if callbackResp.ErrCode != 0 {
-					log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOffline failed", callbackResp)
+					logger.Errorf("callbackUserOffline failed: resp: %v", callbackResp)
 				}
 			} else {
-				log.Debug(operationID, "normal uid-conn  ", uid, platformID, oldConnMap[platformID])
+				logger.Debugf("normal uid-conn: user_id: %s, platform: %d, conn_map: %v", uid, platformID, oldConnMap[platformID])
 			}
 
 		} else {
-			log.NewDebug(operationID, "no other conn", ws.wsUserToConn, uid, platformID)
+			logger.Debug("no other conn: user_to_conn: %v, user_id: %s, platform: %d", ws.wsUserToConn, uid, platformID)
 		}
 
 	case constant.SingleTerminalLogin:
 	case constant.WebAndOther:
 	}
 }
+
 func (ws *WServer) sendKickMsg(oldConn *UserConn, operationID string) {
+	ctx := logx.ContextWithFields(context.Background(), logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
 	mReply := Resp{
 		ReqIdentifier: constant.WSKickOnlineMsg,
 		ErrCode:       constant.ErrTokenInvalid.ErrCode,
@@ -312,27 +368,30 @@ func (ws *WServer) sendKickMsg(oldConn *UserConn, operationID string) {
 	enc := gob.NewEncoder(&b)
 	err := enc.Encode(mReply)
 	if err != nil {
-		log.NewError(mReply.OperationID, mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "Encode Msg error", oldConn.RemoteAddr().String(), err.Error())
+		logger.Errorf("req_identifier: %d, code: %d, msg: %s, err: %s, remote_addr: %s, err: %v", mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "Encode Msg error", oldConn.RemoteAddr().String(), err.Error())
 		return
 	}
 	err = ws.writeMsg(oldConn, websocket.BinaryMessage, b.Bytes())
 	if err != nil {
-		log.NewError(mReply.OperationID, mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "sendKickMsg WS WriteMsg error", oldConn.RemoteAddr().String(), err.Error())
+		logger.Errorf("req_identifier: %d, code: %d, msg: %s, err: %s, remote_addr: %s, err: %v", mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "sendKickMsg WS WriteMsg error", oldConn.RemoteAddr().String(), err.Error())
 	}
 	errClose := oldConn.Close()
 	if errClose != nil {
-		log.NewError(mReply.OperationID, mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "close old conn error", oldConn.RemoteAddr().String(), err.Error())
+		logger.Errorf("req_identifier: %d, code: %d, msg: %s, err: %s, remote_addr: %s, err: %v", mReply.ReqIdentifier, mReply.ErrCode, mReply.ErrMsg, "close old conn error", oldConn.RemoteAddr().String(), err.Error())
 
 	}
 }
 
 func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token string, connID, operationID string) {
+	ctx := logx.ContextWithFields(context.Background(), logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
 	rwLock.Lock()
 	defer rwLock.Unlock()
-	log.Info(operationID, utils.GetSelfFuncName(), " args: ", uid, platformID, conn, token, "ip: ", conn.RemoteAddr().String())
+	logger.Infof("user_id: %s, platform: %d, conn: %v, token: %s, remote_addr: %s", uid, platformID, conn, token, conn.RemoteAddr().String())
 	callbackResp := callbackUserOnline(operationID, uid, platformID, token, false, connID)
 	if callbackResp.ErrCode != 0 {
-		log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOnline resp:", callbackResp)
+		logger.Error("callbackUserOnline resp: ", callbackResp)
 	}
 	go ws.MultiTerminalLoginRemoteChecker(uid, int32(platformID), token, operationID)
 	ws.MultiTerminalLoginChecker(uid, platformID, conn, token, operationID)
@@ -346,21 +405,21 @@ func (ws *WServer) addUserConn(uid string, platformID int, conn *UserConn, token
 			oldConnMap[platformID] = conns
 		}
 		ws.wsUserToConn[uid] = oldConnMap
-		log.Debug(operationID, "user not first come in, add conn ", uid, platformID, conn, oldConnMap)
+		logger.Debugf("user not first come in, add conn: user_id: %s, platform: %d, conn: %v, old_conn_map: %v", uid, platformID, conn, oldConnMap)
 	} else {
 		i := make(map[int][]*UserConn)
 		var conns []*UserConn
 		conns = append(conns, conn)
 		i[platformID] = conns
 		ws.wsUserToConn[uid] = i
-		log.Debug(operationID, "user first come in, new user, conn", uid, platformID, conn, ws.wsUserToConn[uid])
+		logger.Debugf("user first come in, new user, conn: user_id: %d, platform: %d, conn: %v, user_to_conn: %v", uid, platformID, conn, ws.wsUserToConn[uid])
 	}
 	count := 0
 	for _, v := range ws.wsUserToConn {
 		count = count + len(v)
 	}
-	promePkg.PromeGaugeInc(promePkg.OnlineUserGauge)
-	log.Debug(operationID, "WS Add operation", "", "wsUser added", ws.wsUserToConn, "connection_uid", uid, "connection_platform", constant.PlatformIDToName(platformID), "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
+	ws.onlineUser.Inc()
+	logger.Debug("WS Add operation", "", "wsUser added", ws.wsUserToConn, "connection_uid", uid, "connection_platform", constant.PlatformIDToName(platformID), "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
 }
 
 func (ws *WServer) delUserConn(conn *UserConn) {
@@ -395,21 +454,21 @@ func (ws *WServer) delUserConn(conn *UserConn) {
 		for _, v := range ws.wsUserToConn {
 			count = count + len(v)
 		}
-		log.Debug(operationID, "WS delete operation", "", "wsUser deleted", ws.wsUserToConn, "disconnection_uid", conn.userID, "disconnection_platform", platform, "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
+		logx.Debug("WS delete operation", "", "wsUser deleted", ws.wsUserToConn, "disconnection_uid", conn.userID, "disconnection_platform", platform, "online_user_num", len(ws.wsUserToConn), "online_conn_num", count)
 	}
 
 	err := conn.Close()
 	if err != nil {
-		log.Error(operationID, " close err", "", "uid", conn.userID, "platform", platform)
+		logx.Errorf("close err: user_id: %s, platform: %d", conn.userID, platform)
 	}
 	if conn.PlatformID == 0 || conn.connID == "" {
-		log.NewWarn(operationID, utils.GetSelfFuncName(), "PlatformID or connID is null", conn.PlatformID, conn.connID)
+		logx.Errorf("PlatformID or connID is null: platform: %d, conn_id: %s", conn.PlatformID, conn.connID)
 	}
 	callbackResp := callbackUserOffline(operationID, conn.userID, int(conn.PlatformID), conn.connID)
 	if callbackResp.ErrCode != 0 {
-		log.NewError(operationID, utils.GetSelfFuncName(), "callbackUserOffline failed", callbackResp)
+		logx.Error("callbackUserOffline failed: resp: ", callbackResp)
 	}
-	promePkg.PromeGaugeDec(promePkg.OnlineUserGauge)
+	ws.onlineUser.Add(-1)
 
 }
 
@@ -450,10 +509,12 @@ func (ws *WServer) getUserAllCons(uid string) map[int][]*UserConn {
 //		return "", 0
 //	}
 func (ws *WServer) headerCheck(w http.ResponseWriter, r *http.Request, operationID string) (isPass, compression bool) {
+	ctx := logx.ContextWithFields(r.Context(), logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
 	status := http.StatusUnauthorized
 	query := r.URL.Query()
 	if len(query["token"]) != 0 && len(query["sendID"]) != 0 && len(query["platformID"]) != 0 {
-		if ok, err, msg := token_verify.WsVerifyToken(query["token"][0], query["sendID"][0], query["platformID"][0], operationID); !ok {
+		if ok, err, msg := token_verify.WsVerifyToken(r.Context(), query["token"][0], query["sendID"][0], query["platformID"][0], operationID); !ok {
 			if errors.Is(err, constant.ErrTokenExpired) {
 				status = int(constant.ErrTokenExpired.ErrCode)
 			}
@@ -497,7 +558,7 @@ func (ws *WServer) headerCheck(w http.ResponseWriter, r *http.Request, operation
 			//	status = int(constant.ErrTokenDifferentUserID.ErrCode)
 			//}
 
-			log.Error(operationID, "Token verify failed ", "query ", query, msg, err.Error(), "status: ", status)
+			logger.Errorf("Token verify failed: query: %v, msg: %s, err: %v, status: %d ", query, msg, err.Error(), status)
 			w.Header().Set("Sec-Websocket-Version", "13")
 			w.Header().Set("ws_err_msg", err.Error())
 			http.Error(w, err.Error(), status)
@@ -509,12 +570,12 @@ func (ws *WServer) headerCheck(w http.ResponseWriter, r *http.Request, operation
 			if len(query["compression"]) != 0 && query["compression"][0] == "gzip" {
 				compression = true
 			}
-			log.Info(operationID, "Connection Authentication Success", "", "token ", query["token"][0], "userID ", query["sendID"][0], "platformID ", query["platformID"][0], "compression", compression)
+			logger.Infof("Connection Authentication Success: token: %s, user_id: %s, platform: %s, compression: %v", query["token"][0], query["sendID"][0], query["platformID"][0], compression)
 			return true, compression
 		}
 	} else {
 		status = int(constant.ErrArgs.ErrCode)
-		log.Error(operationID, "Args err ", "query ", query)
+		logger.Errorf("Args err: query: %v", query)
 		w.Header().Set("Sec-Websocket-Version", "13")
 		errMsg := "args err, need token, sendID, platformID"
 		w.Header().Set("ws_err_msg", errMsg)

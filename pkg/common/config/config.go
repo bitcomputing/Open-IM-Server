@@ -7,6 +7,10 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/core/prometheus"
+	"github.com/zeromicro/go-zero/core/service"
+	"github.com/zeromicro/go-zero/zrpc"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,8 +31,6 @@ type callBackConfig struct {
 }
 
 type config struct {
-	ServerIP string `yaml:"serverip"`
-
 	RpcRegisterIP string `yaml:"rpcRegisterIP"`
 	ListenIP      string `yaml:"listenIP"`
 
@@ -36,14 +38,6 @@ type config struct {
 	Api           struct {
 		GinPort  []int  `yaml:"openImApiPort"`
 		ListenIP string `yaml:"listenIP"`
-	}
-	CmsApi struct {
-		GinPort  []int  `yaml:"openImCmsApiPort"`
-		ListenIP string `yaml:"listenIP"`
-	}
-	Sdk struct {
-		WsPort  []int    `yaml:"openImSdkWsPort"`
-		DataDir []string `yaml:"dataDir"`
 	}
 	Credential struct {
 		Tencent struct {
@@ -101,6 +95,7 @@ type config struct {
 		LogLevel       int      `yaml:"logLevel"`
 		SlowThreshold  int      `yaml:"slowThreshold"`
 	}
+
 	Mongo struct {
 		DBUri                string   `yaml:"dbUri"`
 		DBAddress            []string `yaml:"dbAddress"`
@@ -114,6 +109,7 @@ type config struct {
 		DBRetainChatRecords  int      `yaml:"dbRetainChatRecords"`
 		ChatRecordsClearTime string   `yaml:"chatRecordsClearTime"`
 	}
+
 	Redis struct {
 		DBAddress     []string `yaml:"dbAddress"`
 		DBMaxIdle     int      `yaml:"dbMaxIdle"`
@@ -123,6 +119,7 @@ type config struct {
 		DBPassWord    string   `yaml:"dbPassWord"`
 		EnableCluster bool     `yaml:"enableCluster"`
 	}
+
 	RpcPort struct {
 		OpenImUserPort           []int `yaml:"openImUserPort"`
 		OpenImFriendPort         []int `yaml:"openImFriendPort"`
@@ -138,6 +135,7 @@ type config struct {
 		OpenImCachePort          []int `yaml:"openImCachePort"`
 		OpenImRealTimeCommPort   []int `yaml:"openImRealTimeCommPort"`
 	}
+
 	RpcRegisterName struct {
 		OpenImUserName   string `yaml:"openImUserName"`
 		OpenImFriendName string `yaml:"openImFriendName"`
@@ -154,6 +152,7 @@ type config struct {
 		OpenImCacheName        string `yaml:"openImCacheName"`
 		OpenImRealTimeCommName string `yaml:"openImRealTimeCommName"`
 	}
+
 	Etcd struct {
 		EtcdSchema string   `yaml:"etcdSchema"`
 		EtcdAddr   []string `yaml:"etcdAddr"`
@@ -161,6 +160,7 @@ type config struct {
 		Password   string   `yaml:"password"`
 		Secret     string   `yaml:"secret"`
 	}
+
 	Log struct {
 		StorageLocation       string   `yaml:"storageLocation"`
 		RotationTime          int      `yaml:"rotationTime"`
@@ -171,11 +171,7 @@ type config struct {
 		ElasticSearchUser     string   `yaml:"elasticSearchUser"`
 		ElasticSearchPassword string   `yaml:"elasticSearchPassword"`
 	}
-	ModuleName struct {
-		LongConnSvrName string `yaml:"longConnSvrName"`
-		MsgTransferName string `yaml:"msgTransferName"`
-		PushName        string `yaml:"pushName"`
-	}
+
 	LongConnSvr struct {
 		WebsocketPort       []int `yaml:"openImWsPort"`
 		WebsocketMaxConnNum int   `yaml:"websocketMaxConnNum"`
@@ -234,6 +230,7 @@ type config struct {
 			Enable    bool   `yaml:"enable"`
 		}
 	}
+
 	Manager struct {
 		AppManagerUid          []string `yaml:"appManagerUid"`
 		Secrets                []string `yaml:"secrets"`
@@ -271,6 +268,7 @@ type config struct {
 			MsgToModify string `yaml:"msgToModify"`
 		}
 	}
+
 	Secret                            string `yaml:"secret"`
 	MultiLoginPolicy                  int    `yaml:"multiloginpolicy"`
 	ChatPersistenceMysql              bool   `yaml:"chatpersistencemysql"`
@@ -283,9 +281,11 @@ type config struct {
 		AccessSecret string `yaml:"accessSecret"`
 		AccessExpire int64  `yaml:"accessExpire"`
 	}
+
 	MessageVerify struct {
 		FriendVerify *bool `yaml:"friendVerify"`
 	}
+
 	IOSPush struct {
 		PushSound  string `yaml:"pushSound"`
 		BadgeCount bool   `yaml:"badgeCount"`
@@ -509,44 +509,6 @@ type config struct {
 			} `yaml:"offlinePush"`
 		} `yaml:"signal"`
 	}
-	Demo struct {
-		Port         []int  `yaml:"openImDemoPort"`
-		ListenIP     string `yaml:"listenIP"`
-		AliSMSVerify struct {
-			AccessKeyID                  string `yaml:"accessKeyId"`
-			AccessKeySecret              string `yaml:"accessKeySecret"`
-			SignName                     string `yaml:"signName"`
-			VerificationCodeTemplateCode string `yaml:"verificationCodeTemplateCode"`
-			Enable                       bool   `yaml:"enable"`
-		}
-		TencentSMS struct {
-			AppID                        string `yaml:"appID"`
-			Region                       string `yaml:"region"`
-			SecretID                     string `yaml:"secretID"`
-			SecretKey                    string `yaml:"secretKey"`
-			SignName                     string `yaml:"signName"`
-			VerificationCodeTemplateCode string `yaml:"verificationCodeTemplateCode"`
-			Enable                       bool   `yaml:"enable"`
-		}
-		SuperCode    string `yaml:"superCode"`
-		CodeTTL      int    `yaml:"codeTTL"`
-		UseSuperCode bool   `yaml:"useSuperCode"`
-		Mail         struct {
-			Title                   string `yaml:"title"`
-			SenderMail              string `yaml:"senderMail"`
-			SenderAuthorizationCode string `yaml:"senderAuthorizationCode"`
-			SmtpAddr                string `yaml:"smtpAddr"`
-			SmtpPort                int    `yaml:"smtpPort"`
-		}
-		TestDepartMentID                        string   `yaml:"testDepartMentID"`
-		ImAPIURL                                string   `yaml:"imAPIURL"`
-		NeedInvitationCode                      bool     `yaml:"needInvitationCode"`
-		OnboardProcess                          bool     `yaml:"onboardProcess"`
-		JoinDepartmentIDList                    []string `yaml:"joinDepartmentIDList"`
-		JoinDepartmentGroups                    bool     `yaml:"joinDepartmentGroups"`
-		OaNotification                          bool     `yaml:"oaNotification"`
-		CreateOrganizationUserAndJoinDepartment bool     `yaml:"createOrganizationUserAndJoinDepartment"`
-	}
 	WorkMoment struct {
 		OnlyFriendCanSee bool `yaml:"onlyFriendCanSee"`
 	} `yaml:"workMoment"`
@@ -571,6 +533,30 @@ type config struct {
 		RealTimeCommPrometheusPort    []int `yaml:"realTimeCommPrometheusPort"`
 		MessageTransferPrometheusPort []int `yaml:"messageTransferPrometheusPort"`
 	} `yaml:"prometheus"`
+
+	ServerConfigs struct {
+		Auth         ServerConfig `yaml:"auth"`
+		Push         ServerConfig `yaml:"push"`
+		Conversation ServerConfig `yaml:"conversation"`
+		User         ServerConfig `yaml:"user"`
+		Cache        ServerConfig `yaml:"cache"`
+		Friend       ServerConfig `yaml:"friend"`
+		Message      ServerConfig `yaml:"message"`
+		Group        ServerConfig `yaml:"group"`
+		Gateway      ServerConfig `yaml:"gateway"`
+	} `yaml:"serverConfigs"`
+
+	ClientConfigs struct {
+		Auth         ClientConfig `yaml:"auth"`
+		Push         ClientConfig `yaml:"push"`
+		Conversation ClientConfig `yaml:"conversation"`
+		User         ClientConfig `yaml:"user"`
+		Cache        ClientConfig `yaml:"cache"`
+		Friend       ClientConfig `yaml:"friend"`
+		Message      ClientConfig `yaml:"message"`
+		Group        ClientConfig `yaml:"group"`
+		Gateway      ClientConfig `yaml:"gateway"`
+	} `yaml:"clientConfigs"`
 }
 type PConversation struct {
 	ReliabilityLevel int  `yaml:"reliabilityLevel"`
@@ -587,60 +573,86 @@ type PDefaultTips struct {
 	Tips string `yaml:"tips"`
 }
 
-type usualConfig struct {
-	Etcd struct {
-		UserName string `yaml:"userName"`
-		Password string `yaml:"password"`
-		Secret   string `yaml:"secret"`
-	} `yaml:"etcd"`
-	Mysql struct {
-		DBUserName string `yaml:"dbMysqlUserName"`
-		DBPassword string `yaml:"dbMysqlPassword"`
-	} `yaml:"mysql"`
-	Mongo struct {
-		DBUserName string `yaml:"dbUserName"`
-		DBPassword string `yaml:"dbPassword"`
-	} `yaml:"mongo"`
-	Redis struct {
-		DBUserName string `yaml:"dbUserName"`
-		DBPassword string `yaml:"dbPassWord"`
-	} `yaml:"redis"`
-	Kafka struct {
-		SASLUserName string `yaml:"SASLUserName"`
-		SASLPassword string `yaml:"SASLPassword"`
-	} `yaml:"kafka"`
-
-	Credential struct {
-		Minio struct {
-			AccessKeyID     string `yaml:"accessKeyID"`
-			SecretAccessKey string `yaml:"secretAccessKey"`
-			Endpoint        string `yaml:"endpoint"`
-		} `yaml:"minio"`
-	} `yaml:"credential"`
-
-	Secret string `yaml:"secret"`
-
-	Tokenpolicy struct {
-		AccessSecret string `yaml:"accessSecret"`
-		AccessExpire int64  `yaml:"accessExpire"`
-	} `yaml:"tokenpolicy"`
-
-	Messageverify struct {
-		FriendVerify bool `yaml:"friendVerify"`
-	} `yaml:"messageverify"`
-
-	Push struct {
-		Getui struct {
-			PushUrl      string `yaml:"pushUrl"`
-			MasterSecret string `yaml:"masterSecret"`
-			AppKey       string `yaml:"appKey"`
-			Enable       bool   `yaml:"enable"`
-		} `yaml:"getui"`
-	} `yaml:"push"`
+type ServerConfig struct {
+	Name      string `yaml:"name"`
+	Discovery struct {
+		Hosts []string `yaml:"hosts"`
+		Key   string   `yaml:"key"`
+	} `yaml:"discovery"`
+	Port       int   `yaml:"port"`
+	Timeout    int64 `yaml:"timeout"`
+	Prometheus struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+		Path string `yaml:"path"`
+	} `yaml:"prometheus"`
+	Middlewares struct {
+		Trace      bool `yaml:"trace"`
+		Recover    bool `yaml:"recover"`
+		Stat       bool `yaml:"stat"`
+		Prometheus bool `yaml:"prometheus"`
+		Breaker    bool `yaml:"breaker"`
+	} `yaml:"middlewares"`
 }
 
-var UsualConfig usualConfig
+func ConvertServerConfig(c ServerConfig) zrpc.RpcServerConf {
+	return zrpc.RpcServerConf{
+		ServiceConf: service.ServiceConf{
+			Name: c.Name,
+			Prometheus: prometheus.Config{
+				Host: c.Prometheus.Host,
+				Port: c.Prometheus.Port,
+				Path: c.Prometheus.Path,
+			},
+		},
+		ListenOn: fmt.Sprintf("0.0.0.0:%d", c.Port),
+		Etcd: discov.EtcdConf{
+			Hosts: c.Discovery.Hosts,
+			Key:   c.Discovery.Key,
+		},
+		Timeout: c.Timeout,
+		Middlewares: zrpc.ServerMiddlewaresConf{
+			Trace:      c.Middlewares.Trace,
+			Recover:    c.Middlewares.Recover,
+			Stat:       c.Middlewares.Stat,
+			Prometheus: c.Middlewares.Prometheus,
+			Breaker:    c.Middlewares.Breaker,
+		},
+	}
+}
 
+type ClientConfig struct {
+	Disconvery struct {
+		Hosts []string `yaml:"hosts"`
+		Key   string   `yaml:"key"`
+	} `yaml:"discovery"`
+	Timeout     int64 `yaml:"timeout"`
+	Middlewares struct {
+		Trace      bool `yaml:"trace"`
+		Duration   bool `yaml:"duration"`
+		Prometheus bool `yaml:"prometheus"`
+		Breaker    bool `yaml:"breaker"`
+		Timeout    bool `yaml:"timeout"`
+	}
+}
+
+func ConvertClientConfig(c ClientConfig) zrpc.RpcClientConf {
+	return zrpc.RpcClientConf{
+		Etcd: discov.EtcdConf{
+			Hosts: c.Disconvery.Hosts,
+			Key:   c.Disconvery.Key,
+		},
+		Timeout: c.Timeout,
+		Middlewares: zrpc.ClientMiddlewaresConf{
+			Trace:      c.Middlewares.Trace,
+			Duration:   c.Middlewares.Duration,
+			Prometheus: c.Middlewares.Prometheus,
+			Breaker:    c.Middlewares.Breaker,
+			Timeout:    c.Middlewares.Timeout,
+		},
+		NonBlock: true,
+	}
+}
 func unmarshalConfig(config interface{}, configName string) {
 	var env string
 	if configName == "config.yaml" {
@@ -676,79 +688,79 @@ func unmarshalConfig(config interface{}, configName string) {
 func init() {
 	unmarshalConfig(&Config, "config.yaml")
 	// unmarshalConfig(&UsualConfig, "usualConfig.yaml")
-	if Config.Etcd.UserName == "" {
-		Config.Etcd.UserName = UsualConfig.Etcd.UserName
-	}
-	if Config.Etcd.Password == "" {
-		Config.Etcd.Password = UsualConfig.Etcd.Password
-	}
-	if Config.Etcd.Secret == "" {
-		Config.Etcd.Secret = UsualConfig.Etcd.Secret
-	}
+	// if Config.Etcd.UserName == "" {
+	// 	Config.Etcd.UserName = UsualConfig.Etcd.UserName
+	// }
+	// if Config.Etcd.Password == "" {
+	// 	Config.Etcd.Password = UsualConfig.Etcd.Password
+	// }
+	// if Config.Etcd.Secret == "" {
+	// 	Config.Etcd.Secret = UsualConfig.Etcd.Secret
+	// }
 
-	if Config.Mysql.DBUserName == "" {
-		Config.Mysql.DBUserName = UsualConfig.Mysql.DBUserName
-	}
-	if Config.Mysql.DBPassword == "" {
-		Config.Mysql.DBPassword = UsualConfig.Mysql.DBPassword
-	}
+	// if Config.Mysql.DBUserName == "" {
+	// 	Config.Mysql.DBUserName = UsualConfig.Mysql.DBUserName
+	// }
+	// if Config.Mysql.DBPassword == "" {
+	// 	Config.Mysql.DBPassword = UsualConfig.Mysql.DBPassword
+	// }
 
-	if Config.Redis.DBUserName == "" {
-		Config.Redis.DBUserName = UsualConfig.Redis.DBUserName
-	}
-	if Config.Redis.DBPassWord == "" {
-		Config.Redis.DBPassWord = UsualConfig.Redis.DBPassword
-	}
+	// if Config.Redis.DBUserName == "" {
+	// 	Config.Redis.DBUserName = UsualConfig.Redis.DBUserName
+	// }
+	// if Config.Redis.DBPassWord == "" {
+	// 	Config.Redis.DBPassWord = UsualConfig.Redis.DBPassword
+	// }
 
-	if Config.Mongo.DBUserName == "" {
-		Config.Mongo.DBUserName = UsualConfig.Mongo.DBUserName
-	}
-	if Config.Mongo.DBPassword == "" {
-		Config.Mongo.DBPassword = UsualConfig.Mongo.DBPassword
-	}
+	// if Config.Mongo.DBUserName == "" {
+	// 	Config.Mongo.DBUserName = UsualConfig.Mongo.DBUserName
+	// }
+	// if Config.Mongo.DBPassword == "" {
+	// 	Config.Mongo.DBPassword = UsualConfig.Mongo.DBPassword
+	// }
 
-	if Config.Kafka.SASLUserName == "" {
-		Config.Kafka.SASLUserName = UsualConfig.Kafka.SASLUserName
-	}
-	if Config.Kafka.SASLPassword == "" {
-		Config.Kafka.SASLPassword = UsualConfig.Kafka.SASLPassword
-	}
+	// if Config.Kafka.SASLUserName == "" {
+	// 	Config.Kafka.SASLUserName = UsualConfig.Kafka.SASLUserName
+	// }
+	// if Config.Kafka.SASLPassword == "" {
+	// 	Config.Kafka.SASLPassword = UsualConfig.Kafka.SASLPassword
+	// }
 
-	if Config.Credential.Minio.AccessKeyID == "" {
-		Config.Credential.Minio.AccessKeyID = UsualConfig.Credential.Minio.AccessKeyID
-	}
-	if Config.Credential.Minio.SecretAccessKey == "" {
-		Config.Credential.Minio.SecretAccessKey = UsualConfig.Credential.Minio.SecretAccessKey
-	}
-	if Config.Credential.Minio.Endpoint == "" {
-		Config.Credential.Minio.Endpoint = UsualConfig.Credential.Minio.Endpoint
-	}
+	// if Config.Credential.Minio.AccessKeyID == "" {
+	// 	Config.Credential.Minio.AccessKeyID = UsualConfig.Credential.Minio.AccessKeyID
+	// }
+	// if Config.Credential.Minio.SecretAccessKey == "" {
+	// 	Config.Credential.Minio.SecretAccessKey = UsualConfig.Credential.Minio.SecretAccessKey
+	// }
+	// if Config.Credential.Minio.Endpoint == "" {
+	// 	Config.Credential.Minio.Endpoint = UsualConfig.Credential.Minio.Endpoint
+	// }
 
-	if Config.MessageVerify.FriendVerify == nil {
-		Config.MessageVerify.FriendVerify = &UsualConfig.Messageverify.FriendVerify
-	}
+	// if Config.MessageVerify.FriendVerify == nil {
+	// 	Config.MessageVerify.FriendVerify = &UsualConfig.Messageverify.FriendVerify
+	// }
 
-	if Config.Push.Getui.MasterSecret == "" {
-		Config.Push.Getui.MasterSecret = UsualConfig.Push.Getui.MasterSecret
-	}
-	if Config.Push.Getui.AppKey == "" {
-		Config.Push.Getui.AppKey = UsualConfig.Push.Getui.AppKey
-	}
-	if Config.Push.Getui.PushUrl == "" {
-		Config.Push.Getui.PushUrl = UsualConfig.Push.Getui.PushUrl
-	}
-	if Config.Push.Getui.Enable == nil {
-		Config.Push.Getui.Enable = &UsualConfig.Push.Getui.Enable
-	}
+	// if Config.Push.Getui.MasterSecret == "" {
+	// 	Config.Push.Getui.MasterSecret = UsualConfig.Push.Getui.MasterSecret
+	// }
+	// if Config.Push.Getui.AppKey == "" {
+	// 	Config.Push.Getui.AppKey = UsualConfig.Push.Getui.AppKey
+	// }
+	// if Config.Push.Getui.PushUrl == "" {
+	// 	Config.Push.Getui.PushUrl = UsualConfig.Push.Getui.PushUrl
+	// }
+	// if Config.Push.Getui.Enable == nil {
+	// 	Config.Push.Getui.Enable = &UsualConfig.Push.Getui.Enable
+	// }
 
-	if Config.Secret == "" {
-		Config.Secret = UsualConfig.Secret
-	}
+	// if Config.Secret == "" {
+	// 	Config.Secret = UsualConfig.Secret
+	// }
 
-	if Config.TokenPolicy.AccessExpire == 0 {
-		Config.TokenPolicy.AccessExpire = UsualConfig.Tokenpolicy.AccessExpire
-	}
-	if Config.TokenPolicy.AccessSecret == "" {
-		Config.TokenPolicy.AccessSecret = UsualConfig.Tokenpolicy.AccessSecret
-	}
+	// if Config.TokenPolicy.AccessExpire == 0 {
+	// 	Config.TokenPolicy.AccessExpire = UsualConfig.Tokenpolicy.AccessExpire
+	// }
+	// if Config.TokenPolicy.AccessSecret == "" {
+	// 	Config.TokenPolicy.AccessSecret = UsualConfig.Tokenpolicy.AccessSecret
+	// }
 }

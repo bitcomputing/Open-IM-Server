@@ -1,0 +1,94 @@
+package auth
+
+import (
+	"context"
+	"net/http"
+
+	"Open_IM/internal/gateway/internal/svc"
+	"Open_IM/internal/gateway/internal/types"
+	"Open_IM/pkg/common/config"
+	"Open_IM/pkg/common/constant"
+	errors "Open_IM/pkg/errors/api"
+	"Open_IM/pkg/proto/auth"
+	sdk "Open_IM/pkg/proto/sdk_ws"
+	"Open_IM/pkg/utils"
+
+	"github.com/zeromicro/go-zero/core/logx"
+)
+
+type RegisterLogic struct {
+	logx.Logger
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *RegisterLogic {
+	return &RegisterLogic{
+		Logger: logx.WithContext(ctx),
+		ctx:    ctx,
+		svcCtx: svcCtx,
+	}
+}
+
+func (l *RegisterLogic) Register(req *types.RegisterRequest) (*types.RegisterResponse, error) {
+	logger := l.Logger.WithFields(logx.Field("op", req.OperationID))
+	if req.Secret != config.Config.Secret {
+		errMsg := "params.Secret != config.Config.Secret"
+		logger.Error(errMsg, req.Secret, config.Config.Secret)
+		return nil, errors.Unauthorized.WriteMessage(errMsg)
+	}
+
+	userRegisterReq := &auth.UserRegisterReq{
+		UserInfo: &sdk.UserInfo{},
+	}
+	utils.CopyStructFields(userRegisterReq.UserInfo, &req)
+	userRegisterReq.OperationID = req.OperationID
+
+	reply, err := l.svcCtx.AuthClient.UserRegister(l.ctx, userRegisterReq)
+	if err != nil {
+		logger.Error(err)
+		return nil, errors.InternalError.WriteMessage(err.Error())
+	}
+	if reply.CommonResp.ErrCode != 0 {
+		errMsg := reply.CommonResp.ErrMsg
+		logger.Error(errMsg)
+		if reply.CommonResp.ErrCode == constant.RegisterLimit {
+			return nil, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           constant.RegisterLimit,
+				Message:        "用户注册被限制",
+			}
+		} else if reply.CommonResp.ErrCode == constant.InvitationError {
+			return nil, errors.Error{
+				HttpStatusCode: http.StatusOK,
+				Code:           constant.InvitationError,
+				Message:        "邀请码错误",
+			}
+		} else {
+			return nil, errors.InternalError.WriteMessage(errMsg)
+		}
+	}
+
+	userTokenReq := &auth.UserTokenReq{
+		Platform:    req.Platform,
+		FromUserID:  req.UserID,
+		OperationID: req.OperationID,
+	}
+	replyToken, err := l.svcCtx.AuthClient.UserToken(l.ctx, userTokenReq)
+	if err != nil {
+		logger.Error(err)
+		return nil, errors.InternalError.WriteMessage(err.Error())
+	}
+
+	return &types.RegisterResponse{
+		CommResp: types.CommResp{
+			ErrCode: replyToken.CommonResp.ErrCode,
+			ErrMsg:  replyToken.CommonResp.ErrMsg,
+		},
+		UserToken: types.UserTokenInfo{
+			UserID:      userRegisterReq.UserInfo.UserID,
+			Token:       replyToken.Token,
+			ExpiredTime: replyToken.ExpiredTime,
+		},
+	}, nil
+}

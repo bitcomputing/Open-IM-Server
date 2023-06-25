@@ -1,18 +1,29 @@
 package conversation
 
 import (
+	conversationclient "Open_IM/internal/rpc/conversation/client"
+	userclient "Open_IM/internal/rpc/user/client"
 	api "Open_IM/pkg/base_info"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
 	pbConversation "Open_IM/pkg/proto/conversation"
 	pbUser "Open_IM/pkg/proto/user"
 	"Open_IM/pkg/utils"
 	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"strings"
+
+	"github.com/gin-gonic/gin"
 )
+
+var (
+	conversationClient conversationclient.ConversationClient
+	userClient         userclient.UserClient
+)
+
+func init() {
+	conversationClient = conversationclient.NewConversationClient(config.ConvertClientConfig(config.Config.ClientConfigs.Conversation))
+	userClient = userclient.NewUserClient(config.ConvertClientConfig(config.Config.ClientConfigs.User))
+}
 
 func SetConversation(c *gin.Context) {
 	var (
@@ -32,15 +43,8 @@ func SetConversation(c *gin.Context) {
 	if err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbUser.NewUserClient(etcdConn)
-	respPb, err := client.SetConversation(context.Background(), &reqPb)
+
+	respPb, err := userClient.SetConversation(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -51,6 +55,7 @@ func SetConversation(c *gin.Context) {
 	log.NewInfo(req.OperationID, utils.GetSelfFuncName(), "resp: ", resp)
 	c.JSON(http.StatusOK, resp)
 }
+
 func ModifyConversationField(c *gin.Context) {
 	var (
 		req   api.ModifyConversationFieldReq
@@ -69,15 +74,8 @@ func ModifyConversationField(c *gin.Context) {
 	if err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImConversationName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbConversation.NewConversationClient(etcdConn)
-	respPb, err := client.ModifyConversationField(context.Background(), &reqPb)
+
+	respPb, err := conversationClient.ModifyConversationField(c.Request.Context(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -104,15 +102,8 @@ func BatchSetConversations(c *gin.Context) {
 	if err := utils.CopyStructFields(&reqPb, req); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbUser.NewUserClient(etcdConn)
-	respPb, err := client.BatchSetConversations(context.Background(), &reqPb)
+
+	respPb, err := userClient.BatchSetConversations(context.Background(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -154,15 +145,8 @@ func GetAllConversations(c *gin.Context) {
 	if err := utils.CopyStructFields(&reqPb, req); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbUser.NewUserClient(etcdConn)
-	respPb, err := client.GetAllConversations(context.Background(), &reqPb)
+
+	respPb, err := userClient.GetAllConversations(context.Background(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -204,15 +188,8 @@ func GetConversation(c *gin.Context) {
 	if err := utils.CopyStructFields(&reqPb, req); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbUser.NewUserClient(etcdConn)
-	respPb, err := client.GetConversation(context.Background(), &reqPb)
+
+	respPb, err := userClient.GetConversation(context.Background(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "GetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -254,15 +231,8 @@ func GetConversations(c *gin.Context) {
 	if err := utils.CopyStructFields(&reqPb, req); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbUser.NewUserClient(etcdConn)
-	respPb, err := client.GetConversations(context.Background(), &reqPb)
+
+	respPb, err := userClient.GetConversations(context.Background(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetConversation rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -292,15 +262,8 @@ func SetRecvMsgOpt(c *gin.Context) {
 	if err := utils.CopyStructFields(&reqPb, req); err != nil {
 		log.NewDebug(req.OperationID, utils.GetSelfFuncName(), "CopyStructFields failed", err.Error())
 	}
-	etcdConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImUserName, req.OperationID)
-	if etcdConn == nil {
-		errMsg := req.OperationID + "getcdv3.GetDefaultConn == nil"
-		log.NewError(req.OperationID, errMsg)
-		c.JSON(http.StatusInternalServerError, gin.H{"errCode": 500, "errMsg": errMsg})
-		return
-	}
-	client := pbUser.NewUserClient(etcdConn)
-	respPb, err := client.SetRecvMsgOpt(context.Background(), &reqPb)
+
+	respPb, err := userClient.SetRecvMsgOpt(context.Background(), &reqPb)
 	if err != nil {
 		log.NewError(req.OperationID, utils.GetSelfFuncName(), "SetRecvMsgOpt rpc failed, ", reqPb.String(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"errCode": 500, "errMsg": "GetAllConversationMsgOpt rpc failed, " + err.Error()})
@@ -312,17 +275,17 @@ func SetRecvMsgOpt(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-//Deprecated
+// Deprecated
 func SetReceiveMessageOpt(c *gin.Context) {
 
 }
 
-//Deprecated
+// Deprecated
 func GetReceiveMessageOpt(c *gin.Context) {
 
 }
 
-//Deprecated
+// Deprecated
 func GetAllConversationMessageOpt(c *gin.Context) {
 
 }

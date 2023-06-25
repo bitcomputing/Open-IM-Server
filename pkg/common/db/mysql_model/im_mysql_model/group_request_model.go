@@ -4,6 +4,7 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
+	"context"
 	"time"
 )
 
@@ -19,21 +20,21 @@ import (
 //	Ex           string    `gorm:"column:ex"`
 //}
 
-func UpdateGroupRequest(groupRequest db.GroupRequest) error {
+func UpdateGroupRequest(ctx context.Context, groupRequest db.GroupRequest) error {
 	if groupRequest.HandledTime.Unix() < 0 {
 		groupRequest.HandledTime = utils.UnixSecondToTime(0)
 	}
-	return db.DB.MysqlDB.DefaultGormDB().Table("group_requests").Where("group_id=? and user_id=?", groupRequest.GroupID, groupRequest.UserID).Updates(&groupRequest).Error
+	return db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("group_requests").Where("group_id=? and user_id=?", groupRequest.GroupID, groupRequest.UserID).Updates(&groupRequest).Error
 }
 
-func InsertIntoGroupRequest(toInsertInfo db.GroupRequest) error {
-	if err := DelGroupRequestByGroupIDAndUserID(toInsertInfo.GroupID, toInsertInfo.UserID); err != nil {
+func InsertIntoGroupRequest(ctx context.Context, toInsertInfo db.GroupRequest) error {
+	if err := DelGroupRequestByGroupIDAndUserID(ctx, toInsertInfo.GroupID, toInsertInfo.UserID); err != nil {
 		return err
 	}
 	if toInsertInfo.HandledTime.Unix() < 0 {
 		toInsertInfo.HandledTime = utils.UnixSecondToTime(0)
 	}
-	u := db.DB.MysqlDB.DefaultGormDB().Table("group_requests").Where("group_id=? and user_id=?", toInsertInfo.GroupID, toInsertInfo.UserID).Updates(&toInsertInfo)
+	u := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("group_requests").Where("group_id=? and user_id=?", toInsertInfo.GroupID, toInsertInfo.UserID).Updates(&toInsertInfo)
 	if u.RowsAffected != 0 {
 		return nil
 	}
@@ -43,23 +44,23 @@ func InsertIntoGroupRequest(toInsertInfo db.GroupRequest) error {
 		toInsertInfo.HandledTime = utils.UnixSecondToTime(0)
 	}
 
-	err := db.DB.MysqlDB.DefaultGormDB().Table("group_requests").Create(&toInsertInfo).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("group_requests").Create(&toInsertInfo).Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetGroupRequestByGroupIDAndUserID(groupID, userID string) (*db.GroupRequest, error) {
+func GetGroupRequestByGroupIDAndUserID(ctx context.Context, groupID, userID string) (*db.GroupRequest, error) {
 	var groupRequest db.GroupRequest
-	err := db.DB.MysqlDB.DefaultGormDB().Table("group_requests").Where("user_id=? and group_id=?", userID, groupID).Take(&groupRequest).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("group_requests").Where("user_id=? and group_id=?", userID, groupID).Take(&groupRequest).Error
 	if err != nil {
 		return nil, err
 	}
 	return &groupRequest, nil
 }
 
-func DelGroupRequestByGroupIDAndUserID(groupID, userID string) error {
+func DelGroupRequestByGroupIDAndUserID(ctx context.Context, groupID, userID string) error {
 	return db.DB.MysqlDB.DefaultGormDB().Table("group_requests").Where("group_id=? and user_id=?", groupID, userID).Delete(db.GroupRequest{}).Error
 }
 
@@ -73,9 +74,9 @@ func GetGroupRequestByGroupID(groupID string) ([]db.GroupRequest, error) {
 }
 
 // received
-func GetGroupApplicationList(userID string) ([]db.GroupRequest, error) {
+func GetGroupApplicationList(ctx context.Context, userID string) ([]db.GroupRequest, error) {
 	var groupRequestList []db.GroupRequest
-	memberList, err := GetGroupMemberListByUserID(userID)
+	memberList, err := GetGroupMemberListByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,9 +95,9 @@ func GetGroupApplicationList(userID string) ([]db.GroupRequest, error) {
 	return groupRequestList, nil
 }
 
-func GetUserReqGroupByUserID(userID string) ([]db.GroupRequest, error) {
+func GetUserReqGroupByUserID(ctx context.Context, userID string) ([]db.GroupRequest, error) {
 	var groupRequestList []db.GroupRequest
-	err := db.DB.MysqlDB.DefaultGormDB().Table("group_requests").Where("user_id=?", userID).Find(&groupRequestList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("group_requests").Where("user_id=?", userID).Find(&groupRequestList).Error
 	return groupRequestList, err
 }
 

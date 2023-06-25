@@ -2,9 +2,10 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"reflect"
+
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 func JsonDataList(resp interface{}) []map[string]interface{} {
@@ -30,15 +31,15 @@ func JsonDataOne(pb proto.Message) map[string]interface{} {
 }
 
 func ProtoToMap(pb proto.Message, idFix bool) map[string]interface{} {
-	marshaler := jsonpb.Marshaler{
-		OrigName:     true,
-		EnumsAsInts:  false,
-		EmitDefaults: false,
+	marshaler := protojson.MarshalOptions{
+		UseProtoNames:   true,
+		UseEnumNumbers:  false,
+		EmitUnpopulated: false,
 	}
 
-	s, _ := marshaler.MarshalToString(pb)
+	s, _ := marshaler.Marshal(pb)
 	out := make(map[string]interface{})
-	json.Unmarshal([]byte(s), &out)
+	json.Unmarshal(s, &out)
 	if idFix {
 		if _, ok := out["id"]; ok {
 			out["_id"] = out["id"]

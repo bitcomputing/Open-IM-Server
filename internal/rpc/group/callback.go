@@ -6,20 +6,22 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/common/http"
-	"Open_IM/pkg/common/log"
 	pbGroup "Open_IM/pkg/proto/group"
 	"Open_IM/pkg/utils"
+	"context"
 	http2 "net/http"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func callbackBeforeCreateGroup(req *pbGroup.CreateGroupReq) cbApi.CommonCallbackResp {
+func callbackBeforeCreateGroup(ctx context.Context, req *pbGroup.CreateGroupReq) cbApi.CommonCallbackResp {
+	logger := logx.WithContext(ctx)
 	callbackResp := cbApi.CommonCallbackResp{OperationID: req.OperationID}
 	if !config.Config.Callback.CallbackBeforeCreateGroup.Enable {
 		return callbackResp
 	}
-	log.NewDebug(req.OperationID, utils.GetSelfFuncName(), req.String())
+	logger.Debugv(req)
 	commonCallbackReq := &cbApi.CallbackBeforeCreateGroupReq{
 		CallbackCommand: constant.CallbackBeforeCreateGroupCommand,
 		OperationID:     req.OperationID,
@@ -30,8 +32,8 @@ func callbackBeforeCreateGroup(req *pbGroup.CreateGroupReq) cbApi.CommonCallback
 		CommonCallbackResp: &callbackResp,
 	}
 	//utils.CopyStructFields(req, msg.MsgData)
-	defer log.NewDebug(req.OperationID, utils.GetSelfFuncName(), commonCallbackReq, *resp)
-	if err := http.CallBackPostReturn(config.Config.Callback.CallbackUrl, constant.CallbackBeforeCreateGroupCommand, commonCallbackReq, resp, config.Config.Callback.CallbackBeforeCreateGroup.CallbackTimeOut); err != nil {
+	defer logger.Debug(*resp)
+	if err := http.CallBackPostReturnCtx(ctx, config.Config.Callback.CallbackUrl, constant.CallbackBeforeCreateGroupCommand, commonCallbackReq, resp, config.Config.Callback.CallbackBeforeCreateGroup.CallbackTimeOut); err != nil {
 		callbackResp.ErrCode = http2.StatusInternalServerError
 		callbackResp.ErrMsg = err.Error()
 		if !config.Config.Callback.CallbackBeforeCreateGroup.CallbackFailedContinue {
@@ -83,12 +85,13 @@ func callbackBeforeCreateGroup(req *pbGroup.CreateGroupReq) cbApi.CommonCallback
 	return callbackResp
 }
 
-func CallbackBeforeMemberJoinGroup(operationID string, groupMember *db.GroupMember, groupEx string) cbApi.CommonCallbackResp {
+func CallbackBeforeMemberJoinGroup(ctx context.Context, operationID string, groupMember *db.GroupMember, groupEx string) cbApi.CommonCallbackResp {
+	logger := logx.WithContext(ctx)
 	callbackResp := cbApi.CommonCallbackResp{OperationID: operationID}
 	if !config.Config.Callback.CallbackBeforeMemberJoinGroup.Enable {
 		return callbackResp
 	}
-	log.NewDebug(operationID, "args: ", *groupMember)
+	logger.Debugv(*groupMember)
 	callbackReq := cbApi.CallbackBeforeMemberJoinGroupReq{
 		CallbackCommand: constant.CallbackBeforeMemberJoinGroupCommand,
 		OperationID:     operationID,
@@ -100,7 +103,7 @@ func CallbackBeforeMemberJoinGroup(operationID string, groupMember *db.GroupMemb
 	resp := &cbApi.CallbackBeforeMemberJoinGroupResp{
 		CommonCallbackResp: &callbackResp,
 	}
-	if err := http.CallBackPostReturn(config.Config.Callback.CallbackUrl, constant.CallbackBeforeMemberJoinGroupCommand, callbackReq, resp, config.Config.Callback.CallbackBeforeMemberJoinGroup.CallbackTimeOut); err != nil {
+	if err := http.CallBackPostReturnCtx(ctx, config.Config.Callback.CallbackUrl, constant.CallbackBeforeMemberJoinGroupCommand, callbackReq, resp, config.Config.Callback.CallbackBeforeMemberJoinGroup.CallbackTimeOut); err != nil {
 		callbackResp.ErrCode = http2.StatusInternalServerError
 		callbackResp.ErrMsg = err.Error()
 		if !config.Config.Callback.CallbackBeforeMemberJoinGroup.CallbackFailedContinue {
@@ -129,7 +132,7 @@ func CallbackBeforeMemberJoinGroup(operationID string, groupMember *db.GroupMemb
 	return callbackResp
 }
 
-func CallbackBeforeSetGroupMemberInfo(req *pbGroup.SetGroupMemberInfoReq) cbApi.CommonCallbackResp {
+func CallbackBeforeSetGroupMemberInfo(ctx context.Context, req *pbGroup.SetGroupMemberInfoReq) cbApi.CommonCallbackResp {
 	callbackResp := cbApi.CommonCallbackResp{OperationID: req.OperationID}
 	if !config.Config.Callback.CallbackBeforeSetGroupMemberInfo.Enable {
 		return callbackResp
@@ -156,7 +159,7 @@ func CallbackBeforeSetGroupMemberInfo(req *pbGroup.SetGroupMemberInfoReq) cbApi.
 		CommonCallbackResp: &callbackResp,
 	}
 
-	if err := http.CallBackPostReturn(config.Config.Callback.CallbackUrl, constant.CallbackBeforeSetGroupMemberInfoCommand, callbackReq, resp, config.Config.Callback.CallbackBeforeSetGroupMemberInfo.CallbackTimeOut); err != nil {
+	if err := http.CallBackPostReturnCtx(ctx, config.Config.Callback.CallbackUrl, constant.CallbackBeforeSetGroupMemberInfoCommand, callbackReq, resp, config.Config.Callback.CallbackBeforeSetGroupMemberInfo.CallbackTimeOut); err != nil {
 		callbackResp.ErrCode = http2.StatusInternalServerError
 		callbackResp.ErrMsg = err.Error()
 		if !config.Config.Callback.CallbackBeforeSetGroupMemberInfo.CallbackFailedContinue {

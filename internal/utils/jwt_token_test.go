@@ -4,6 +4,7 @@ import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/token_verify"
+	"context"
 	"testing"
 	"time"
 
@@ -38,7 +39,7 @@ func Test_CreateToken(t *testing.T) {
 	platform := int32(1)
 	now := time.Now().Unix()
 
-	tokenString, expiresAt, err := token_verify.CreateToken(uid, int(platform))
+	tokenString, expiresAt, err := token_verify.CreateToken(context.Background(), uid, int(platform))
 
 	assert.NotEmpty(t, tokenString)
 	assert.Equal(t, expiresAt, 604800+now)
@@ -48,17 +49,17 @@ func Test_CreateToken(t *testing.T) {
 func Test_VerifyToken(t *testing.T) {
 	uid := "1"
 	platform := int32(1)
-	tokenString, _, _ := token_verify.CreateToken(uid, int(platform))
-	result, _ := token_verify.VerifyToken(tokenString, uid)
+	tokenString, _, _ := token_verify.CreateToken(context.Background(), uid, int(platform))
+	result, _ := token_verify.VerifyToken(context.Background(), tokenString, uid)
 	assert.True(t, result)
-	result, _ = token_verify.VerifyToken(tokenString, "2")
+	result, _ = token_verify.VerifyToken(context.Background(), tokenString, "2")
 	assert.False(t, result)
 }
 
 func Test_ParseRedisInterfaceToken(t *testing.T) {
 	uid := "1"
 	platform := int32(1)
-	tokenString, _, _ := token_verify.CreateToken(uid, int(platform))
+	tokenString, _, _ := token_verify.CreateToken(context.Background(), uid, int(platform))
 
 	claims, err := token_verify.ParseRedisInterfaceToken([]uint8(tokenString))
 	assert.Nil(t, err)
@@ -66,7 +67,7 @@ func Test_ParseRedisInterfaceToken(t *testing.T) {
 
 	// timeout
 	config.Config.TokenPolicy.AccessExpire = -80
-	tokenString, _, _ = token_verify.CreateToken(uid, int(platform))
+	tokenString, _, _ = token_verify.CreateToken(context.Background(), uid, int(platform))
 	claims, err = token_verify.ParseRedisInterfaceToken([]uint8(tokenString))
 	assert.Equal(t, err, constant.ExpiredToken)
 	assert.Nil(t, claims)
@@ -75,8 +76,8 @@ func Test_ParseRedisInterfaceToken(t *testing.T) {
 func Test_ParseToken(t *testing.T) {
 	uid := "1"
 	platform := int32(1)
-	tokenString, _, _ := token_verify.CreateToken(uid, int(platform))
-	claims, err := token_verify.ParseToken(tokenString, "")
+	tokenString, _, _ := token_verify.CreateToken(context.Background(), uid, int(platform))
+	claims, err := token_verify.ParseToken(context.Background(), tokenString, "")
 	if err == nil {
 		assert.Equal(t, claims.UID, uid)
 	}

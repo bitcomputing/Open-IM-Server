@@ -1,11 +1,11 @@
 package logic
 
 import (
+	pushclient "Open_IM/internal/push/client"
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/kafka"
 	promePkg "Open_IM/pkg/common/prometheus"
 	"fmt"
-	"sync"
 )
 
 const OnlineTopicBusy = 1
@@ -17,26 +17,22 @@ const MongoMessages = 5
 const ChannelNum = 100
 
 var (
-	persistentCH          PersistentConsumerHandler
-	historyCH             OnlineHistoryRedisConsumerHandler
-	historyMongoCH        OnlineHistoryMongoConsumerHandler
-	modifyCH              ModifyMsgConsumerHandler
-	producer              *kafka.Producer
-	producerToModify      *kafka.Producer
-	producerToMongo       *kafka.Producer
-	cmdCh                 chan Cmd2Value
-	onlineTopicStatus     int
-	w                     *sync.Mutex
-	singleMsgSuccessCount uint64
-	groupMsgCount         uint64
-	singleMsgFailedCount  uint64
-
-	singleMsgSuccessCountMutex sync.Mutex
+	persistentCH     PersistentConsumerHandler
+	historyCH        OnlineHistoryRedisConsumerHandler
+	historyMongoCH   OnlineHistoryMongoConsumerHandler
+	modifyCH         ModifyMsgConsumerHandler
+	producer         *kafka.Producer
+	producerToModify *kafka.Producer
+	producerToMongo  *kafka.Producer
+	cmdCh            chan Cmd2Value
+	// onlineTopicStatus int
+	// w                 *sync.Mutex
+	pushClient pushclient.PushClient
 )
 
 func Init() {
 	cmdCh = make(chan Cmd2Value, 10000)
-	w = new(sync.Mutex)
+	// w = new(sync.Mutex)
 	if config.Config.Prometheus.Enable {
 		initPrometheus()
 	}
@@ -44,12 +40,14 @@ func Init() {
 	historyCH.Init(cmdCh) //
 	historyMongoCH.Init()
 	modifyCH.Init()
-	onlineTopicStatus = OnlineTopicVacancy
+	// onlineTopicStatus = OnlineTopicVacancy
 	//offlineHistoryCH.Init(cmdCh)
 	producer = kafka.NewKafkaProducer(config.Config.Kafka.Ms2pschat.Addr, config.Config.Kafka.Ms2pschat.Topic)
 	producerToModify = kafka.NewKafkaProducer(config.Config.Kafka.MsgToModify.Addr, config.Config.Kafka.MsgToModify.Topic)
 	producerToMongo = kafka.NewKafkaProducer(config.Config.Kafka.MsgToMongo.Addr, config.Config.Kafka.MsgToMongo.Topic)
+	pushClient = pushclient.NewPushClient(config.ConvertClientConfig(config.Config.ClientConfigs.Push))
 }
+
 func Run(promethuesPort int) {
 	//register mysqlConsumerHandler to
 	if config.Config.ChatPersistenceMysql {
@@ -68,13 +66,15 @@ func Run(promethuesPort int) {
 		}
 	}()
 }
-func SetOnlineTopicStatus(status int) {
-	w.Lock()
-	defer w.Unlock()
-	onlineTopicStatus = status
-}
-func GetOnlineTopicStatus() int {
-	w.Lock()
-	defer w.Unlock()
-	return onlineTopicStatus
-}
+
+// func SetOnlineTopicStatus(status int) {
+// 	w.Lock()
+// 	defer w.Unlock()
+// 	onlineTopicStatus = status
+// }
+
+// func GetOnlineTopicStatus() int {
+// 	w.Lock()
+// 	defer w.Unlock()
+// 	return onlineTopicStatus
+// }

@@ -1,23 +1,23 @@
 package gate
 
 import (
-	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/db"
-	"Open_IM/pkg/common/log"
-	"Open_IM/pkg/grpc-etcdv3/getcdv3"
-	pbChat "Open_IM/pkg/proto/msg"
 	sdk_ws "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
 	"context"
-	"strings"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 var MaxPullMsgNum = 100
 
-func (r *RPCServer) GenPullSeqList(currentSeq uint32, operationID string, userID string) ([]uint32, error) {
-	maxSeq, err := db.DB.GetUserMaxSeq(userID)
+func (r *RPCServer) GenPullSeqList(ctx context.Context, currentSeq uint32, operationID string, userID string) ([]uint32, error) {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
+	maxSeq, err := db.DB.GetUserMaxSeq(ctx, userID)
 	if err != nil {
-		log.Error(operationID, "GetUserMaxSeq failed ", userID, err.Error())
+		logger.Errorf("GetUserMaxSeq failed: user_id: %s, err: %v", userID, err)
 		return nil, utils.Wrap(err, "")
 	}
 
@@ -30,7 +30,7 @@ func (r *RPCServer) GenPullSeqList(currentSeq uint32, operationID string, userID
 			break
 		}
 	}
-	log.Info(operationID, "GenPullSeqList ", seqList, "current seq", currentSeq)
+
 	return seqList, nil
 }
 
@@ -75,31 +75,27 @@ func (r *RPCServer) GetSingleUserMsgForPush(operationID string, msgData *sdk_ws.
 	//return msgList
 }
 
-func (r *RPCServer) GetSingleUserMsg(operationID string, currentMsgSeq uint32, userID string) []*sdk_ws.MsgData {
-	seqList, err := r.GenPullSeqList(currentMsgSeq, operationID, userID)
+func (r *RPCServer) GetSingleUserMsg(ctx context.Context, operationID string, currentMsgSeq uint32, userID string) []*sdk_ws.MsgData {
+	ctx = logx.ContextWithFields(ctx, logx.Field("op", operationID))
+	logger := logx.WithContext(ctx)
+
+	seqList, err := r.GenPullSeqList(ctx, currentMsgSeq, operationID, userID)
 	if err != nil {
-		log.Error(operationID, "GenPullSeqList failed ", err.Error(), currentMsgSeq, userID)
+		logger.Errorf("GenPullSeqList failed: err: %v, current_msg_seq: %d, user_id: %s", err, currentMsgSeq, userID)
 		return nil
 	}
 	if len(seqList) == 0 {
-		log.Error(operationID, "GenPullSeqList len == 0 ", currentMsgSeq, userID)
+		logger.Errorf("GenPullSeqList len == 0, current_msg_seq: %d, user_id: %s", currentMsgSeq, userID)
 		return nil
 	}
 	rpcReq := sdk_ws.PullMessageBySeqListReq{}
 	rpcReq.SeqList = seqList
 	rpcReq.UserID = userID
 	rpcReq.OperationID = operationID
-	grpcConn := getcdv3.GetDefaultConn(config.Config.Etcd.EtcdSchema, strings.Join(config.Config.Etcd.EtcdAddr, ","), config.Config.RpcRegisterName.OpenImMsgName, rpcReq.OperationID)
-	if grpcConn == nil {
-		errMsg := "getcdv3.GetDefaultConn == nil"
-		log.NewError(rpcReq.OperationID, errMsg)
-		return nil
-	}
 
-	msgClient := pbChat.NewMsgClient(grpcConn)
-	reply, err := msgClient.PullMessageBySeqList(context.Background(), &rpcReq)
+	reply, err := r.msgClient.PullMessageBySeqList(context.Background(), &rpcReq)
 	if err != nil {
-		log.Error(operationID, "PullMessageBySeqList failed ", err.Error(), rpcReq.String())
+		logger.Errorf("PullMessageBySeqList failed: err: %v, resp: %v ", err.Error(), rpcReq)
 		return nil
 	}
 	if len(reply.List) == 0 {

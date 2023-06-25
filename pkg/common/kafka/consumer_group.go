@@ -42,10 +42,10 @@ func NewMConsumerGroup(consumerConfig *MConsumerGroupConfig, topics, addrs []str
 		topics,
 	}
 }
+
 func (mc *MConsumerGroup) RegisterHandleAndConsumer(handler sarama.ConsumerGroupHandler) {
-	ctx := context.Background()
 	for {
-		err := mc.ConsumerGroup.Consume(ctx, mc.topics, handler)
+		err := mc.ConsumerGroup.Consume(context.Background(), mc.topics, handler)
 		if err != nil {
 			panic(err.Error())
 		}

@@ -4,6 +4,7 @@ import (
 	"Open_IM/pkg/common/constant"
 	"Open_IM/pkg/common/db"
 	"Open_IM/pkg/utils"
+	"context"
 	"fmt"
 
 	"time"
@@ -22,7 +23,7 @@ import (
 //	Ex            string    `gorm:"column:ex"`
 //}
 
-func InsertIntoGroup(groupInfo db.Group) error {
+func InsertIntoGroup(ctx context.Context, groupInfo db.Group) error {
 	if groupInfo.GroupName == "" {
 		groupInfo.GroupName = "Group Chat"
 	}
@@ -31,27 +32,27 @@ func InsertIntoGroup(groupInfo db.Group) error {
 	if groupInfo.NotificationUpdateTime.Unix() < 0 {
 		groupInfo.NotificationUpdateTime = utils.UnixSecondToTime(0)
 	}
-	err := db.DB.MysqlDB.DefaultGormDB().Table("groups").Create(groupInfo).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Create(groupInfo).Error
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetGroupInfoByGroupID(groupID string) (*db.Group, error) {
+func GetGroupInfoByGroupID(ctx context.Context, groupID string) (*db.Group, error) {
 	var groupInfo db.Group
-	err := db.DB.MysqlDB.DefaultGormDB().Table("groups").Where("group_id=?", groupID).Take(&groupInfo).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Where("group_id=?", groupID).Take(&groupInfo).Error
 	return &groupInfo, err
 }
 
-func GetGroupInfoByGroupIDList(groupIDList []string) ([]*db.Group, error) {
+func GetGroupInfoByGroupIDList(ctx context.Context, groupIDList []string) ([]*db.Group, error) {
 	var groupInfoList []*db.Group
-	err := db.DB.MysqlDB.DefaultGormDB().Table("groups").Where("group_id in (?)", groupIDList).Find(&groupIDList).Error
+	err := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Where("group_id in (?)", groupIDList).Find(&groupIDList).Error
 	return groupInfoList, err
 }
 
-func SetGroupInfo(groupInfo db.Group) error {
-	return db.DB.MysqlDB.DefaultGormDB().Table("groups").Where("group_id=?", groupInfo.GroupID).Updates(&groupInfo).Error
+func SetGroupInfo(ctx context.Context, groupInfo db.Group) error {
+	return db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Where("group_id=?", groupInfo.GroupID).Updates(&groupInfo).Error
 }
 
 type GroupWithNum struct {
@@ -59,10 +60,10 @@ type GroupWithNum struct {
 	MemberCount int `gorm:"column:num"`
 }
 
-func GetGroupsByName(groupName string, pageNumber, showNumber int32) ([]GroupWithNum, int64, error) {
+func GetGroupsByName(ctx context.Context, groupName string, pageNumber, showNumber int32) ([]GroupWithNum, int64, error) {
 	var groups []GroupWithNum
 	var count int64
-	sql := db.DB.MysqlDB.DefaultGormDB().Table("groups").Select("groups.*, (select count(*) from group_members where group_members.group_id=groups.group_id) as num").
+	sql := db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Select("groups.*, (select count(*) from group_members where group_members.group_id=groups.group_id) as num").
 		Where(" name like ? and status != ?", fmt.Sprintf("%%%s%%", groupName), constant.GroupStatusDismissed)
 	if err := sql.Count(&count).Error; err != nil {
 		return nil, 0, err
@@ -80,12 +81,12 @@ func GetGroups(pageNumber, showNumber int) ([]GroupWithNum, error) {
 	return groups, nil
 }
 
-func OperateGroupStatus(groupId string, groupStatus int32) error {
+func OperateGroupStatus(ctx context.Context, groupId string, groupStatus int32) error {
 	group := db.Group{
 		GroupID: groupId,
 		Status:  groupStatus,
 	}
-	if err := SetGroupInfo(group); err != nil {
+	if err := SetGroupInfo(ctx, group); err != nil {
 		return err
 	}
 	return nil
@@ -99,8 +100,8 @@ func GetGroupsCountNum(group db.Group) (int32, error) {
 	return int32(count), nil
 }
 
-func UpdateGroupInfoDefaultZero(groupID string, args map[string]interface{}) error {
-	return db.DB.MysqlDB.DefaultGormDB().Table("groups").Where("group_id = ? ", groupID).Updates(args).Error
+func UpdateGroupInfoDefaultZero(ctx context.Context, groupID string, args map[string]interface{}) error {
+	return db.DB.MysqlDB.DefaultGormDB().WithContext(ctx).Table("groups").Where("group_id = ? ", groupID).Updates(args).Error
 }
 
 func GetGroupIDListByGroupType(groupType int) ([]string, error) {

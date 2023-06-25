@@ -3,7 +3,6 @@ package db
 import (
 	"Open_IM/pkg/common/config"
 	"Open_IM/pkg/common/constant"
-	"Open_IM/pkg/common/log"
 	pbMsg "Open_IM/pkg/proto/msg"
 	open_im_sdk "Open_IM/pkg/proto/sdk_ws"
 	"Open_IM/pkg/utils"
@@ -15,13 +14,14 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gogo/protobuf/sortkeys"
+	"github.com/zeromicro/go-zero/core/logx"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	//"github.com/garyburd/redigo/redis"
-	"github.com/golang/protobuf/proto"
 	"go.mongodb.org/mongo-driver/bson"
+	"google.golang.org/protobuf/proto"
 
 	"strconv"
 	"time"
@@ -95,7 +95,8 @@ func (d *DataBases) GetMinSeqFromMongo2(uid string) (MinSeq uint32, err error) {
 
 // deleteMsgByLogic
 func (d *DataBases) DelMsgBySeqList(userID string, seqList []uint32, operationID string) (totalUnExistSeqList []uint32, err error) {
-	log.Debug(operationID, utils.GetSelfFuncName(), "args ", userID, seqList)
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
+	logger.Debug("args ", userID, seqList)
 	sortkeys.Uint32s(seqList)
 	suffixUserID2SubSeqList := func(uid string, seqList []uint32) map[string][]uint32 {
 		t := make(map[string][]uint32)
@@ -119,7 +120,7 @@ func (d *DataBases) DelMsgBySeqList(userID string, seqList []uint32, operationID
 			defer wg.Done()
 			unexistSeqList, err := d.DelMsgBySeqListInOneDoc(suffixUserID, subSeqList, operationID)
 			if err != nil {
-				log.Error(operationID, "DelMsgBySeqListInOneDoc failed ", err.Error(), suffixUserID, subSeqList)
+				logger.Error("DelMsgBySeqListInOneDoc failed ", err.Error(), suffixUserID, subSeqList)
 				return
 			}
 			lock.Lock()
@@ -131,7 +132,6 @@ func (d *DataBases) DelMsgBySeqList(userID string, seqList []uint32, operationID
 }
 
 func (d *DataBases) DelMsgBySeqListInOneDoc(suffixUserID string, seqList []uint32, operationID string) ([]uint32, error) {
-	log.Debug(operationID, utils.GetSelfFuncName(), "args ", suffixUserID, seqList)
 	seqMsgList, indexList, unexistSeqList, err := d.GetMsgAndIndexBySeqListInOneMongo2(suffixUserID, seqList, operationID)
 	if err != nil {
 		return nil, utils.Wrap(err, "")
@@ -145,78 +145,74 @@ func (d *DataBases) DelMsgBySeqListInOneDoc(suffixUserID string, seqList []uint3
 }
 
 // deleteMsgByLogic
-func (d *DataBases) DelMsgLogic(uid string, seqList []uint32, operationID string) error {
+func (d *DataBases) DelMsgLogic(ctx context.Context, uid string, seqList []uint32, operationID string) error {
 	sortkeys.Uint32s(seqList)
-	seqMsgs, err := d.GetMsgBySeqListMongo2(uid, seqList, operationID)
+	seqMsgs, err := d.GetMsgBySeqListMongo2(ctx, uid, seqList, operationID)
 	if err != nil {
 		return utils.Wrap(err, "")
 	}
 	for _, seqMsg := range seqMsgs {
-		log.NewDebug(operationID, utils.GetSelfFuncName(), *seqMsg)
 		seqMsg.Status = constant.MsgDeleted
-		if err = d.ReplaceMsgBySeq(uid, seqMsg, operationID); err != nil {
-			log.NewError(operationID, utils.GetSelfFuncName(), "ReplaceMsgListBySeq error", err.Error())
+		if err = d.ReplaceMsgBySeq(ctx, uid, seqMsg, operationID); err != nil {
 		}
 	}
 	return nil
 }
 
 func (d *DataBases) DelMsgByIndex(suffixUserID string, msg *open_im_sdk.MsgData, operationID string, seqIndex int) error {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), suffixUserID, *msg)
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	s := fmt.Sprintf("msg.%d.msg", seqIndex)
-	log.NewDebug(operationID, utils.GetSelfFuncName(), seqIndex, s)
 	msg.Status = constant.MsgDeleted
 	bytes, err := proto.Marshal(msg)
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "proto marshal failed ", err.Error(), msg.String())
 		return utils.Wrap(err, "")
 	}
-	updateResult, err := c.UpdateOne(ctx, bson.M{"uid": suffixUserID}, bson.M{"$set": bson.M{s: bytes}})
-	log.NewInfo(operationID, utils.GetSelfFuncName(), updateResult)
+	_, err = c.UpdateOne(ctx, bson.M{"uid": suffixUserID}, bson.M{"$set": bson.M{s: bytes}})
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "UpdateOne", err.Error())
 		return utils.Wrap(err, "")
 	}
 	return nil
 }
 
-func (d *DataBases) ReplaceMsgBySeq(uid string, msg *open_im_sdk.MsgData, operationID string) error {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, *msg)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) ReplaceMsgBySeq(ctx context.Context, uid string, msg *open_im_sdk.MsgData, operationID string) error {
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
+	logger.Info(uid, msg)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	uid = getSeqUid(uid, msg.Seq)
 	seqIndex := getMsgIndex(msg.Seq)
 	s := fmt.Sprintf("msg.%d.msg", seqIndex)
-	log.NewDebug(operationID, utils.GetSelfFuncName(), seqIndex, s)
+	logger.Debug(seqIndex, s)
 	bytes, err := proto.Marshal(msg)
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "proto marshal", err.Error())
+		logger.Error("proto marshal", err.Error())
 		return utils.Wrap(err, "")
 	}
-	updateResult, err := c.UpdateOne(
+	_, err = c.UpdateOne(
 		ctx, bson.M{"uid": uid},
 		bson.M{"$set": bson.M{s: bytes}})
-	log.NewInfo(operationID, utils.GetSelfFuncName(), updateResult)
 	if err != nil {
-		log.NewError(operationID, utils.GetSelfFuncName(), "UpdateOne", err.Error())
+		logger.Error("UpdateOne", err.Error())
 		return utils.Wrap(err, "")
 	}
 	return nil
 }
 
 func (d *DataBases) GetMsgBySeqIndex(uid string, seq uint32, operationID string) (*open_im_sdk.MsgData, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	uid = getSeqUid(uid, seq)
 	seqIndex := getMsgIndex(seq)
 	result, err := c.Find(ctx, bson.M{"msg": bson.M{"$slice": []int{seqIndex, 1}}})
 	if err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 	var msgInfos []MsgInfo
 	if err := result.Decode(&msgInfos); err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 	if len(msgInfos) < 1 {
@@ -224,25 +220,30 @@ func (d *DataBases) GetMsgBySeqIndex(uid string, seq uint32, operationID string)
 	}
 	var msg open_im_sdk.MsgData
 	if err := proto.Unmarshal(msgInfos[0].Msg, &msg); err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 	return &msg, nil
 }
 
-func (d *DataBases) ReplaceMsgByIndex(uid string, msg *open_im_sdk.MsgData, index int) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) ReplaceMsgByIndex(uid string, msg *open_im_sdk.MsgData, index int, operationID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", operationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	uid = getSeqUid(uid, msg.Seq)
 	seqIndex := getMsgIndex(msg.Seq)
 	s := fmt.Sprintf("msg.%d.msg", seqIndex)
 	bytes, err := proto.Marshal(msg)
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	_, err = c.UpdateOne(
 		ctx, bson.M{"uid": uid},
 		bson.M{"$set": bson.M{s: bytes}})
 	if err != nil {
+		logger.Error(err)
 		return utils.Wrap(err, "")
 	}
 	return nil
@@ -256,7 +257,6 @@ func (d *DataBases) UpdateOneMsgList(msg *UserChat) error {
 }
 
 func (d *DataBases) GetMsgBySeqList(uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
-	log.NewInfo(operationID, utils.GetSelfFuncName(), uid, seqList)
 	var hasSeqList []uint32
 	singleCount := 0
 	session := d.mgoSession.Clone()
@@ -281,14 +281,12 @@ func (d *DataBases) GetMsgBySeqList(uid string, seqList []uint32, operationID st
 	sChat := UserChat{}
 	for seqUid, value := range m {
 		if err = c.Find(bson.M{"uid": seqUid}).One(&sChat); err != nil {
-			log.NewError(operationID, "not find seqUid", seqUid, value, uid, seqList, err.Error())
 			continue
 		}
 		singleCount = 0
 		for i := 0; i < len(sChat.Msg); i++ {
 			msg := new(open_im_sdk.MsgData)
 			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, value, uid, seqList, err.Error())
 				return nil, err
 			}
 			if isContainInt32(msg.Seq, value) {
@@ -431,10 +429,9 @@ func (d *DataBases) GetOldestMsg(ID string) (msg *open_im_sdk.MsgData, err error
 	return nil, nil
 }
 
-func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
+func (d *DataBases) GetMsgBySeqListMongo2(ctx context.Context, uid string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, err error) {
 	var hasSeqList []uint32
 	singleCount := 0
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 
 	m := func(uid string, seqList []uint32) map[string][]uint32 {
@@ -453,14 +450,12 @@ func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operatio
 	sChat := UserChat{}
 	for seqUid, value := range m {
 		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
-			log.NewError(operationID, "not find seqUid", seqUid, value, uid, seqList, err.Error())
 			continue
 		}
 		singleCount = 0
 		for i := 0; i < len(sChat.Msg); i++ {
 			msg := new(open_im_sdk.MsgData)
 			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, value, uid, seqList, err.Error())
 				return nil, err
 			}
 			if isContainInt32(msg.Seq, value) {
@@ -474,19 +469,18 @@ func (d *DataBases) GetMsgBySeqListMongo2(uid string, seqList []uint32, operatio
 		}
 	}
 	if len(hasSeqList) != len(seqList) {
-		var diff []uint32
-		diff = utils.Difference(hasSeqList, seqList)
+		diff := utils.Difference(hasSeqList, seqList)
 		exceptionMSg := genExceptionMessageBySeqList(diff)
 		seqMsg = append(seqMsg, exceptionMSg...)
 
 	}
 	return seqMsg, nil
 }
-func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, indexes map[uint32]int, err error) {
+func (d *DataBases) GetSuperGroupMsgBySeqListMongo(ctx context.Context, groupID string, seqList []uint32, operationID string) (seqMsg []*open_im_sdk.MsgData, indexes map[uint32]int, err error) {
+	logger := logx.WithContext(context.Background()).WithFields(logx.Field("op", operationID))
 	var hasSeqList []uint32
 	indexes = make(map[uint32]int)
 	singleCount := 0
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 
 	m := func(uid string, seqList []uint32) map[string][]uint32 {
@@ -505,14 +499,14 @@ func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uin
 	sChat := UserChat{}
 	for seqUid, value := range m {
 		if err = c.FindOne(ctx, bson.M{"uid": seqUid}).Decode(&sChat); err != nil {
-			log.NewError(operationID, "not find seqGroupID", seqUid, value, groupID, seqList, err.Error())
+			logger.Error("not find seqGroupID", seqUid, value, groupID, seqList, err.Error())
 			continue
 		}
 		singleCount = 0
 		for i := 0; i < len(sChat.Msg); i++ {
 			msg := new(open_im_sdk.MsgData)
 			if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-				log.NewError(operationID, "Unmarshal err", seqUid, value, groupID, seqList, err.Error())
+				logger.Error("Unmarshal err", seqUid, value, groupID, seqList, err.Error())
 				return nil, nil, err
 			}
 			if isContainInt32(msg.Seq, value) {
@@ -527,8 +521,7 @@ func (d *DataBases) GetSuperGroupMsgBySeqListMongo(groupID string, seqList []uin
 		}
 	}
 	if len(hasSeqList) != len(seqList) {
-		var diff []uint32
-		diff = utils.Difference(hasSeqList, seqList)
+		diff := utils.Difference(hasSeqList, seqList)
 		exceptionMSg := genExceptionSuperGroupMessageBySeqList(diff, groupID)
 		seqMsg = append(seqMsg, exceptionMSg...)
 	}
@@ -540,7 +533,6 @@ func (d *DataBases) GetMsgAndIndexBySeqListInOneMongo2(suffixUserID string, seqL
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	sChat := UserChat{}
 	if err = c.FindOne(ctx, bson.M{"uid": suffixUserID}).Decode(&sChat); err != nil {
-		log.NewError(operationID, "not find seqUid", suffixUserID, err.Error())
 		return nil, nil, nil, utils.Wrap(err, "")
 	}
 	singleCount := 0
@@ -548,7 +540,6 @@ func (d *DataBases) GetMsgAndIndexBySeqListInOneMongo2(suffixUserID string, seqL
 	for i := 0; i < len(sChat.Msg); i++ {
 		msg := new(open_im_sdk.MsgData)
 		if err = proto.Unmarshal(sChat.Msg[i].Msg, msg); err != nil {
-			log.NewError(operationID, "Unmarshal err", msg.String(), err.Error())
 			return nil, nil, nil, err
 		}
 		if isContainInt32(msg.Seq, seqList) {
@@ -591,10 +582,11 @@ func genExceptionSuperGroupMessageBySeqList(seqList []uint32, groupID string) (e
 }
 
 func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+	defer cancel()
+	logger := logx.WithContext(ctx).WithFields(logx.Field("op", m.OperationID))
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
 	newTime := getCurrentTimestampByMill()
-	operationID := ""
 	seqUid := getSeqUid(uid, m.MsgData.Seq)
 	filter := bson.M{"uid": seqUid}
 	var err error
@@ -604,20 +596,20 @@ func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgD
 		return utils.Wrap(err, "")
 	}
 	err = c.FindOneAndUpdate(ctx, filter, bson.M{"$push": bson.M{"msg": sMsg}}).Err()
-	log.NewWarn(operationID, "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
+	logger.Info("get mgoSession cost time", getCurrentTimestampByMill()-newTime)
 	if err != nil {
 		sChat := UserChat{}
 		sChat.UID = seqUid
 		sChat.Msg = append(sChat.Msg, sMsg)
 		if _, err = c.InsertOne(ctx, &sChat); err != nil {
-			log.NewDebug(operationID, "InsertOne failed", filter)
+			logger.Debug("InsertOne failed", filter)
 			return utils.Wrap(err, "")
 		}
 	} else {
-		log.NewDebug(operationID, "FindOneAndUpdate ok", filter)
+		logger.Debug("FindOneAndUpdate ok", filter)
 	}
 
-	log.NewDebug(operationID, "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
+	logger.Debug("find mgo uid cost time", getCurrentTimestampByMill()-newTime)
 	return nil
 }
 
@@ -664,20 +656,18 @@ func (d *DataBases) SaveUserChatMongo2(uid string, sendTime int64, m *pbMsg.MsgD
 
 func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToDB) error {
 	var seqUid string
-	newTime := getCurrentTimestampByMill()
+	// newTime := getCurrentTimestampByMill()
 	session := d.mgoSession.Clone()
 	if session == nil {
 		return errors.New("session == nil")
 	}
 	defer session.Close()
-	log.NewDebug("", "get mgoSession cost time", getCurrentTimestampByMill()-newTime)
 	c := session.DB(config.Config.Mongo.DBDatabase).C(cChat)
 	seqUid = getSeqUid(uid, m.MsgData.Seq)
 	n, err := c.Find(bson.M{"uid": seqUid}).Count()
 	if err != nil {
 		return err
 	}
-	log.NewDebug("", "find mgo uid cost time", getCurrentTimestampByMill()-newTime)
 	sMsg := MsgInfo{}
 	sMsg.SendTime = sendTime
 	if sMsg.Msg, err = proto.Marshal(m.MsgData); err != nil {
@@ -697,7 +687,6 @@ func (d *DataBases) SaveUserChat(uid string, sendTime int64, m *pbMsg.MsgDataToD
 			return err
 		}
 	}
-	log.NewDebug("", "insert mgo data cost time", getCurrentTimestampByMill()-newTime)
 	return nil
 }
 
@@ -780,7 +769,7 @@ func (d *DataBases) GetGroupMember(groupID string) []string {
 	//return groupInfo.UIDList
 }
 
-func (d *DataBases) AddGroupMember(groupID, uid string) error {
+func (d *DataBases) AddGroupMember(ctx context.Context, groupID, uid string) error {
 	return nil
 	//session := d.mgoSession.Clone()
 	//if session == nil {
@@ -813,7 +802,7 @@ func (d *DataBases) AddGroupMember(groupID, uid string) error {
 	//return nil
 }
 
-func (d *DataBases) DelGroupMember(groupID, uid string) error {
+func (d *DataBases) DelGroupMember(ctx context.Context, groupID, uid string) error {
 	return nil
 	//session := d.mgoSession.Clone()
 	//if session == nil {
@@ -1041,7 +1030,7 @@ func (d *DataBases) LikeOneWorkMoment(likeUserID, userName, workMomentID string)
 	if !isAlreadyLike {
 		workMoment.LikeUserList = append(workMoment.LikeUserList, &WorkMomentUser{UserID: likeUserID, UserName: userName})
 	}
-	log.NewDebug("", utils.GetSelfFuncName(), workMoment)
+
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cWorkMoment)
 	_, err = c.UpdateOne(ctx, bson.M{"work_moment_id": workMomentID}, bson.M{"$set": bson.M{"like_user_list": workMoment.LikeUserList}})
@@ -1142,8 +1131,7 @@ type UserToSuperGroup struct {
 	GroupIDList []string `bson:"group_id_list" json:"groupIDList"`
 }
 
-func (d *DataBases) CreateSuperGroup(groupID string, initMemberIDList []string, memberNumCount int) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) CreateSuperGroup(ctx context.Context, groupID string, initMemberIDList []string, memberNumCount int) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1187,16 +1175,14 @@ func (d *DataBases) CreateSuperGroup(groupID string, initMemberIDList []string, 
 	return err
 }
 
-func (d *DataBases) GetSuperGroup(groupID string) (SuperGroup, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) GetSuperGroup(ctx context.Context, groupID string) (SuperGroup, error) {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	superGroup := SuperGroup{}
 	err := c.FindOne(ctx, bson.M{"group_id": groupID}).Decode(&superGroup)
 	return superGroup, err
 }
 
-func (d *DataBases) AddUserToSuperGroup(groupID string, userIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) AddUserToSuperGroup(ctx context.Context, groupID string, userIDList []string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1233,8 +1219,7 @@ func (d *DataBases) AddUserToSuperGroup(groupID string, userIDList []string) err
 	_ = session.CommitTransaction(ctx)
 	return err
 }
-func (d *DataBases) AddUserToSuperGroups(groupIDList []string, userID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) AddUserToSuperGroups(ctx context.Context, groupIDList []string, userID string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1264,8 +1249,7 @@ func (d *DataBases) AddUserToSuperGroups(groupIDList []string, userID string) er
 	return err
 }
 
-func (d *DataBases) RemoverUserFromSuperGroup(groupID string, userIDList []string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) RemoverUserFromSuperGroup(ctx context.Context, groupID string, userIDList []string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1287,16 +1271,14 @@ func (d *DataBases) RemoverUserFromSuperGroup(groupID string, userIDList []strin
 	return err
 }
 
-func (d *DataBases) GetSuperGroupByUserID(userID string) (UserToSuperGroup, error) {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) GetSuperGroupByUserID(ctx context.Context, userID string) (UserToSuperGroup, error) {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cUserToSuperGroup)
 	var user UserToSuperGroup
 	_ = c.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
 	return user, nil
 }
 
-func (d *DataBases) DeleteSuperGroup(groupID string) error {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Config.Mongo.DBTimeout)*time.Second)
+func (d *DataBases) DeleteSuperGroup(ctx context.Context, groupID string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cSuperGroup)
 	session, err := d.mongoClient.StartSession()
 	if err != nil {
@@ -1414,10 +1396,9 @@ func superGroupIndexGen(groupID string, seqSuffix uint32) string {
 	return "super_group_" + groupID + ":" + strconv.FormatInt(int64(seqSuffix), 10)
 }
 
-func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) error {
-	ctx := context.Background()
+func (d *DataBases) CleanUpUserMsgFromMongo(ctx context.Context, userID string, operationID string) error {
 	c := d.mongoClient.Database(config.Config.Mongo.DBDatabase).Collection(cChat)
-	maxSeq, err := d.GetUserMaxSeq(userID)
+	maxSeq, err := d.GetUserMaxSeq(ctx, userID)
 	if err == redis.Nil {
 		return nil
 	}
@@ -1426,7 +1407,6 @@ func (d *DataBases) CleanUpUserMsgFromMongo(userID string, operationID string) e
 	}
 
 	seqUsers := getSeqUserIDList(userID, uint32(maxSeq))
-	log.Error(operationID, "getSeqUserIDList", seqUsers)
 	_, err = c.DeleteMany(ctx, bson.M{"uid": bson.M{"$in": seqUsers}})
 	if err == mongo.ErrNoDocuments {
 		return nil
